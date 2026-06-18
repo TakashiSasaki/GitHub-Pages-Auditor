@@ -1,20 +1,54 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# GitHub Pages Auditor
 
-# Run and deploy your AI Studio app
+GitHub Pages Auditor is a multi-user web application that audits GitHub Pages settings across repositories accessible to fine-grained or classic Personal Access Tokens (PATs). It displays custom domain configuration status, HTTPS certificate state, and Pages deployment methods securely without modifying any settings.
 
-This contains everything you need to run your app locally.
+## Core Features & MVP Status
+- **Secure Backend API Auditing**: Directly proxies standard GitHub API endpoints from the Express backend, keeping the PAT invisible to the browser.
+- **Classification Engine**: Pure shared classification models mapping Github Pages metadata into standardized custom domain and SSL status models.
+- **Defense in Depth**: Escape patterns defend spreadsheet exports from formula injections; strict allowlists protect the proxy layers.
+- **Authentication**: Integrates Firebase Authentication (Google persistent sign-in and temporary Anonymous guests), verification happens via ID Token bearer verification.
 
-View your app in AI Studio: https://ai.studio/apps/c58ee83b-114d-43b6-8b59-d3ec17013a4d
+## Running the Application Locally
 
-## Run Locally
+### 1. Prerequisites
+- Node.js (v18+)
+- npm
 
-**Prerequisites:**  Node.js
+### 2. Environment Setup
+Create a `.env` file at the root level of the project. Declare keys as defined in `.env.example`:
 
+```env
+# Required for any Gemini API calls and AI Studio environment configs
+GEMINI_API_KEY="your-gemini-key"
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+# App URL for absolute references and self-routing
+APP_URL="http://localhost:3000"
+
+# Optional: Set to 'true' to enable 'dummy-token' for local/integration testing
+ALLOW_DUMMY_AUTH="true"
+```
+
+### 3. Installation
+Install project dependencies:
+```bash
+npm install
+```
+
+### 4. Running the Development Server
+To boot the full-stack system in development mode (Express server and Vite frontend pipeline concurrent):
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 5. Running the Automated Tests
+Run the comprehensive synchronous test suite:
+```bash
+npm test
+```
+
+## Non-Negotiable Security Rules & Constraints (MVP)
+- **PAT-Only Authentication**: The application remains strictly PAT-only. No GitHub OAuth or GitHub Apps are implemented.
+- **Read-Only Proxy**: The backend only allowlists exact `GET` endpoints. The system will never support write actions (e.g., POST/PUT/DELETE pages settings or repository metadata).
+- **Actions Workflow Shield**: Action dispatching and workflow modification endpoints are strictly blocked under absolute regex boundaries to protect automation setups.
+- **Zero Firestore & Functions Dependency**: In the current MVP phase, PATs and session states are managed entirely in-memory at the Express server border. Cloud Firestore and Cloud Functions are disabled.

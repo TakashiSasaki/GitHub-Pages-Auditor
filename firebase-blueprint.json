@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a persistent Google user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "provider": { "type": "string" }
+      },
+      "required": ["uid", "provider"]
+    },
+    "GitHubToken": {
+      "title": "GitHubToken",
+      "description": "Represents persistent PAT metadata for Google users only. No direct client reads allowed.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "token": { "type": "string" },
+        "tokenStorageVersion": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "token", "tokenStorageVersion"]
+    },
+    "AnonymousSession": {
+       "title": "AnonymousSession",
+       "description": "Represents a temporary anonymous guest session.",
+       "type": "object",
+       "properties": {
+         "anonymousUid": { "type": "string" },
+         "expiresAt": { "type": "string", "format": "date-time" },
+         "updatedAt": { "type": "string", "format": "date-time" }
+       },
+       "required": ["anonymousUid", "expiresAt"]
+    }
+  },
+  "firestore": {
+    "/githubPagesAuditorV1/dev/users/{uid}": {
+       "schema": { "$ref": "#/entities/User" },
+       "description": "Persistent user profile"
+    },
+    "/githubPagesAuditorV1/dev/users/{uid}/githubTokens/{tokenId}": {
+       "schema": { "$ref": "#/entities/GitHubToken" },
+       "description": "PAT storage for persistent users, never read directly by clients"
+    },
+    "/githubPagesAuditorV1/dev/anonymousSessions/{anonymousUid}": {
+       "schema": { "$ref": "#/entities/AnonymousSession" },
+       "description": "Guest session data"
+    },
+    "/githubPagesAuditorV1/dev/anonymousSessions/{anonymousUid}/githubTokens/{tokenId}": {
+       "schema": { "$ref": "#/entities/GitHubToken" },
+       "description": "PAT storage for anonymous users, never read directly by clients"
+    },
+    "/githubPagesAuditorV1/prod/users/{uid}": {
+       "schema": { "$ref": "#/entities/User" },
+       "description": "Persistent user profile"
+    },
+    "/githubPagesAuditorV1/prod/users/{uid}/githubTokens/{tokenId}": {
+       "schema": { "$ref": "#/entities/GitHubToken" },
+       "description": "PAT storage for persistent users, never read directly by clients"
+    },
+    "/githubPagesAuditorV1/prod/anonymousSessions/{anonymousUid}": {
+       "schema": { "$ref": "#/entities/AnonymousSession" },
+       "description": "Guest session data"
+    },
+    "/githubPagesAuditorV1/prod/anonymousSessions/{anonymousUid}/githubTokens/{tokenId}": {
+       "schema": { "$ref": "#/entities/GitHubToken" },
+       "description": "PAT storage for anonymous users, never read directly by clients"
+    }
+  }
+}

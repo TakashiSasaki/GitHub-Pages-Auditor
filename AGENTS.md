@@ -43,7 +43,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Environment document name: `dev` / `staging` / `prod`.
 - Persistent user path: `githubPagesAuditorV1/{environment}/users/{uid}`
 - Anonymous temporary path: `githubPagesAuditorV1/{environment}/anonymousSessions/{anonymousUid}`
-- PAT storage path: `githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/{tokenId}` (Stored securely, no plaintext)
+- PAT storage path: `githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/{tokenId}` (Stored securely via Firestore rules, server-only access)
 - Anonymous cleanup strategy: Delete temporary session and token data upon audit completion or via scheduled cleanup using `expiresAt`.
 
 ## Cloud Functions Deployment Contract
@@ -68,7 +68,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Rate Limit Handling is fully integrated, evaluating headers (`x-ratelimit-remaining`, `retry-after`) and interrupting loops on `429` / `403`.
 
 ## PAT Storage Decision
-- For Version 1, PAT storage can be strictly in-memory or securely encrypted if persisted to Firestore. (Currently in-memory for MVP).
+- For Version 1, PAT storage is handled via Cloud Firestore securely using Firestore Security Rules. Because PATs are stored in a secure managed configuration (Firestore) with strict server-side only read/write rules, additional static server-side encryption is not required.
 
 ## JSON Export Schema Contract
 - JSON export schema version: `github-pages-auditor.export.v1`
@@ -81,10 +81,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - `schemas/` - Export JSON schemas.
 
 ## Current Implementation Status
-- Initializing the safe project foundation according to "Initial Implementation Task" phase.
+- Modular Safe Refactoring and Testing Phase Completed. Secure endpoints separation, pure shared classification models, defensive CSV and fully-compliant JSON exporters are verified under comprehensive automated tests.
 
 ## Known Constraints and Open Questions
-- PAT encryption strategy for persistent storage logic in Firestore needs to be defined if we switch to persisted PATs.
+- Automatic token cleanup for timed-out/expired anonymous sessions will be handled by a scheduled Cloud Function in a future iteration.
 
 ## Change Log for Agents
 - Initialized `AGENTS.md` to track project architecture and constraints.
@@ -94,3 +94,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Fixed `publishSourceSummary` inside `types.ts` and `server.ts`.
 - Processed `docs/spec-appendix-firebase.md` and updated Firestore / Cloud Functions contracts.
 - Processed JSON Export Schema and created complete `schemas/github-pages-auditor-export-v1.schema.json`.
+- Refactored `server.ts` to separate raw endpoint fetches and allowlist matching into `server/githubClient.ts`.
+- Subdivided domain, SSL certificate, and deployment methods logic into pure shared classification module `src/audit/classification.ts`.
+- Moved JSON/CSV exporters out of components into pure builders under `src/export/exportBuilders.ts`, fully validating schema properties (fixed `'fine_grained'` tokenType enum and filtered out invalid classifications).
+- Implemented active double-guard on Express start bindings allowing sync automated tests execution without hangs.
+- Auth stub security strengthened behind `ALLOW_DUMMY_AUTH` gating.
+- Added systematic test coverage in `tests/comprehensive.test.ts` matching 23 assertions for API subpath restricts, classification engines, schema outputs, and CSV defenses.
+

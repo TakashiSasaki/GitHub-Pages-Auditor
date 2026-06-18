@@ -2,11 +2,44 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import * as admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import dotenv from 'dotenv';
 
-// Initialize Firebase Admin (this requires correct environment variables or default service account in production)
+// Load environment variables
+dotenv.config();
+
+import { 
+  githubApi, 
+  classifyError, 
+  checkRateLimit 
+} from './server/githubClient';
+
+import {
+  savePatToFirestore,
+  getPatFromFirestore,
+  deletePatFromFirestore
+} from './server/db';
+
+import { 
+  classifyDeploymentMethod, 
+  classifyCustomDomainStatus, 
+  classifyHttpsCertificateStatus 
+} from './src/audit/classification';
+
+// Initialize Firebase Admin
 try {
-  admin.initializeApp();
+  if (!getApps().length) {
+    const fs = require('fs');
+    if (fs.existsSync('./firebase-applet-config.json')) {
+      const config = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf-8'));
+      admin.initializeApp({
+        projectId: config.projectId,
+      });
+    } else {
+      admin.initializeApp();
+    }
+  }
 } catch (error) {
   console.warn("Firebase Admin Initialization missing config. Warning only for Dev environments.");
 }
@@ -15,9 +48,6 @@ const app = express();
 app.use(express.json());
 
 const PORT = 3000;
-
-// Temporary in-memory state for user PATs (MVP)
-const userPats: Record<string, string> = {};
 
 // Middleware to verify Firebase ID Token
 async function verifyAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -28,8 +58,8 @@ async function verifyAuth(req: express.Request, res: express.Response, next: exp
 
   const idToken = authHeader.split('Bearer ')[1];
   
-  // STUB for MVP - allow dummy-token to simulate Anonymous Guest Mode
-  if (idToken === 'dummy-token') {
+  // STUB for MVP - allow dummy-token to simulate Anonymous Guest Mode only if explicitly enabled
+  if (idToken === 'dummy-token' && process.env.ALLOW_DUMMY_AUTH === 'true') {
     (req as any).user = { uid: 'anonymous-guest', isAnonymous: true };
     return next();
   }
@@ -39,73 +69,10 @@ async function verifyAuth(req: express.Request, res: express.Response, next: exp
     (req as any).user = decodedToken;
     next();
   } catch (error) {
-    console.error('Error verifying Firebase ID token:', error);
-    // In strict env, we return 401. 
+    // SECURITY: Do not log Firebase ID tokens plaintext
+    console.error('Error verifying Firebase ID token signature/expiration');
     return res.status(401).json({ error: 'Unauthorized' });
   }
-}
-
-// Allowed Endpoints for Github API
-export const ALLOWED_ENDPOINTS = [
-  /^\/user$/,
-  /^\/user\/repos$/,
-  /^\/repos\/[^\/]+\/[^\/]+\/pages$/,
-  /^\/repos\/[^\/]+\/[^\/]+\/pages\/health$/,
-  /^\/rate_limit$/
-];
-
-export async function githubApi(endpoint: string, pat: string, queryParams: any = {}) {
-  // Enforce allowlist
-  const isAllowed = ALLOWED_ENDPOINTS.some(regex => regex.test(endpoint));
-  if (!isAllowed) {
-    throw new Error(`Endpoint ${endpoint} is not allowed`);
-  }
-
-  const url = new URL(`https://api.github.com${endpoint}`);
-  for (const [key, value] of Object.entries(queryParams)) {
-    url.searchParams.append(key, String(value));
-  }
-
-  const headers = {
-    'Accept': 'application/vnd.github+json',
-    'Authorization': `Bearer ${pat}`,
-    'X-GitHub-Api-Version': '2026-03-10',
-    'User-Agent': 'GitHub-Pages-Auditor'
-  };
-
-  const response = await fetch(url.toString(), {
-    method: 'GET', // only GET is allowed
-    headers
-  });
-
-  return response;
-}
-
-function classifyError(status: number, isUserEndpoint: boolean, isReposEndpoint: boolean, hasPages: boolean): string {
-  if (status === 401) return 'token_invalid_or_expired';
-  if (status === 403) return 'insufficient_permissions'; // Or rate limited, SSO, etc. Could be refined.
-  if (status === 404) {
-    if (isUserEndpoint || isReposEndpoint) return 'repository_not_found_or_no_access';
-    if (!hasPages) return 'pages_not_enabled';
-    return 'pages_resource_not_found';
-  }
-  if (status === 422) return 'validation_failed';
-  if (status === 429) return 'primary_rate_limited';
-  if (status >= 500) return 'github_temporary_error';
-  return 'unknown_error';
-}
-
-function checkRateLimit(response: Response) {
-  const remaining = response.headers.get('x-ratelimit-remaining');
-  const retryAfter = response.headers.get('retry-after');
-  
-  if ((response.status === 403 || response.status === 429) && remaining === '0') {
-    return 'primary_rate_limited';
-  }
-  if ((response.status === 403 || response.status === 429) && retryAfter) {
-    return 'secondary_rate_limited';
-  }
-  return null;
 }
 
 // --- API ROUTES ---
@@ -132,31 +99,49 @@ app.post('/api/pat/validate', verifyAuth, async (req, res) => {
   }
 });
 
-app.post('/api/pat', verifyAuth, (req, res) => {
-  const uid = (req as any).user.uid;
+app.post('/api/pat', verifyAuth, async (req, res) => {
+  const user = (req as any).user;
+  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
   const { pat } = req.body;
   if (!pat) return res.status(400).json({ error: 'PAT is required' });
   
-  userPats[uid] = pat;
-  res.json({ success: true });
+  try {
+    await savePatToFirestore(user.uid, isAnonymous, pat);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to save PAT', details: err.message });
+  }
 });
 
-app.get('/api/pat/status', verifyAuth, (req, res) => {
-  const uid = (req as any).user.uid;
-  const pat = userPats[uid];
-  res.json({ hasPat: !!pat });
+app.get('/api/pat/status', verifyAuth, async (req, res) => {
+  const user = (req as any).user;
+  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
+  try {
+    const pat = await getPatFromFirestore(user.uid, isAnonymous);
+    res.json({ hasPat: !!pat });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve PAT status' });
+  }
 });
 
-app.delete('/api/pat', verifyAuth, (req, res) => {
-  const uid = (req as any).user.uid;
-  delete userPats[uid];
-  res.json({ success: true });
+app.delete('/api/pat', verifyAuth, async (req, res) => {
+  const user = (req as any).user;
+  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
+  try {
+    await deletePatFromFirestore(user.uid, isAnonymous);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete PAT' });
+  }
 });
 
 // 2. Audit Endpoints
 app.get('/api/audit/user', verifyAuth, async (req, res) => {
-  const uid = (req as any).user.uid;
-  const pat = userPats[uid] || req.headers['x-temp-pat'];
+  const user = (req as any).user;
+  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
+  const storedPat = await getPatFromFirestore(user.uid, isAnonymous);
+  
+  const pat = storedPat || req.headers['x-temp-pat'];
   if (!pat) return res.status(400).json({ error: 'No GitHub PAT provided' });
 
   try {
@@ -172,9 +157,11 @@ app.get('/api/audit/user', verifyAuth, async (req, res) => {
 });
 
 app.post('/api/audit/run', verifyAuth, async (req, res) => {
-  const uid = (req as any).user.uid;
-  // Fallback to header based PAT for Anonymous transient sessions
-  const pat = userPats[uid] || req.headers['x-temp-pat'];
+  const user = (req as any).user;
+  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
+  const storedPat = await getPatFromFirestore(user.uid, isAnonymous);
+  
+  const pat = storedPat || req.headers['x-temp-pat'];
   if (!pat) return res.status(400).json({ error: 'No GitHub PAT provided' });
 
   try {
@@ -252,11 +239,18 @@ app.post('/api/audit/run', verifyAuth, async (req, res) => {
 
       if (pagesResponse.status === 404) {
         repoResult.hasPages = false;
-        repoResult.customDomainStatus = 'pages_disabled';
-        repoResult.deploymentMethod = 'not_applicable';
+        
+        // Use standard pure classification
+        const buildInfo = classifyDeploymentMethod({ hasPages: false });
+        repoResult.deploymentMethod = buildInfo.deploymentMethod;
+        repoResult.publishingSourceSummary = buildInfo.publishingSourceSummary;
+
+        repoResult.customDomainStatus = classifyCustomDomainStatus({ hasPages: false });
+        repoResult.httpsCertificateStatus = classifyHttpsCertificateStatus({ hasPages: false });
         repoResult.errorClassification = 'pages_disabled_or_unavailable';
       } else if (pagesResponse.ok) {
         const pagesData = await pagesResponse.json();
+        
         repoResult.pagesStatus = pagesData.status;
         repoResult.buildType = pagesData.build_type;
         repoResult.sourceBranch = pagesData.source?.branch;
@@ -265,43 +259,34 @@ app.post('/api/audit/run', verifyAuth, async (req, res) => {
         repoResult.protectedDomainState = pagesData.protected_domain_state;
         repoResult.pendingDomainUnverifiedAt = pagesData.pending_domain_unverified_at;
         repoResult.httpsCertificateState = pagesData.https_certificate?.state;
+        repoResult.httpsCertificateDescription = pagesData.https_certificate?.description || null;
+        repoResult.httpsCertificateDomains = pagesData.https_certificate?.domains || [];
+        repoResult.httpsCertificateExpiresAt = pagesData.https_certificate?.expires_at || null;
         repoResult.httpsEnforced = pagesData.https_enforced;
+        repoResult.pagesHtmlUrl = pagesData.html_url || null;
 
-        // Classify deployment method
-        if (pagesData.build_type === 'workflow') {
-          repoResult.deploymentMethod = 'workflow';
-          repoResult.publishingSourceSummary = 'GitHub Actions workflow';
-        } else if (pagesData.build_type === 'legacy' && pagesData.source?.path === '/') {
-          repoResult.deploymentMethod = 'branch_root';
-          repoResult.publishingSourceSummary = `${pagesData.source?.branch}:/`;
-        } else if (pagesData.build_type === 'legacy' && pagesData.source?.path === '/docs') {
-          repoResult.deploymentMethod = 'branch_docs';
-          repoResult.publishingSourceSummary = `${pagesData.source?.branch}:/docs`;
-        } else if (pagesData.build_type === 'legacy') {
-          repoResult.deploymentMethod = 'branch_unknown_path';
-          repoResult.publishingSourceSummary = `${pagesData.source?.branch}:${pagesData.source?.path}`;
-        } else {
-          repoResult.deploymentMethod = 'unknown';
-          repoResult.publishingSourceSummary = 'Unknown Pages deployment method';
-        }
+        const classificationInputs = {
+          hasPages: true,
+          buildType: pagesData.build_type,
+          sourceBranch: pagesData.source?.branch,
+          sourcePath: pagesData.source?.path,
+          cname: pagesData.cname,
+          protectedDomainState: pagesData.protected_domain_state,
+          pendingDomainUnverifiedAt: pagesData.pending_domain_unverified_at,
+          httpsCertificateState: pagesData.https_certificate?.state,
+          httpsEnforced: pagesData.https_enforced
+        };
 
-        // Classify domain status
-        if (!pagesData.cname) {
-          repoResult.customDomainStatus = 'pages_enabled_no_custom_domain';
-        } else if (pagesData.protected_domain_state === 'verified') {
-          repoResult.customDomainStatus = 'custom_domain_verified';
-        } else if (pagesData.pending_domain_unverified_at) {
-          repoResult.customDomainStatus = 'custom_domain_pending';
-        } else {
-          repoResult.customDomainStatus = 'custom_domain_unverified_or_unknown';
-        }
+        // Classify deployment method using shared function
+        const buildInfo = classifyDeploymentMethod(classificationInputs);
+        repoResult.deploymentMethod = buildInfo.deploymentMethod;
+        repoResult.publishingSourceSummary = buildInfo.publishingSourceSummary;
 
-        // Classify HTTPS
-        if (pagesData.https_certificate?.state === 'approved') {
-          repoResult.httpsCertificateStatus = pagesData.https_enforced ? 'https_certificate_ok' : 'https_not_enforced';
-        } else {
-          repoResult.httpsCertificateStatus = 'https_certificate_problem_or_unknown';
-        }
+        // Classify domain status using shared function
+        repoResult.customDomainStatus = classifyCustomDomainStatus(classificationInputs);
+
+        // Classify HTTPS status using shared function
+        repoResult.httpsCertificateStatus = classifyHttpsCertificateStatus(classificationInputs);
 
       } else {
         repoResult.errorClassification = classifyError(pagesResponse.status, false, false, repo.has_pages);
@@ -336,6 +321,9 @@ async function startServer() {
   });
 }
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.argv.some(arg => arg.includes('test'))) {
   startServer();
 }
+
+// Re-export from server for easier consumption in tests
+export { githubApi, ALLOWED_ENDPOINTS } from './server/githubClient';

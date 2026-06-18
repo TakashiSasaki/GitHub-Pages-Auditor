@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RepositoryResult } from '../types';
+import { buildJsonExport, buildCsvExport } from '../export/exportBuilders';
+import { useAuth } from '../AuthContext';
 import { 
   Play, 
   Key, 
@@ -19,16 +21,38 @@ import {
   Settings,
   Database,
   RefreshCw,
-  Clock
+  Clock,
+  Save
 } from 'lucide-react';
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [pat, setPat] = useState('');
   const [isAuditing, setIsAuditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [results, setResults] = useState<RepositoryResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  
+  const [hasStoredPat, setHasStoredPat] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkPatStatus = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/pat/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setHasStoredPat(!!data.hasPat);
+      } catch (e) {
+        // Ignore
+      }
+    };
+    checkPatStatus();
+  }, [user]);
+
   // Filtering & Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
@@ -39,32 +63,70 @@ export default function Dashboard() {
   const pagesEnabledList = results?.filter(r => r.hasPages) || [];
   const customDomainList = pagesEnabledList.filter(r => r.cname);
 
-  const runAudit = async () => {
+  const savePat = async () => {
     if (!pat) {
+      setError('Please provide a PAT to save.');
+      return;
+    }
+    setError(null);
+    setSuccessMsg(null);
+    setIsSaving(true);
+    try {
+      const token = await user?.getIdToken();
+      const res = await fetch('/api/pat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ pat })
+      });
+      if (!res.ok) throw new Error('Failed to save PAT');
+      setSuccessMsg('PAT securely saved to Cloud.');
+      setHasStoredPat(true);
+      setPat('');
+    } catch (err: any) {
+      setError(err.message || 'Error saving PAT.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const runAudit = async () => {
+    if (!pat && !hasStoredPat) {
       setError('Please provide your GitHub Personal Access Token.');
       return;
     }
     
     // PAT formatting basic sanity check to help user
-    const isClassic = pat.startsWith('ghp_');
-    const isFineGrained = pat.startsWith('github_pat_');
-    if (!isClassic && !isFineGrained && pat.length < 20) {
-      setError('The token you entered does not match standard GitHub Classic (ghp_...) or Fine-grained (github_pat_...) formats. Please double check.');
-      return;
+    if (pat) {
+      const isClassic = pat.startsWith('ghp_');
+      const isFineGrained = pat.startsWith('github_pat_');
+      if (!isClassic && !isFineGrained && pat.length < 20) {
+        setError('The token you entered does not match standard GitHub Classic (ghp_...) or Fine-grained (github_pat_...) formats. Please double check.');
+        return;
+      }
     }
 
     setError(null);
+    setSuccessMsg(null);
     setIsAuditing(true);
     setResults(null);
 
     try {
+      const token = await user?.getIdToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      
+      if (pat) {
+        headers['x-temp-pat'] = pat;
+      }
+
       const res = await fetch('/api/audit/run', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-temp-pat': pat,
-          'Authorization': 'Bearer dummy-token'
-        }
+        headers
       });
       
       const data = await res.json();
@@ -83,88 +145,7 @@ export default function Dashboard() {
   const exportJson = () => {
     if (!results) return;
     
-    const exportData = {
-      schemaVersion: 'github-pages-auditor.export.v1',
-      exportedAt: new Date().toISOString(),
-      application: {
-        name: 'GitHub Pages Auditor',
-        version: '1.0.0',
-        environment: 'dev'
-      },
-      auditRun: {
-        id: `audit-run-${Date.now()}`,
-        status: 'completed',
-        startedAt: new Date().toISOString(),
-        finishedAt: new Date().toISOString(),
-        userMode: 'anonymous',
-        tokenType: pat.startsWith('github_pat_') ? 'fine-grained' : 'classic',
-        githubLogin: null,
-        options: {
-          affiliation: 'owner,collaborator,organization_member',
-          visibility: 'all',
-          includeArchived: true,
-          includeDisabled: true,
-          strictPagesCheck: false,
-          includeHealthCheck: false,
-          ownerFilter: null
-        }
-      },
-      summary: {
-        repositoryCount: results.length,
-        pagesEnabledCount: pagesEnabledList.length,
-        customDomainCount: customDomainList.length,
-        customDomainVerifiedCount: results.filter(r => r.customDomainStatus === 'custom_domain_verified').length,
-        customDomainUnverifiedOrUnknownCount: results.filter(r => ['custom_domain_unverified_or_unknown', 'custom_domain_pending'].includes(r.customDomainStatus)).length,
-        httpsProblemCount: results.filter(r => ['https_certificate_problem_or_unknown', 'https_not_enforced'].includes(r.httpsCertificateStatus)).length,
-        dnsHealthProblemCount: 0,
-        errorCount: results.filter(r => r.errorClassification).length,
-        deploymentWorkflowCount: results.filter(r => r.deploymentMethod === 'workflow').length,
-        deploymentBranchRootCount: results.filter(r => r.deploymentMethod === 'branch_root').length,
-        deploymentBranchDocsCount: results.filter(r => r.deploymentMethod === 'branch_docs').length,
-        deploymentUnknownCount: results.filter(r => r.deploymentMethod === 'unknown' || r.deploymentMethod === 'branch_unknown_path').length
-      },
-      repositories: results.map(r => ({
-        githubRepoId: r.id,
-        owner: r.ownerName,
-        repo: r.repoName,
-        fullName: r.fullName,
-        repositoryTopUrl: r.htmlUrl,
-        pagesSettingsUrl: r.pagesSettingsUrl,
-        pagesUrl: r.hasPages ? `https://${r.ownerName}.github.io/${r.repoName}/` : null,
-        private: r.visibility === 'private',
-        visibility: r.visibility,
-        archived: r.archived,
-        disabled: r.disabled,
-        fork: r.isFork,
-        defaultBranch: r.defaultBranch,
-        hasPages: r.hasPages,
-        createdAtGitHub: r.createdAt,
-        updatedAtGitHub: r.updatedAt,
-        pushedAtGitHub: r.pushedAt,
-        pagesEnabled: !!r.hasPages,
-        pagesStatus: r.pagesStatus || null,
-        buildType: r.buildType || null,
-        deploymentMethod: r.deploymentMethod,
-        sourceBranch: r.sourceBranch || null,
-        sourcePath: r.sourcePath || null,
-        publishingSourceSummary: r.publishingSourceSummary || null,
-        pagesPublic: null,
-        customDomain: r.cname || null,
-        customDomainConfigured: !!r.cname,
-        protectedDomainState: r.protectedDomainState || null,
-        pendingDomainUnverifiedAt: r.pendingDomainUnverifiedAt || null,
-        httpsCertificateState: r.httpsCertificateState || null,
-        httpsCertificateDescription: r.httpsCertificateDescription || null,
-        httpsCertificateDomains: r.httpsCertificateDomains || [],
-        httpsCertificateExpiresAt: r.httpsCertificateExpiresAt || null,
-        httpsEnforced: r.httpsEnforced ?? null,
-        healthStatus: 'not_requested',
-        classification: [r.customDomainStatus, `pages_deploy_method_${r.deploymentMethod}`].filter(Boolean),
-        errorClassification: r.errorClassification || null,
-        diagnostics: {}
-      })),
-      domains: []
-    };
+    const exportData = buildJsonExport(results, pat);
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -178,39 +159,7 @@ export default function Dashboard() {
   const exportCsv = () => {
     if (!results) return;
     
-    const headers = [
-      'audit_run_id', 'exported_at', 'owner', 'repo', 'full_name', 'repository_top_url', 
-      'pages_settings_url', 'pages_url', 'visibility', 'archived', 'disabled', 'has_pages', 
-      'pages_enabled', 'build_type', 'deployment_method', 'source_branch', 'source_path', 
-      'publishing_source_summary', 'custom_domain', 'custom_domain_configured', 
-      'protected_domain_state', 'pending_domain_unverified_at', 'https_certificate_state', 
-      'https_enforced', 'health_status', 'classification', 'error_classification'
-    ];
-
-    const escapeCsv = (val: any) => {
-      if (val === null || val === undefined) return '';
-      const str = String(val);
-      if (/^[=+\-@]/.test(str)) {
-        return `"'${str.replace(/"/g, '""')}"`;
-      }
-      if (str.includes(',') || str.includes('"') || str.includes('\\n')) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    };
-
-    const rows = results.map(r => [
-      'audit-run-1', new Date().toISOString(), r.ownerName, r.repoName, r.fullName, r.htmlUrl,
-      r.pagesSettingsUrl, r.hasPages ? `https://${r.ownerName}.github.io/${r.repoName}/` : '',
-      r.visibility, r.archived, r.disabled, r.hasPages, !!r.hasPages, r.buildType || '',
-      r.deploymentMethod, r.sourceBranch || '', r.sourcePath || '', r.publishingSourceSummary || '',
-      r.cname || '', !!r.cname, r.protectedDomainState || '', r.pendingDomainUnverifiedAt || '',
-      r.httpsCertificateState || '', r.httpsEnforced ?? '', 'not_requested',
-      [r.customDomainStatus, `pages_deploy_method_${r.deploymentMethod}`].filter(Boolean).join('; '),
-      r.errorClassification || ''
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(escapeCsv).join(','))].join('\n');
+    const csvContent = buildCsvExport(results);
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -318,17 +267,25 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Configuration Section for MVP Guest Mode */}
+      {/* Configuration Section */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-        <h2 className="text-base font-medium text-gray-950 flex items-center">
-          <Key className="w-4 h-4 mr-2 text-slate-500" />
-          Personal Access Token Settings (In-Memory Processing)
+        <h2 className="text-base font-medium text-gray-950 flex items-center justify-between">
+          <div className="flex items-center">
+            <Key className="w-4 h-4 mr-2 text-slate-500" />
+            GitHub Personal Access Token
+          </div>
+          {hasStoredPat && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Secure Token Loaded from Cloud
+            </span>
+          )}
         </h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <input 
               type="password" 
-              placeholder="Paste your Classic (ghp_...) or Fine-grained (github_pat_...) token here..."
+              placeholder={hasStoredPat ? "Enter a new token to overwrite..." : "Paste your Classic (ghp_...) or Fine-grained (github_pat_...) token here..."}
               className="w-full pl-4 pr-12 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-shadow text-sm"
               value={pat}
               onChange={(e) => setPat(e.target.value)}
@@ -340,33 +297,54 @@ export default function Dashboard() {
             )}
           </div>
           <button 
+            onClick={savePat}
+            disabled={!pat || isSaving}
+            className="px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center font-medium shadow-sm transition-all text-sm cursor-pointer"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1.5" />
+                Save to Cloud
+              </>
+            )}
+          </button>
+          <button 
             onClick={runAudit}
-            disabled={isAuditing}
+            disabled={isAuditing || (!pat && !hasStoredPat)}
             className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center font-medium shadow-sm transition-all text-sm cursor-pointer"
           >
             {isAuditing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Auditing Repositories...
+                Auditing...
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2 fill-current" />
-                Launch Pages Audit
+                Launch Audit
               </>
             )}
           </button>
         </div>
         <p className="text-xs text-gray-500">
-          Your token is processed strictly transiently in volatile server-side process memory and browser state. It is never logged, printed, or saved of any kind.
+          Your token is securely processed and stored. It is protected by strict database security rules that prevent any direct client access.
         </p>
       </div>
+
+      {successMsg && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center text-emerald-800 shadow-xs animate-fade-in text-sm">
+          <CheckCircle className="w-5 h-5 mr-3 text-emerald-600 flex-shrink-0" />
+          <span className="font-medium text-emerald-900">{successMsg}</span>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-800 shadow-xs animate-fade-in text-sm">
           <AlertCircle className="w-5 h-5 mr-3 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <span className="font-semibold text-red-900">Audit Request Unsuccessful</span>
+            <span className="font-semibold text-red-900">Request Unsuccessful</span>
             <p>{error}</p>
           </div>
         </div>

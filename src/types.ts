@@ -49,6 +49,7 @@ export interface RepositoryResult {
 
   // Pages specific details
   pagesStatus?: string;
+  pagesHtmlUrl?: string | null;
   buildType?: string;
   deploymentMethod: PagesDeploymentMethod;
   sourceBranch?: string;
