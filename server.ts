@@ -9,6 +9,11 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+import { validateBackendEnv } from './server/env';
+
+// Validate runtime environment
+const backendEnv = validateBackendEnv();
+
 import { 
   githubApi, 
   classifyError, 
@@ -21,14 +26,12 @@ import {
   classifyHttpsCertificateStatus 
 } from './src/audit/classification';
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin using validated settings
 try {
   if (!getApps().length) {
-    if (fs.existsSync('./firebase-applet-config.json')) {
-      const config = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf-8'));
-      // Only set projectId so verifyIdToken can work without requiring full GCP credentials
+    if (backendEnv.hasFirebaseConfig && backendEnv.projectId) {
       initializeApp({
-        projectId: config.projectId || config.firebaseProjectId
+        projectId: backendEnv.projectId
       });
     } else {
       initializeApp();

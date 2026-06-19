@@ -15,6 +15,7 @@ import {
   escapeCsvCell 
 } from '../src/export/exportBuilders.js';
 import { RepositoryResult } from '../src/types.js';
+import { getEnvironmentName, getGithubTokenDocPath, getAuditCollectionPath } from '../src/lib/firestorePaths.js';
 
 describe('GitHub API Allowlist and Subpaths', () => {
   it('allows allowlisted endpoints', () => {
@@ -315,6 +316,7 @@ describe('GitHub API Security & Proxy Shield', () => {
       '/repos/test-owner/test-repo/actions/workflows',
       '/repos/test-owner/test-repo/actions/runs',
       '/repos/test-owner/test-repo/pages/builds',
+      '/repos/test-owner/test-repo/contents/CNAME',
       '/repos/owner/repo/pulls',
       '/orgs/my-org/repos'
     ];
@@ -372,5 +374,33 @@ describe('CSV formulas injection defense', () => {
     assert.equal(escapeCsvCell('https://github.com'), 'https://github.com');
     // contains comma
     assert.equal(escapeCsvCell('some,text'), '"some,text"');
+  });
+});
+
+describe('Firestore Path Helpers', () => {
+  it('correctly builds standard and anonymous user Firestore paths', () => {
+    const environmentDev = getEnvironmentName('development');
+    const environmentProd = getEnvironmentName('production');
+
+    assert.strictEqual(environmentDev, 'development');
+    assert.strictEqual(environmentProd, 'production');
+
+    // 1. Google user PAT path matches specification
+    const patPathGoogle = getGithubTokenDocPath('development', 'user123', false);
+    assert.strictEqual(patPathGoogle, 'githubPagesAuditorV1/development/users/user123/githubTokens/default');
+
+    // 2. Anonymous PAT path matches specification under anonymous session namespace
+    const patPathAnon = getGithubTokenDocPath('development', 'anon456', true);
+    assert.strictEqual(patPathAnon, 'githubPagesAuditorV1/development/anonymousSessions/anon456/githubTokens/default');
+
+    // 3. Audit cache path matches specification under tenancy
+    const auditPath = getAuditCollectionPath('development', 'user123');
+    assert.strictEqual(auditPath, 'githubPagesAuditorV1/development/users/user123/audits');
+
+    // 4. Paths do not use generic top-level collections
+    assert.ok(!patPathGoogle.startsWith('users/'), 'Paths must not use generic top-level collections');
+    assert.ok(!patPathGoogle.startsWith('tokens/'), 'Paths must not use generic top-level collections');
+    assert.ok(!patPathAnon.startsWith('anonymousSessions/'), 'Paths must not use generic top-level collections');
+    assert.ok(!auditPath.startsWith('audits/'), 'Paths must not use generic top-level collections');
   });
 });

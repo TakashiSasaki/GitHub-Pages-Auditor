@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RepositoryResult } from '../types';
 import { buildJsonExport, buildCsvExport } from '../export/exportBuilders';
 import { useAuth } from '../AuthContext';
+import { getEnvironmentName, getAuditCollectionPath } from '../lib/firestorePaths';
 import { 
   Play, 
   Key, 
@@ -117,8 +118,8 @@ export default function Dashboard() {
       try {
         const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
-        const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
-        const collectionPath = `githubPagesAuditorV1/${env}/users/${user!.uid}/audits`;
+        const env = getEnvironmentName(import.meta.env.MODE);
+        const collectionPath = getAuditCollectionPath(env, user!.uid);
         
         const q = query(collection(db, collectionPath), orderBy('createdAt', 'desc'), limit(1));
         const snapshot = await getDocs(q);
@@ -201,8 +202,8 @@ export default function Dashboard() {
       try {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
-        const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
-        const collectionPath = `githubPagesAuditorV1/${env}/users/${user!.uid}/audits`;
+        const env = getEnvironmentName(import.meta.env.MODE);
+        const collectionPath = getAuditCollectionPath(env, user!.uid);
         
         const docRef = doc(db, collectionPath, auditId);
         const docSnap = await getDoc(docRef);
@@ -286,8 +287,8 @@ export default function Dashboard() {
         try {
           const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
           const { db } = await import('../lib/firebase');
-          const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
-          const collectionPath = `githubPagesAuditorV1/${env}/users/${user.uid}/audits`;
+          const env = getEnvironmentName(import.meta.env.MODE);
+          const collectionPath = getAuditCollectionPath(env, user.uid);
           
           await setDoc(doc(db, collectionPath, data.auditId), {
             results: data.results,

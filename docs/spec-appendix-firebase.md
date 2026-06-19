@@ -366,6 +366,35 @@ Document required indexes in "AGENTS.md".
 Firestore is accessed directly via the frontend Firebase Client SDK. The rules MUST strictly isolate data tenanting per-UID:
 - Clients can exclusively read/write to `githubPagesAuditorV1/{environment}/users/{uid}` and `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}` endpoints where `uid == request.auth.uid`.
 
+The active `firestore.rules` implemented is:
+
+```firestore
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Standard Google Authenticated Users
+    match /githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/default {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /githubPagesAuditorV1/{environment}/users/{uid}/audits/{auditId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Anonymous/Guest Session Users 
+    match /githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/githubTokens/default {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Catch-all safety rule: deny all other paths by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
 9. Cloud Functions Usage
 
 Cloud Functions are optional.

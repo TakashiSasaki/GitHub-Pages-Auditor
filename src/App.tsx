@@ -7,10 +7,12 @@ import { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import { AuthProvider, useAuth } from './AuthContext';
+import { validateFrontendFirebaseConfig } from './lib/env';
 import { LogOut, LogIn, UserCircle, Ghost, Key, Save, Loader2, CheckCircle, Github, HelpCircle, X, AlertCircle, Database, ShieldCheck, XCircle } from 'lucide-react';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signInAsGuest, logout, hasStoredPat, savePatToFirestore } = useAuth();
+  const [firebaseConfigError, setFirebaseConfigError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [showGuide, setShowGuide] = useState(false);
@@ -81,6 +83,14 @@ function AppContent() {
     };
   }, []);
 
+  useEffect(() => {
+    const checkFirebase = validateFrontendFirebaseConfig();
+    if (!checkFirebase.valid) {
+      setFirebaseConfigError(`Firebase setup incomplete. Missing fields: ${checkFirebase.missingFields.join(', ')}. Please ensure Firebase is provisioned via the 'set_up_firebase' tool.`);
+      console.error("Firebase config validation failed:", checkFirebase.missingFields);
+    }
+  }, []);
+
   if (loading) {
     return <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div></div>;
   }
@@ -89,6 +99,15 @@ function AppContent() {
     return (
       <div className="min-h-[100dvh] bg-slate-50 text-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-xl w-full mx-auto space-y-8 animate-fade-in">
+          {firebaseConfigError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-xs flex items-start gap-2.5 shadow-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-0.5">Configuration Warning</p>
+                <p className="leading-relaxed opacity-90">{firebaseConfigError}</p>
+              </div>
+            </div>
+          )}
           {/* Visual Identity Hero - Only visible when logged out */}
           <div className="bg-slate-900 text-white rounded-2xl p-8 border border-slate-800 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
@@ -261,6 +280,12 @@ function AppContent() {
           </div>
           <div id="navbar-bottom-slot"></div>
         </nav>
+        {firebaseConfigError && (
+          <div className="bg-red-50 border-b border-red-200 text-red-800 p-3 text-xs flex items-center justify-center gap-2 shadow-sm shrink-0">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
+            <span className="font-semibold">{firebaseConfigError}</span>
+          </div>
+        )}
         <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col overflow-hidden">
           <Routes>
             <Route path="/" element={<Dashboard />} />

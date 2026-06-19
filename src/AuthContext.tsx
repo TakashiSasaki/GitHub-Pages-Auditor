@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
+import { getGithubTokenDocPath, getEnvironmentName } from './lib/firestorePaths';
 
 interface AuthContextType {
   user: User | null;
@@ -21,14 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [hasStoredPat, setHasStoredPat] = useState(false);
 
-  const getEnv = () => import.meta.env.MODE === 'production' ? 'production' : 'development';
-
   const getDocRef = (uid: string, isAnonymous: boolean) => {
-    const env = getEnv();
-    const collectionPath = isAnonymous 
-      ? `githubPagesAuditorV1/${env}/anonymousSessions/${uid}/githubTokens`
-      : `githubPagesAuditorV1/${env}/users/${uid}/githubTokens`;
-    return doc(db, collectionPath, 'default');
+    const env = getEnvironmentName(import.meta.env.MODE);
+    const fullPath = getGithubTokenDocPath(env, uid, isAnonymous);
+    return doc(db, fullPath);
   };
 
   const getStoredPat = async (): Promise<string | null> => {
