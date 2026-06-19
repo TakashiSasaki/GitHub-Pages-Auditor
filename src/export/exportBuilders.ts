@@ -81,7 +81,7 @@ export function buildJsonExport(results: RepositoryResult[], pat: string): GitHu
     exportedAt: new Date().toISOString(),
     application: {
       name: 'GitHub Pages Auditor',
-      version: '1.0.0',
+      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0-test',
       environment: 'dev'
     },
     auditRun: {

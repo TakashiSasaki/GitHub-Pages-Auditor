@@ -1,18 +1,27 @@
 export interface GitHubTokenDocument {
-  id: string; // The type is a guid or static identifier like 'default'
-  maskedToken: string; // e.g. "ghp_...XXXX" or "github_pat_...XXXX"
-  addedAt: string; // ISO timestamp
+  // Currently stored fields
+  token: string; // The literal PAT is stored here by the React client
+  updatedAt: unknown; // Firebase FieldValue serverTimestamp
+
+  // Note: 'id' is conventionally the doc name (e.g. 'default') and not inside the body.
+  // Note: metadata like maskedToken, addedAt are not currently generated or required by the React form.
 }
 
 export interface AuditRunDocument {
-  id: string; // The Audit Run idi
-  startedAt: string; // ISO 8601 string
-  completedAt?: string; // ISO 8601 string
+  // Currently stored fields
+  results: any[]; // The results array returned from the backend audit
+  createdAt: unknown; // Firebase FieldValue serverTimestamp
+
+  // Future/Ideal metadata below (not currently stored by Dashboard.tsx)
+  /*
+  id: string;
+  startedAt: string;
+  completedAt?: string;
   repositoryCount: number;
   pagesEnabledCount: number;
   customDomainCount: number;
   httpsProblemCount: number;
-  results: any[]; // The results are stored inside this doc, currently not fully matching the internal RepositoryResult model. Note: this is provisional.
+  */
 }
 
 export interface RepositoryResultDocument {
@@ -22,6 +31,8 @@ export interface RepositoryResultDocument {
 }
 
 export interface AnonymousSessionDocument {
-  createdAt: string; // ISO timestamp.
-  lastAccess: string;
+  // Currently we use anonymous sessions implicitly through Firebase Auth
+  // We may store tokens under `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/githubTokens/default`
+  // But a dedicated active session document is not yet automatically created.
+  [key: string]: any;
 }

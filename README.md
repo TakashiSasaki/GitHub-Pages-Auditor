@@ -4,7 +4,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 
 ## Core Features & Release Candidate (RC) Status
 - **Release Candidate Baseline**: Internal UI types and interchange types (JSON schema) are successfully decoupled. The UI is stabilized.
-- **Secure Backend API Auditing**: Directly proxies standard GitHub API endpoints from the Express backend, keeping the PAT invisible to the browser.
+- **Secure Backend API Auditing**: Directly proxies standard GitHub API endpoints from the Express backend. The browser owns the PAT copy and uses Firestore under authenticated user isolation for storage; the backend receives the PAT temporarily only during GitHub API calls.
 - **Classification Engine**: Pure shared classification models mapping Github Pages metadata into standardized custom domain and SSL status models.
 - **Defense in Depth**: Escape patterns defend spreadsheet exports from formula injections; strict allowlists protect the proxy layers.
 - **Authentication**: Integrates Firebase Authentication (Google persistent sign-in and temporary Anonymous guests), verification happens via ID Token bearer verification.

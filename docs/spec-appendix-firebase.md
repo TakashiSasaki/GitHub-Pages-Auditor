@@ -98,10 +98,8 @@ sharing saved results
 Anonymous user PAT handling:
 
 Anonymous user may input PAT for one-shot audit.
-Do not create persistent GitHubToken records for anonymous users by default.
-Do not store anonymous PAT plaintext.
-If temporary server-side token retention is necessary, keep duration minimal.
-Delete temporary token material after audit completion, failure, cancellation, or expiration.
+The app may store a session-scoped PAT under the anonymous session namespace if necessary.
+Cleanup of anonymous PATs is a planned follow-up.
 
 Anonymous data must have expiration metadata if persisted.
 

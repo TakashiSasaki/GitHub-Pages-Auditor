@@ -13,7 +13,9 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ## Implementation Decisions
 - **Firebase Auth Plan:** We are using Firebase Auth (Google + Anonymous) to manage application user identity.
 - **Backend GitHub API Client:** We use `fetch` targeting `https://api.github.com` strictly wrapped in helper functions to prevent calling forbidden endpoints.
-- **Full-Stack Structure:** The core GitHub API proxy runs on the Express server to keep the GitHub PAT secure.
+- **Full-Stack Structure:** The core GitHub API proxy runs on the Express server. The browser owns the PAT and temporarily sends it to the server strictly via an `x-temp-pat` header. The server must never return it to the browser.
+- **PAT Truth:** The current implementation is the absolute source of truth for PAT behavior. Design documents must follow the implementation, not the other way around.
+- **Firestore Schema:** Firestore document types defined in `src/schema/firestoreTypes.ts` reflect the actual currently-stored shapes, not future ideals.
 
 ## Non-Negotiable Security Rules
 - The backend must never return PAT plaintext to the browser; the browser manages its own copy.

@@ -92,9 +92,9 @@ Forbidden providers in Version 1:
 - custom OIDC
 - any other persistent external provider
 
-Persistent Google users use an in-memory PAT per session for V1. PAT records and audit history persistence is deferred to a future version.
+Persistent Google users store PATs in Firestore through Firebase Client SDK. PAT records and audit history are persisted by the client.
 
-Anonymous users are allowed only for non-persistent guest mode. Anonymous users may run a temporary one-shot audit, but must not create persistent stored PATs by default. Any server-side data for anonymous users must be temporary and have expiration metadata.
+Anonymous users are allowed only for non-persistent guest mode. Anonymous users may run a temporary one-shot audit, and may store a session-scoped PAT under the anonymous session namespace. Server-side data for anonymous users must be temporary and have expiration metadata; automatic cleanup is a planned follow-up.
 
 Use Firebase UID as the tenant boundary. Do not use email address as the primary identity key.
 
@@ -118,10 +118,9 @@ Do not use generic top-level collections such as:
 Use a namespace similar to:
 
 githubPagesAuditorV1/{environment}/users/{uid}
-githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/{tokenId}
-githubPagesAuditorV1/{environment}/users/{uid}/auditRuns/{auditRunId}
-githubPagesAuditorV1/{environment}/users/{uid}/auditRuns/{auditRunId}/repositories/{repositoryResultId}
-githubPagesAuditorV1/{environment}/anonymousSessions/{anonymousUid}
+githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/default
+githubPagesAuditorV1/{environment}/users/{uid}/audits/{auditId}
+githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/githubTokens/default
 githubPagesAuditorV1/{environment}/appAuditLogs/{logId}
 
 "environment" should be one of:
@@ -194,7 +193,7 @@ Authorization: Bearer <PAT>
 X-GitHub-Api-Version: 2026-03-10
 User-Agent: <application-name>
 
-The browser manages the GitHub PAT temporally or via Firestore Client SDK to pass it as `x-temp-pat` to the backend. The backend must not return any GitHub Authorization header or PAT plaintext back to the browser.
+The browser manages the GitHub PAT copy and uses Firebase Client SDK for persistence. It passes it as `x-temp-pat` to the backend. The backend must not return any GitHub Authorization header or PAT plaintext back to the browser.
 
 Do not log PATs or Authorization headers.
 

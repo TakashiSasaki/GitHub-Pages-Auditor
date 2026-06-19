@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import * as fs from 'fs';
 import * as path from 'path';
 import Ajv from 'ajv';
@@ -38,18 +38,23 @@ describe('GitHub API Allowlist and Subpaths', () => {
       '/user/emails',
       '/repos/test-owner/test-repo/dispatches',
       '/repos/test-owner/test-repo/actions/workflows',
+      '/repos/test-owner/test-repo/actions/runs',
       '/repos/test-owner/test-repo/pages/builds',
+      '/repos/test-owner/test-repo',
+      '/orgs/my-org/repos',
+      '/repos/test-owner/test-repo/contents/CNAME',
       '/repos/test-owner/test-repo/key',
-      '/orgs/my-org/repos'
+      '/orgs/test/outside'
     ];
     for (const ep of invalid) {
       assert.ok(
-        !ALLOWED_ENDPOINTS.some(regex => regex.test(ep)) || ep.includes('/actions/') || ep.includes('/dispatches'),
+        ALLOWED_ENDPOINTS.some(regex => regex.test(ep)) === false,
         `Endpoint ${ep} should be disallowed`
       );
     }
   });
 });
+
 
 describe('Deployment Method Classification Engine', () => {
   it('handles build_type=workflow correctly', () => {
@@ -270,8 +275,84 @@ describe('JSON Export and Schema Structure Check', () => {
     }
     assert.ok(valid, 'The built export data must strictly pass the JSON schema layout specification validated by Ajv.');
   });
+  it('ensures json export does not leak secrets', () => {
+    const jsonStr = JSON.stringify(buildJsonExport(dummyResults, 'ghp_dummy'));
+    assert.ok(jsonStr.indexOf('ghp_dummy') === -1, 'JSON export must not contain PAT plaintext');
+    assert.ok(jsonStr.indexOf('Authorization') === -1, 'JSON export must not contain HTTP headers');
+    assert.ok(jsonStr.indexOf('githubTokens') === -1, 'JSON export must not contain Firestore storage path strings');
+  });
+
+  it('exports dynamic version not hardcoded', () => {
+    const json = buildJsonExport(dummyResults, 'ghp_dummy');
+    assert.ok(json.application.version);
+    assert.ok(json.application.version !== '1.0.0' || typeof __APP_VERSION__ !== 'undefined', 'Version should not be hardcoded to 1.0.0');
+    if (typeof __APP_VERSION__ !== 'undefined') {
+      assert.strictEqual(json.application.version, __APP_VERSION__);
+    }
+  });
 });
 
+describe('GitHub API Security & Proxy Shield', () => {
+  let originalFetch: typeof globalThis.fetch;
+
+  before(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('rejects forbidden endpoints without making a network request', async () => {
+    let fetchCalled = false;
+    globalThis.fetch = async () => {
+      fetchCalled = true;
+      return new Response();
+    };
+
+    const invalid = [
+      '/user/emails',
+      '/repos/test-owner/test-repo/actions/workflows',
+      '/repos/test-owner/test-repo/actions/runs',
+      '/repos/test-owner/test-repo/pages/builds',
+      '/repos/owner/repo/pulls',
+      '/orgs/my-org/repos'
+    ];
+
+    for (const ep of invalid) {
+      fetchCalled = false; // reset
+      try {
+        await githubApi(ep, 'ghp_dummy_token');
+        assert.fail(`githubApi should have rejected ${ep}`);
+      } catch (err: any) {
+        assert.match(err.message, /Endpoint .* is not allowed/i, `Expected forbidden error for ${ep}`);
+      }
+      assert.strictEqual(fetchCalled, false, `Fetch must not be called inside githubApi for ${ep}`);
+    }
+  });
+
+  it('makes correct GET request for allowed endpoints', async () => {
+    let capturedReq: Request | null = null;
+    globalThis.fetch = async (req, init) => {
+      capturedReq = req instanceof Request ? req : new Request('' + req, init);
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      });
+    };
+
+    const res = await githubApi('/user', 'ghp_secret_test_token');
+    assert.strictEqual(res.ok, true);
+    assert.ok(capturedReq, 'Fetch should have been called');
+
+    const method = capturedReq.method;
+    assert.strictEqual(method, 'GET', 'GitHub API wrapper must force GET in Version 1');
+    assert.strictEqual(capturedReq.url, 'https://api.github.com/user');
+    assert.strictEqual(capturedReq.headers.get('Authorization'), 'Bearer ghp_secret_test_token');
+    assert.strictEqual(capturedReq.headers.get('Accept'), 'application/vnd.github+json');
+    assert.strictEqual(capturedReq.headers.get('X-GitHub-Api-Version'), '2026-03-10');
+  });
+});
 describe('CSV formulas injection defense', () => {
   it('escapes cells starting with formula trigger chars (=, +, -, @)', () => {
     const triggerVals = [
