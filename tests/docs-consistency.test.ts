@@ -36,4 +36,47 @@ describe('Documentation Consistency Diagnostics', () => {
       }
     }
   });
+
+  it('No stale V1 or draft V2 wording remains in code, docs, tests, and scripts', () => {
+    const checkDir = (dirPath) => {
+      const files = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const file of files) {
+        if (file.name === 'node_modules' || file.name === '.git' || file.name === 'dist') continue;
+        const fullPath = path.join(dirPath, file.name);
+        
+        if (file.name === 'docs-consistency.test.ts') continue;
+        if (file.isDirectory()) {
+          checkDir(fullPath);
+        } else if (file.name.endsWith('.ts') || file.name.endsWith('.tsx') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.js')) {
+          const content = fs.readFileSync(fullPath, 'utf-8');
+          const isDocs = fullPath.includes('/docs/') || fullPath.includes('/README.md') || fullPath.includes('/AGENTS.md');
+          
+          assert.ok(!content.includes('github-pages-auditor.export.v1'), `Forbidden identifier github-pages-auditor.export.v1 found in ${fullPath}`);
+          assert.ok(!content.includes('github-pages-auditor-export-v1.schema.json'), `Forbidden filename github-pages-auditor-export-v1.schema.json found in ${fullPath}`);
+          assert.ok(!content.includes('examples/github-pages-auditor-export-v1.sample.json'), `Forbidden filename examples/github-pages-auditor-export-v1.sample.json found in ${fullPath}`);
+          
+          if (isDocs) {
+            assert.ok(!content.includes('V2 draft'), `Forbidden wording V2 draft found in ${fullPath}`);
+            assert.ok(!content.includes('v2 draft'), `Forbidden wording v2 draft found in ${fullPath}`);
+            assert.ok(!content.includes('Interchange Draft'), `Forbidden wording Interchange Draft found in ${fullPath}`);
+            assert.ok(!content.includes('V1 default'), `Forbidden wording V1 default found in ${fullPath}`);
+            assert.ok(!content.includes('v1 JSON export'), `Forbidden wording v1 JSON export found in ${fullPath}`);
+            assert.ok(!content.includes('v1 CSV export'), `Forbidden wording v1 CSV export found in ${fullPath}`);
+          }
+        }
+      }
+    };
+    checkDir(process.cwd());
+  });
+
+  it('schemas/schema-identifiers.json has exactly one schema entry and it is V2 current', () => {
+    const idPath = path.join(process.cwd(), 'schemas/schema-identifiers.json');
+    if (fs.existsSync(idPath)) {
+      const identifiers = JSON.parse(fs.readFileSync(idPath, 'utf-8'));
+      const schemas = identifiers.schemas;
+      assert.strictEqual(schemas.length, 1, 'Should have exactly one schema entry');
+      assert.strictEqual(schemas[0].schemaVersion, 'github-pages-auditor.export.v2', 'Should be V2');
+      assert.strictEqual(schemas[0].status, 'current', 'Should be current status');
+    }
+  });
 });

@@ -12,7 +12,7 @@ The following sample files are located in the `/examples` directory of the repos
    - Represents the default flat export format.
 
 2. **V2 JSON Export Sample**: `examples/github-pages-auditor-export-v2.sample.json`
-   - Maps to the **V2** Draft JSON Schema: `schemas/github-pages-auditor-export-v2.schema.json`
+   - Maps to the **V2** JSON Schema: `schemas/github-pages-auditor-export-v2.schema.json`
    - Stable `$id`/`schemaId`: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2`
    - Represents the nested, highly-structured machine interchange format candidate.
 

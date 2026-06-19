@@ -35,7 +35,7 @@ export function buildCsvExport(results: RepositoryResult[], context?: ExportBuil
     'https_enforced', 'health_status', 'classification', 'error_classification'
   ];
 
-  const auditRunId = context?.auditRunId || "export-${Date.now()}";
+  const auditRunId = context?.auditRunId || `export-${Date.now()}`;
   const nowStr = context?.exportedAt || new Date().toISOString();
 
   const rows = results.map(r => {

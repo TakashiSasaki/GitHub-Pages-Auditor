@@ -61,7 +61,7 @@ Maintain absolute coverage using these verification commands:
 | `npm test` | Complete Suite | Runs all automated test suites, including unit metrics and Firestore rules. |
 | `npm run test:unit` | Classification & API Proxy | Runs core unit validation, JSON schemas, CSV defense, and mock client proxy limits. |
 | `npm run test:rules` | Firestore Rules | Runs independent local simulation test cases verifying `firestore.rules` paths (does not require full Firebase Local Emulator). |
-| `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypes.ts` (and V2 draft `src/schema/exportTypesV2.ts`) to output standard Export JSON Schema. |
+| `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypes.ts` (and V2 `src/schema/exportTypesV2.ts`) to output standard Export JSON Schema. |
 | `npm run schema:check` | Schema Drift | Guarantees that built JSON schema matches types exactly. |
 | `npm run build` | Production Compilation | Bundles Vite static assets and compiles the ES Express backend into self-contained `dist/server.cjs` via esbuild. |
 
@@ -96,7 +96,7 @@ firebase deploy --only firestore:rules
 *   **Deployment Status**: Google Cloud Run is our active, live runtime.
 *   **Planned Custom Domain**: `pages.moukaeritai.work`
 *   **Custom Domain Status**: planned, not yet assigned (Current milestone: Custom Domain Assignment Readiness for pages.moukaeritai.work)
-*   **Export Schema Status**: V2 default, V2 draft/interchange candidate, examples validation.
+*   **Export Schema Status**: V2 default, V2/interchange candidate, examples validation.
 
 ---
 
@@ -117,3 +117,13 @@ firebase deploy --only firestore:rules
 6.  **No Workflow/Actions APIs**: Workflows and Actions routes are absolutely forbidden to safeguard repository CI/CD configurations.
 7.  **No Cloud Functions**: Audit caches and transient records are read/written directly via the Firebase Client SDK.
 8.  **No Gemini/AI Integration**: Google Gemini, `@google/genai` libraries, or any artificial intelligence models/SDKs are strictly out of scope. The application does not use artificial intelligence, LLM generation, or cognitive agents for auditing, authentication, persistence, deployment, or export. It is strictly client-and-backend procedural code.
+
+
+## Launcher (`/launcher`)
+The **Launcher** page displays a user's detected GitHub Pages sites from their most recent audit.
+- Tiles open target URLs safely in new windows using `noopener noreferrer`.
+- Only Pages-enabled sites with safe `http:` or `https:` URLs are included.
+- Tile ordering can be customized and is persisted in Firestore under `settings/launcherLayout`.
+- The app stores only layout metadata (IDs and order), not duplicated audit payloads.
+- Icons are generated locally based on the app's initial; no external favicon service is used.
+- Layout stores the ordered array of IDs rather than absolute x/y coordinates.

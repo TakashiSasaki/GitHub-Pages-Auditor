@@ -10,7 +10,7 @@ All exported JSON files are defined by a JSON Schema. You can identify the schem
 
 ### Available Schema Versions
 1. **Version 2 (V2) - Current Default:** Flat structure targeting spreadsheet ingestion. `schemaVersion: "github-pages-auditor.export.v2"`.
-2. **Version 2 (V2) - Interchange Draft:** Deeply-nested structure designed for system-to-system interchange. `schemaVersion: "github-pages-auditor.export.v2"`.
+2. **Version 2 (V2) - Current Default:** Deeply-nested structure designed for system-to-system interchange. `schemaVersion: "github-pages-auditor.export.v2"`.
 
 For JSON exports, you will find `schemaId` inside the exported payload, which must strictly match the `$id` of the actual JSON Schema definitions. These schema documents are self-contained and version-controlled alongside this application.
 

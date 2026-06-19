@@ -34,9 +34,9 @@ Run the following checks locally or via CI to ensure the application is healthy 
 *   [ ] Verify `/healthz` on current Cloud Run URL (`https://github-pages-auditor-1042140630327.asia-east1.run.app/healthz`).
 *   [ ] Verify current sign-in flow on default Cloud Run URL.
 *   [ ] Verify PAT validation and audit run on default Cloud Run URL.
-*   [ ] Verify v1 CSV export.
-*   [ ] Verify v1 JSON export.
-*   [ ] Verify v2 draft JSON export.
+*   [ ] Verify CSV export.
+*   [ ] Verify JSON V2 export.
+*   [ ] Verify JSON V2 export.
 
 ## 5. Cloud Run domain mapping checklist
 *   [ ] Navigate to the Google Cloud Console -> Cloud Run.
@@ -79,8 +79,8 @@ Run the following checks locally or via CI to ensure the application is healthy 
 *   [ ] Confirm audit run works.
 *   [ ] Confirm cached audit view works for Google user.
 *   [ ] Confirm CSV export downloads.
-*   [ ] Confirm JSON v1 export downloads.
-*   [ ] Confirm JSON v2 draft export downloads if exposed.
+*   [ ] Confirm JSON tab schema validation export downloads.
+*   [ ] Confirm JSON tab schema validation export downloads if exposed.
 *   [ ] Confirm schema tab / JSON preview works if present.
 *   [ ] Confirm no GitHub OAuth / GitHub App login appears.
 *   [ ] Confirm browser console has no Firebase unauthorized-domain error.

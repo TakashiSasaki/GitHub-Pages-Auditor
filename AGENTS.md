@@ -96,14 +96,14 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ## JSON Export Schema Contract
 - JSON export schema version: `github-pages-auditor.export.v2`
 - Schema lives in `schemas/github-pages-auditor-export-v2.schema.json` (Full schema implemented).
-- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and drafted V2 schemas live in `src/schema/exportTypesV2.ts`).
+- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and V2 schemas live in `src/schema/exportTypesV2.ts`).
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
 - Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
-- **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 draft layout lives in `docs/export-schema-v2-draft.md`.
+- **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 layout lives in `docs/export-schema-v2.md`.
 - **Stable Schema Identity Policy**:
   - Every schema has a permanent, static `$id` mapped as a standard URN UUID (`urn:uuid:<uuid-v4>`).
   - **Version 1 (Flat)** ID: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1` (optional in exported payload, defined in JSON Schema).
-  - **Version 2 (Draft)** ID: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2` (required in exported payload, defined in JSON Schema).
+  - **Version 2 (Current Default)** ID: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2` (required in exported payload, defined in JSON Schema).
   - Identifiers must **never** be generated or altered dynamically during build, export, test, or run actions.
   - Resolver implementations, registry databases, and remote hosting lookup logic are **explicitly out of scope** in this stack; external clients must treat the URN as a stable opaque identifier.
 
@@ -169,3 +169,13 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Documented deployment readiness roadmap in `docs/deployment-readiness.md` and UI testing roadmap in `docs/ui-regression-plan.md`.
 - Consolidated overall setup and configurations into `README.md`.
 
+
+
+## Launcher (`/launcher`)
+The **Launcher** page displays a user's detected GitHub Pages sites from their most recent audit.
+- Tiles open target URLs safely in new windows using `noopener noreferrer`.
+- Only Pages-enabled sites with safe `http:` or `https:` URLs are included.
+- Tile ordering can be customized and is persisted in Firestore under `settings/launcherLayout`.
+- The app stores only layout metadata (IDs and order), not duplicated audit payloads.
+- Icons are generated locally based on the app's initial; no external favicon service is used.
+- Layout stores the ordered array of IDs rather than absolute x/y coordinates.

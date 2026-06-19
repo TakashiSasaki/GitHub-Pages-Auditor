@@ -226,6 +226,12 @@ function AppContent() {
                 <HelpCircle className="w-4 h-4" />
                 What's this app?
               </button>
+              <Link
+                to="/launcher"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Launcher
+              </Link>
               <div id="navbar-center-slot"></div>
             </div>
             <div className="flex items-center gap-4">
