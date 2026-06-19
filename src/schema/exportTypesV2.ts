@@ -131,6 +131,7 @@ export interface V2Summary {
 
 export interface GitHubPagesAuditorExportV2 {
   schemaVersion: 'github-pages-auditor.export.v2';
+  schemaId: 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2';
   exportedAt: string;
   application: V2AppMeta;
   auditRun: V2AuditRun;

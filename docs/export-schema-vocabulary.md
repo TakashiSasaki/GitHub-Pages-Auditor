@@ -171,3 +171,27 @@ Determines the reason behind fetch audit blockers:
 *   `sso_required`: Single-Sign-On authorization has not been granted.
 *   `repository_not_found_or_no_access`: Private repo blocked or resource deleted.
 *   `pages_not_enabled`: Standard raw endpoints returned 404 Pages deactivated.
+
+---
+
+## Part 5: Schema Identity Policy & URN UUIDs
+
+To allow third-party integrations and automatic pipelines to parse auditor reports safely without structural ambiguity, this project adopts a strict **Schema Identity Policy**.
+
+### 1. Unified Urn Identifier Specification (`schemaId`)
+Each published JSON Schema is bound permanently to a stable, unique machine ID `$id` using the UUIDv4 standard:
+- **Identifier format**: `urn:uuid:<uuid-v4>`
+
+The identification boundaries assigned are:
+*   **V1 Schema (Flat Layout)**:
+    - `schemaVersion`: `github-pages-auditor.export.v1`
+    - `schemaId` / JSON Schema `$id`: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1`
+*   **V2 Schema (Nested Layout)**:
+    - `schemaVersion`: `github-pages-auditor.export.v2`
+    - `schemaId` / JSON Schema `$id`: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2`
+
+### 2. Rigorous Non-Negotiable Rules
+*   **Opaque and Stable**: External systems must treat the URN as a globally stable, opaque schema identifier. Do not attempt to derive or extract meaning from the UUID value.
+*   **Explicitly Out of Scope**: Resolving, dereferencing, or looking up schemas via remote host endpoints is **explicitly out of scope**. No remote hosting, lookup endpoints, or server-side mapping mechanisms are implemented.
+*   **Strict Generation Guard**: These identifiers are generated once per version and committed. They must **never** be generated or altered dynamically based on audit identifiers, session tokens, version updates, or execution timestamps.
+

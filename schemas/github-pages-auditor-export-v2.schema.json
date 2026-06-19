@@ -1,6 +1,7 @@
 {
-  "$ref": "#/definitions/GitHubPagesAuditorExportV2",
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2",
+  "$ref": "#/definitions/GitHubPagesAuditorExportV2",
   "definitions": {
     "GitHubPagesAuditorExportV2": {
       "additionalProperties": false,
@@ -63,6 +64,10 @@
           },
           "type": "array"
         },
+        "schemaId": {
+          "const": "urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2",
+          "type": "string"
+        },
         "schemaVersion": {
           "const": "github-pages-auditor.export.v2",
           "type": "string"
@@ -73,6 +78,7 @@
       },
       "required": [
         "schemaVersion",
+        "schemaId",
         "exportedAt",
         "application",
         "auditRun",

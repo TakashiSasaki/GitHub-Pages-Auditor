@@ -165,6 +165,7 @@ export interface ExportAuditRun {
 
 export interface GitHubPagesAuditorExport {
   schemaVersion: 'github-pages-auditor.export.v1';
+  schemaId?: 'urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1';
   exportedAt: string;
   application: ExportAppMeta;
   auditRun: ExportAuditRun;

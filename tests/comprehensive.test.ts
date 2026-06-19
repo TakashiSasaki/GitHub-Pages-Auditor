@@ -620,6 +620,26 @@ describe('CSV Export Regression and Live Data Diagnostics', () => {
 
     assert.ok(jsonExport.auditRun.id.startsWith('export-'), 'Guest/anonymous exports without loaded audit IDs must generate safe dynamic export scope IDs');
   });
+
+  it('asserts that the generated v1 and v2 schemas contain valid urn:uuid:uuid-v4 $id values', () => {
+    const v1Schema = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v1.schema.json'), 'utf-8'));
+    const v2Schema = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v2.schema.json'), 'utf-8'));
+
+    assert.ok(v1Schema.$id, 'V1 schema must contain an $id field');
+    assert.match(v1Schema.$id, /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'V1 $id must have standard urn:uuid:v4 formatting');
+
+    assert.ok(v2Schema.$id, 'V2 schema must contain an $id field');
+    assert.match(v2Schema.$id, /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'V2 $id must have standard urn:uuid:v4 formatting');
+  });
+
+  it('asserts that schema $id values are stable and not regenerated dynamically', () => {
+    const v1Schema = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v1.schema.json'), 'utf-8'));
+    const v2Schema = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v2.schema.json'), 'utf-8'));
+
+    // Assert the exact hardcoded stable UUID values chosen for schema identity are preserved exactly
+    assert.strictEqual(v1Schema.$id, 'urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1', 'V1 $id must remain stable across generation runs');
+    assert.strictEqual(v2Schema.$id, 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2', 'V2 $id must remain stable across generation runs');
+  });
 });
 
 

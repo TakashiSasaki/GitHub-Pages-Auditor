@@ -100,6 +100,12 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
 - Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
 - **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 draft layout lives in `docs/export-schema-v2-draft.md`.
+- **Stable Schema Identity Policy**:
+  - Every schema has a permanent, static `$id` mapped as a standard URN UUID (`urn:uuid:<uuid-v4>`).
+  - **Version 1 (Flat)** ID: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1` (optional in exported payload, defined in JSON Schema).
+  - **Version 2 (Draft)** ID: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2` (required in exported payload, defined in JSON Schema).
+  - Identifiers must **never** be generated or altered dynamically during build, export, test, or run actions.
+  - Resolver implementations, registry databases, and remote hosting lookup logic are **explicitly out of scope** in this stack; external clients must treat the URN as a stable opaque identifier.
 
 ## Directory Structure
 - `src/` - React frontend code.
