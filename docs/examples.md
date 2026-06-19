@@ -6,18 +6,13 @@ This directory provides concrete, validated example artifacts generated directly
 
 The following sample files are located in the `/examples` directory of the repository:
 
-1. **V1 JSON Export Sample**: `examples/github-pages-auditor-export-v1.sample.json`
-   - Maps to the **V1** JSON Schema: `schemas/github-pages-auditor-export-v1.schema.json`
-   - Stable `$id`/`schemaId`: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1`
-   - Represents the default flat export format.
-
-2. **V2 JSON Export Sample**: `examples/github-pages-auditor-export-v2.sample.json`
-   - Maps to the **V2** Draft JSON Schema: `schemas/github-pages-auditor-export-v2.schema.json`
+1. **V2 JSON Export Sample**: `examples/github-pages-auditor-export-v2.sample.json`
+   - Maps to the **V2** JSON Schema: `schemas/github-pages-auditor-export-v2.schema.json`
    - Stable `$id`/`schemaId`: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2`
-   - Represents the nested, highly-structured machine interchange format candidate.
+   - Represents the nested, highly-structured machine interchange format.
 
-3. **V1 CSV Export Sample**: `examples/github-pages-auditor-export.sample.csv`
-   - Contains exactly 27-column spreadsheet representation derived from the flat V1 data.
+2. **CSV Export Sample**: `examples/github-pages-auditor-export.sample.csv`
+   - Contains exactly 27-column spreadsheet representation.
    - Built-in defenses against CSV formula injection (prefixed formula trigger characters with a single quote).
 
 ---
@@ -28,7 +23,7 @@ The sample files are generated from the standard fixtures containing representat
 
 ### 1. GitHub Pages Disabled
 - **Repository**: `TakashiSasaki/disabled-pages-repo`
-- **V1 Fields**: `hasPages: false`, `pagesEnabled: false`, `deploymentMethod: "not_applicable"`
+- **CSV Fields**: `has_pages: false`, `pages_enabled: false`, `deployment_method: "not_applicable"`
 - **V2 Findings**: Contains a `pages_disabled` finding (`category: "pages"`, `severity: "info"`).
 
 ### 2. Pages Enabled without Custom Domain

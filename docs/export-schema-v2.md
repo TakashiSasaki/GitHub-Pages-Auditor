@@ -1,8 +1,8 @@
-# GitHub Pages Auditor - Proposed V2 Export Schema Architecture
+# GitHub Pages Auditor - V2 Export Schema Architecture
 
-This document designs and drafts the **Version 2 (v2)** data interchange schema, registered under `github-pages-auditor.export.v2`. 
+This document designs and defines the **Version 2 (v2)** data interchange schema, registered under `github-pages-auditor.export.v2`.
 
-While the **V1** schema (current default) utilizes a flat, single-level dictionary optimised for CSV grids, the **V2** design (draft/interchange candidate) leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability.
+The **V2** design leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability. This is the only official JSON export schema format. Flat exports remain available separately as CSV files.
 
 ### Samples and Tooling
 External consumer tools and developers can evaluate V2 payloads by inspecting:
@@ -13,9 +13,9 @@ For referencing the stable `$id` and schema version, a local schema manifest is 
 
 ---
 
-## 1. Why Transition to V2?
+## 1. V2 Design Principles
 *   **Structural Honesty**: Prevents namespaces pollution by grouping raw GitHub properties and local app classifications into domain-isolated maps.
-*   **Decoupled Findings**: Replaces multi-purpose tag array fields (`classification[]`, `errorClassification`) with a unified, structured `findings[]` registry.
+*   **Decoupled Findings**: Uses a unified, structured `findings[]` registry for classifying domain states, deployment methods, and errors.
 *   **Strict String Typings**: Implements formalized RFC-3339 constraints and URI matching patterns across dates and links.
 *   **No Silent Failures**: Fully separates unknown values (such as cases where GitHub API doesn't report CNAME protection) from explicitly unverified/denied handshakes.
 

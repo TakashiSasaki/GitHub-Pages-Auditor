@@ -108,9 +108,9 @@ expiresAt
 
 Anonymous cleanup strategy must be documented in "AGENTS.md".
 
-Anonymous-to-Google upgrade or credential linking is not required in Version 1. Do not implement automatic migration unless the specification is updated.
+Anonymous-to-Google upgrade or credential linking is not required. Do not implement automatic migration unless the specification is updated.
 
-5. Firestore Persistence (V1 / MVP)
+5. Firestore Persistence (MVP)
 
 Firebase Firestore is used for persistent PAT storage and Audit cache persistence. 
 The keys and documents are fully guarded strictly using standard Firebase Client SDK usage with `firestore.rules` where `request.auth.uid == uid`, completely locking it down securely per user.
@@ -363,7 +363,7 @@ Document required indexes in "AGENTS.md".
 8. Firestore Security Requirements
 
 Firestore is accessed directly via the frontend Firebase Client SDK. The rules MUST strictly isolate data tenanting per-UID:
-- Clients can exclusively read/write to `githubPagesAuditorV1/{environment}/users/{uid}` and `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}` endpoints where `uid == request.auth.uid`.
+- Clients can exclusively read/write to `githubPagesAuditorV2/{environment}/users/{uid}` and `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}` endpoints where `uid == request.auth.uid`.
 
 The active `firestore.rules` implemented is:
 
@@ -373,16 +373,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Standard Google Authenticated Users
-    match /githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/default {
+    match /githubPagesAuditorV2/{environment}/users/{uid}/githubTokens/default {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    match /githubPagesAuditorV1/{environment}/users/{uid}/audits/{auditId} {
+    match /githubPagesAuditorV2/{environment}/users/{uid}/audits/{auditId} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
     // Anonymous/Guest Session Users 
-    match /githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/githubTokens/default {
+    match /githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/githubTokens/default {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
@@ -408,14 +408,14 @@ If used, rules are mandatory.
 
 Function prefix:
 
-gpaV1
+gpa
 
 Allowed examples:
 
-gpaV1Api
-gpaV1RunAudit
-gpaV1CleanupAnonymousSessions
-gpaV1ExportAuditJson
+gpaV2Api
+gpaV2RunAudit
+gpaV2CleanupAnonymousSessions
+gpaV2ExportAuditJson
 
 Forbidden generic names:
 
@@ -433,8 +433,8 @@ firebase deploy --only functions
 
 Preferred deploy commands:
 
-firebase deploy --only functions:gpaV1Api
-firebase deploy --only functions:gpaV1Api,functions:gpaV1RunAudit,functions:gpaV1CleanupAnonymousSessions
+firebase deploy --only functions:gpaV2Api
+firebase deploy --only functions:gpaV2Api,functions:gpaV2RunAudit,functions:gpaV2CleanupAnonymousSessions
 
 Do not:
 
@@ -476,7 +476,7 @@ Google user cannot access another anonymous user's temporary data.
 
 Firestore namespace tests:
 
-Documents confirm prefix 'githubPagesAuditorV1' and exact path routing respects `uid` checks perfectly under `rules`.
+Documents confirm prefix 'githubPagesAuditorV2' and exact path routing respects `uid` checks perfectly under `rules`.
 
 Cloud Functions safety tests, if Cloud Functions are used:
 

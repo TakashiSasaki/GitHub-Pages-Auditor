@@ -9,6 +9,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Backend: Express.js + Node.js (TypeScript).
 - Database: Firestore (via `firebase-applet-config.json` when configured via `set_up_firebase`).
 - Authentication: Firebase Authentication (Google provider for persistent use, Anonymous for guest mode). Backend verification of Firebase ID tokens.
+- **Custom Domain Deployment:** Planned production domain is `pages.moukaeritai.work`.
 
 ## Implementation Decisions
 - **Firebase Auth Plan:** We are using Firebase Auth (Google + Anonymous) to manage application user identity. Firebase Auth is strictly for application user identity, never for GitHub workspace access.
@@ -94,16 +95,15 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Any change to auth, PAT storage, Firestore paths, or GitHub API allowlist must update `AGENTS.md`, README, and relevant docs in the same commit.
 
 ## JSON Export Schema Contract
-- JSON export schema version: `github-pages-auditor.export.v1`
-- Schema lives in `schemas/github-pages-auditor-export-v1.schema.json` (Full schema implemented).
-- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and drafted V2 schemas live in `src/schema/exportTypesV2.ts`).
+- JSON export schema version: `github-pages-auditor.export.v2`
+- Schema lives in `schemas/github-pages-auditor-export-v2.schema.json`.
+- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypesV2.ts`.
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
-- Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
-- **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 draft layout lives in `docs/export-schema-v2-draft.md`.
+- Any schema-affecting types change must trigger schema regeneration via `npm run schema:generate` and validation check via `npm run schema:check`.
+- **Vocabulary & Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested layout lives in `docs/export-schema-v2.md`.
 - **Stable Schema Identity Policy**:
   - Every schema has a permanent, static `$id` mapped as a standard URN UUID (`urn:uuid:<uuid-v4>`).
-  - **Version 1 (Flat)** ID: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1` (optional in exported payload, defined in JSON Schema).
-  - **Version 2 (Draft)** ID: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2` (required in exported payload, defined in JSON Schema).
+  - **Version 2** ID: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2` (required in exported payload, defined in JSON Schema).
   - Identifiers must **never** be generated or altered dynamically during build, export, test, or run actions.
   - Resolver implementations, registry databases, and remote hosting lookup logic are **explicitly out of scope** in this stack; external clients must treat the URN as a stable opaque identifier.
 

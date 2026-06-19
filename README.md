@@ -6,6 +6,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ---
 
 ## Core Features & Milestone Status
+- **Planned Custom Domain**: This application is planned to be deployed and assigned to the custom domain `pages.moukaeritai.work`.
 - **Release Candidate & Pre-Production Baseline**: All core backend models, shared classification algorithms, and Firestore security layers are fully hardened and integrated under the latest Node.js test runner.
 - **Secure Backend API Auditing**: Directly proxies standard GitHub API endpoints from the Express backend via safe GET methods. The browser manages its own copy of the PAT and persists it in Firestore under authenticated user isolation using the Firebase Client SDK. The backend only ever holds the PAT temporarily inside the `x-temp-pat` header for the lifetime of the request.
 - **Classification Engine**: Pure shared classification models mapping GitHub Pages metadata into standardized custom domain and SSL status models.
