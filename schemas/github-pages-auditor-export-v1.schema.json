@@ -26,6 +26,7 @@
       "additionalProperties": false,
       "properties": {
         "finishedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -44,6 +45,7 @@
           "$ref": "#/definitions/ExportAuditRunOptions"
         },
         "startedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -289,6 +291,7 @@
           "type": "array"
         },
         "createdAtGitHub": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -338,10 +341,8 @@
           "type": "string"
         },
         "githubRepoId": {
-          "type": [
-            "number",
-            "null"
-          ]
+          "description": "Official GitHub repository ID.",
+          "type": "integer"
         },
         "hasPages": {
           "type": [
@@ -365,6 +366,7 @@
           "type": "array"
         },
         "httpsCertificateExpiresAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -395,6 +397,7 @@
           ]
         },
         "pagesSettingsUrl": {
+          "format": "uri",
           "type": "string"
         },
         "pagesStatus": {
@@ -404,12 +407,14 @@
           ]
         },
         "pagesUrl": {
+          "format": "uri",
           "type": [
             "string",
             "null"
           ]
         },
         "pendingDomainUnverifiedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -431,6 +436,7 @@
           ]
         },
         "pushedAtGitHub": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -440,6 +446,7 @@
           "type": "string"
         },
         "repositoryTopUrl": {
+          "format": "uri",
           "type": "string"
         },
         "sourceBranch": {
@@ -455,6 +462,7 @@
           ]
         },
         "updatedAtGitHub": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -598,6 +606,7 @@
           "type": "array"
         },
         "exportedAt": {
+          "format": "date-time",
           "type": "string"
         },
         "repositories": {

@@ -74,45 +74,28 @@ export function toExportRepositoryResult(r: RepositoryResult): ExportRepositoryR
   };
 }
 
-export function buildJsonExport(results: RepositoryResult[], patOrContext?: string | ExportBuildContext): GitHubPagesAuditorExport {
+export function buildJsonExport(results: RepositoryResult[], context?: ExportBuildContext): GitHubPagesAuditorExport {
   const pagesEnabledList = results.filter(r => r.hasPages);
   const customDomainList = pagesEnabledList.filter(r => r.cname);
 
-  let context: ExportBuildContext = {};
-  if (typeof patOrContext === 'string') {
-    const pat = patOrContext;
-    let tokenType: 'fine_grained' | 'classic' | 'unknown' | null = 'unknown';
-    if (pat) {
-      if (pat.startsWith('github_pat_')) {
-        tokenType = 'fine_grained';
-      } else if (pat.startsWith('ghp_')) {
-        tokenType = 'classic';
-      }
-    } else {
-      tokenType = null;
-    }
-    context = { tokenType };
-  } else if (patOrContext) {
-    context = patOrContext;
-  }
-
-  const finalTokenType = context.tokenType ?? null;
+  const finalContext = context || {};
+  const finalTokenType = finalContext.tokenType ?? null;
 
   const httpsNotEnforcedList = pagesEnabledList.filter(r => r.httpsCertificateStatus === 'https_not_enforced' || r.httpsEnforced === false);
   const approvedCertButHttpsNotEnforcedList = pagesEnabledList.filter(r => r.httpsCertificateState === 'approved' && r.httpsEnforced === false);
   const customDomainHttpsNotEnforcedList = customDomainList.filter(r => r.httpsEnforced === false);
 
-  const exportedAtStr = context.exportedAt || new Date().toISOString();
-  const startedAtStr = context.auditCreatedAt || exportedAtStr;
-  const finishedAtStr = context.auditCreatedAt || exportedAtStr;
+  const exportedAtStr = finalContext.exportedAt || new Date().toISOString();
+  const startedAtStr = finalContext.auditCreatedAt || exportedAtStr;
+  const finishedAtStr = finalContext.auditCreatedAt || exportedAtStr;
 
   const appMeta = {
     name: 'GitHub Pages Auditor',
     version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.2.0',
-    environment: context.appEnvironment || 'dev'
+    environment: finalContext.appEnvironment || 'dev'
   };
 
-  const auditRunId = context.auditRunId || `export-${Date.now()}`;
+  const auditRunId = finalContext.auditRunId || `export-${Date.now()}`;
 
   const auditRunData: any = {
     id: auditRunId,
@@ -120,7 +103,7 @@ export function buildJsonExport(results: RepositoryResult[], patOrContext?: stri
     startedAt: startedAtStr,
     finishedAt: finishedAtStr,
     tokenType: finalTokenType,
-    githubLogin: context.githubLogin || null,
+    githubLogin: finalContext.githubLogin || null,
     options: {
       affiliation: 'owner,collaborator,organization_member',
       visibility: 'all',
@@ -132,8 +115,8 @@ export function buildJsonExport(results: RepositoryResult[], patOrContext?: stri
     }
   };
 
-  if (context.userMode === 'google' || context.userMode === 'anonymous') {
-    auditRunData.userMode = context.userMode;
+  if (finalContext.userMode === 'google' || finalContext.userMode === 'anonymous') {
+    auditRunData.userMode = finalContext.userMode;
   }
 
   return {

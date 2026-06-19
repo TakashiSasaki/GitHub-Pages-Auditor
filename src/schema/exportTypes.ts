@@ -63,12 +63,26 @@ export type ExportHealthStatus =
   | null;
 
 export interface ExportRepositoryResult {
+  /**
+   * Official GitHub repository ID.
+   * @additionalItems false
+   * @asType integer
+   */
   githubRepoId: number | null;
   owner: string;
   repo: string;
   fullName: string;
+  /**
+   * @format uri
+   */
   repositoryTopUrl: string;
+  /**
+   * @format uri
+   */
   pagesSettingsUrl: string;
+  /**
+   * @format uri
+   */
   pagesUrl: string | null;
   private: boolean;
   visibility: 'public' | 'private' | 'internal' | null;
@@ -77,8 +91,17 @@ export interface ExportRepositoryResult {
   fork: boolean;
   defaultBranch: string | null;
   hasPages: boolean | null;
+  /**
+   * @format date-time
+   */
   createdAtGitHub: string | null;
+  /**
+   * @format date-time
+   */
   updatedAtGitHub: string | null;
+  /**
+   * @format date-time
+   */
   pushedAtGitHub: string | null;
   pagesEnabled: boolean;
   pagesStatus: string | null;
@@ -91,10 +114,16 @@ export interface ExportRepositoryResult {
   customDomain: string | null;
   customDomainConfigured: boolean;
   protectedDomainState: string | null;
+  /**
+   * @format date-time
+   */
   pendingDomainUnverifiedAt: string | null;
   httpsCertificateState: string | null;
   httpsCertificateDescription: string | null;
   httpsCertificateDomains: string[];
+  /**
+   * @format date-time
+   */
   httpsCertificateExpiresAt: string | null;
   httpsEnforced: boolean | null;
   healthStatus: ExportHealthStatus;
@@ -155,7 +184,13 @@ export interface ExportAuditRunOptions {
 export interface ExportAuditRun {
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'paused' | 'cancelled';
+  /**
+   * @format date-time
+   */
   startedAt: string | null;
+  /**
+   * @format date-time
+   */
   finishedAt: string | null;
   userMode?: 'google' | 'anonymous';
   tokenType?: 'fine_grained' | 'classic' | 'unknown' | null;
@@ -166,6 +201,9 @@ export interface ExportAuditRun {
 export interface GitHubPagesAuditorExport {
   schemaVersion: 'github-pages-auditor.export.v1';
   schemaId?: 'urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1';
+  /**
+   * @format date-time
+   */
   exportedAt: string;
   application: ExportAppMeta;
   auditRun: ExportAuditRun;

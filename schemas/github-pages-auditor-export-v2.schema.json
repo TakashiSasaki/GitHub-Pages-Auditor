@@ -30,6 +30,7 @@
                       "type": "string"
                     },
                     "htmlUrl": {
+                      "format": "uri",
                       "type": "string"
                     }
                   },
@@ -56,6 +57,7 @@
           "type": "array"
         },
         "exportedAt": {
+          "format": "date-time",
           "type": "string"
         },
         "repositories": {
@@ -133,6 +135,7 @@
       "additionalProperties": false,
       "properties": {
         "finishedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -151,6 +154,7 @@
           "$ref": "#/definitions/V2AuditRunOptions"
         },
         "startedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -329,6 +333,7 @@
               ]
             },
             "pendingUnverifiedAt": {
+              "format": "date-time",
               "type": [
                 "string",
                 "null"
@@ -422,6 +427,7 @@
           "type": "object"
         },
         "htmlUrl": {
+          "format": "uri",
           "type": [
             "string",
             "null"
@@ -446,6 +452,7 @@
                   "type": "array"
                 },
                 "expiresAt": {
+                  "format": "date-time",
                   "type": [
                     "string",
                     "null"
@@ -486,6 +493,7 @@
           ]
         },
         "settingsUrl": {
+          "format": "uri",
           "type": "string"
         },
         "statusRaw": {
@@ -512,6 +520,7 @@
       "additionalProperties": false,
       "properties": {
         "createdAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
@@ -542,6 +551,7 @@
           ]
         },
         "htmlUrl": {
+          "format": "uri",
           "type": "string"
         },
         "isArchived": {
@@ -563,12 +573,14 @@
           "type": "string"
         },
         "pushedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"
           ]
         },
         "updatedAt": {
+          "format": "date-time",
           "type": [
             "string",
             "null"

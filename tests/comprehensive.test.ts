@@ -14,7 +14,9 @@ import {
   buildCsvExport, 
   escapeCsvCell 
 } from '../src/export/exportBuilders.js';
+import { buildJsonExportV2 } from '../src/export/exportBuildersV2.js';
 import { RepositoryResult } from '../src/types.js';
+import { ExportBuildContext } from '../src/schema/exportTypes.js';
 import { getEnvironmentName, getGithubTokenDocPath, getAuditCollectionPath } from '../src/lib/firestorePaths.js';
 import { liveExportSampleRows } from './fixtures/liveExportRows.js';
 
@@ -231,16 +233,16 @@ describe('JSON Export and Schema Structure Check', () => {
   ];
 
   it('produces valid tokenType mapped format', () => {
-    const ghpJson = buildJsonExport(dummyResults, 'ghp_classic_token');
+    const ghpJson = buildJsonExport(dummyResults, { tokenType: 'classic' });
     assert.equal(ghpJson.auditRun.tokenType, 'classic');
 
-    const patJson = buildJsonExport(dummyResults, 'github_pat_fine_grained_token');
+    const patJson = buildJsonExport(dummyResults, { tokenType: 'fine_grained' });
     assert.equal(patJson.auditRun.tokenType, 'fine_grained');
     assert.notEqual(patJson.auditRun.tokenType, 'fine-grained');
   });
 
   it('guarantees layout maps authentic pages.html_url and standard fields matching schema spec', () => {
-    const json = buildJsonExport(dummyResults, 'ghp_dummy');
+    const json = buildJsonExport(dummyResults, { tokenType: 'classic' });
     
     assert.equal(json.schemaVersion, 'github-pages-auditor.export.v1');
     assert.equal(json.summary.repositoryCount, 2);
@@ -262,7 +264,7 @@ describe('JSON Export and Schema Structure Check', () => {
   });
 
   it('validates generated export data against the generated JSON schema', () => {
-    const json = buildJsonExport(dummyResults, 'ghp_dummy');
+    const json = buildJsonExport(dummyResults, { tokenType: 'classic' });
     const schemaContent = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v1.schema.json'), 'utf-8')
     );
@@ -277,15 +279,38 @@ describe('JSON Export and Schema Structure Check', () => {
     }
     assert.ok(valid, 'The built export data must strictly pass the JSON schema layout specification validated by Ajv.');
   });
-  it('ensures json export does not leak secrets', () => {
-    const jsonStr = JSON.stringify(buildJsonExport(dummyResults, 'ghp_dummy'));
-    assert.ok(jsonStr.indexOf('ghp_dummy') === -1, 'JSON export must not contain PAT plaintext');
-    assert.ok(jsonStr.indexOf('Authorization') === -1, 'JSON export must not contain HTTP headers');
-    assert.ok(jsonStr.indexOf('githubTokens') === -1, 'JSON export must not contain Firestore storage path strings');
+
+  it('ensures json export does not leak secrets when build context contains metadata', () => {
+    const context: ExportBuildContext = {
+      tokenType: 'classic',
+      githubLogin: 'TakashiSasaki',
+      auditRunId: 'audit-run-id-example',
+      appEnvironment: 'production'
+    };
+    const jsonStr = JSON.stringify(buildJsonExport(dummyResults, context));
+    // Check that we never see actual raw secret variables
+    assert.ok(!jsonStr.includes('ghp_'), 'JSON export must not contain PAT prefix ghp_');
+    assert.ok(!jsonStr.includes('github_pat_'), 'JSON export must not contain PAT prefix github_pat_');
+    assert.ok(!jsonStr.includes('Authorization'), 'JSON export must not contain Authorization headers');
+    assert.ok(!jsonStr.includes('githubTokens'), 'JSON export must not contain Firestore path details');
+  });
+
+  it('ensures CSV export does not leak secrets', () => {
+    const context: ExportBuildContext = {
+      tokenType: 'classic',
+      githubLogin: 'TakashiSasaki',
+      auditRunId: 'audit-run-id-example',
+      appEnvironment: 'production'
+    };
+    const csvStr = buildCsvExport(dummyResults, context);
+    assert.ok(!csvStr.includes('ghp_'), 'CSV export must not contain PAT prefix ghp_');
+    assert.ok(!csvStr.includes('github_pat_'), 'CSV export must not contain PAT prefix github_pat_');
+    assert.ok(!csvStr.includes('Authorization'), 'CSV export must not contain Authorization headers');
+    assert.ok(!csvStr.includes('githubTokens'), 'CSV export must not contain Firestore path details');
   });
 
   it('exports dynamic version not hardcoded', () => {
-    const json = buildJsonExport(dummyResults, 'ghp_dummy');
+    const json = buildJsonExport(dummyResults, { tokenType: 'classic' });
     assert.ok(json.application.version);
     assert.ok(json.application.version !== '1.0.0' || typeof __APP_VERSION__ !== 'undefined', 'Version should not be hardcoded to 1.0.0');
     if (typeof __APP_VERSION__ !== 'undefined') {
@@ -639,6 +664,98 @@ describe('CSV Export Regression and Live Data Diagnostics', () => {
     // Assert the exact hardcoded stable UUID values chosen for schema identity are preserved exactly
     assert.strictEqual(v1Schema.$id, 'urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1', 'V1 $id must remain stable across generation runs');
     assert.strictEqual(v2Schema.$id, 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2', 'V2 $id must remain stable across generation runs');
+  });
+
+  it('validates the complete V2 JSON export structure and asserts schema compliance', () => {
+    const context = {
+      auditRunId: 'v2-audit-run-id-99',
+      auditCreatedAt: '2026-06-19T10:00:00Z',
+      exportedAt: '2026-06-19T11:00:00Z',
+      userMode: 'google' as const,
+      githubLogin: 'TakashiSasaki',
+      appEnvironment: 'production'
+    };
+
+    const v2Export = buildJsonExportV2(liveExportSampleRows, context);
+
+    // Validate using AJV against the V2 JSON Schema
+    const v2SchemaContent = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v2.schema.json'), 'utf-8')
+    );
+    const ajv = new Ajv({ strict: false });
+    const validate = ajv.compile(v2SchemaContent);
+    const valid = validate(v2Export);
+
+    if (!valid) {
+      console.error('AJV V2 validation failures:', validate.errors);
+    }
+    assert.ok(valid, 'The generated V2 payload must strictly comply with the schemas/github-pages-auditor-export-v2.schema.json specifications.');
+
+    // Assert V2 top-level schemaId matches schema $id
+    assert.strictEqual(v2Export.schemaId, v2SchemaContent.$id, 'V2 export schemaId must exactly match schema $id');
+    assert.strictEqual(v2Export.schemaId, 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2', 'V2 export schemaId must match the stable UUID constant');
+
+    // Assert schemaVersion and schemaId are distinct concepts
+    assert.notStrictEqual(v2Export.schemaVersion, v2Export.schemaId, 'schemaVersion and schemaId must be distinct fields having distinct contents');
+    assert.strictEqual(v2Export.schemaVersion, 'github-pages-auditor.export.v2');
+
+    // Assert nesting layers
+    assert.ok(Array.isArray(v2Export.repositories), 'v2Export.repositories must be an array');
+    const firstRepRecord = v2Export.repositories[0];
+    assert.ok(firstRepRecord.repository, 'must contain nested repository block');
+    assert.ok(firstRepRecord.pages, 'must contain nested pages block');
+    assert.ok(Array.isArray(firstRepRecord.findings), 'must contain findings array');
+
+    // Assert specific fields
+    const targetRecord = v2Export.repositories.find(
+      r => r.repository.fullName === 'TakashiSasaki/custom-domain-unenforced'
+    );
+    assert.ok(targetRecord, 'custom-domain-unenforced must exist in the V2 repositories list');
+    assert.strictEqual(typeof targetRecord.repository.githubId, 'string', 'repository.githubId must be string');
+
+    // Assert deployment block
+    assert.ok(targetRecord.pages.deployment, 'must contain deployment block');
+    assert.strictEqual(targetRecord.pages.deployment.githubBuildTypeRaw, 'legacy', 'raw buildType must be preserved under pages.deployment.githubBuildTypeRaw');
+
+    // Assert custom domain block
+    assert.ok(targetRecord.pages.customDomain, 'must contain customDomain block');
+    assert.strictEqual(targetRecord.pages.customDomain.cnameRaw, 'unenforced.com', 'raw customDomain cname must match cnameRaw');
+    assert.strictEqual(targetRecord.pages.customDomain.githubProtectedDomainStateRaw, 'verified', 'raw protected state must be preserved under customDomain.githubProtectedDomainStateRaw');
+    assert.strictEqual(targetRecord.pages.customDomain.verificationState, 'verified', 'normalized verificationState must map correctly');
+
+    // Assert findings and check for the pages_https_not_enforced findings
+    // TakashiSasaki/custom-domain-unenforced in liveExportSampleRows has httpsCertificateStatus = 'https_not_enforced' and httpsEnforced = false
+    const httpsFindings = targetRecord.findings.filter(f => f.code === 'pages_https_not_enforced');
+    assert.ok(httpsFindings.length >= 1, 'HTTPS not enforced must be represented in findings[]');
+    assert.strictEqual(httpsFindings[0].category, 'https', 'finding category must match');
+    assert.strictEqual(httpsFindings[0].severity, 'error', 'finding severity must match');
+    assert.strictEqual(httpsFindings[0].source, 'github_pages_api', 'finding source must match');
+
+    // Check custom_domain_https_not_enforced finding on custom-domain-unenforced
+    const customHttpsFindings = targetRecord.findings.filter(f => f.code === 'custom_domain_https_not_enforced');
+    assert.ok(customHttpsFindings.length >= 1, 'Custom domain HTTPS not enforced must be represented in findings[]');
+    assert.strictEqual(customHttpsFindings[0].category, 'custom_domain', 'custom domain finding category must match');
+
+    // Assert no secret leakages
+    const v2Str = JSON.stringify(v2Export);
+    const forbiddenPatterns = [
+      'ghp_', 'github_pat_', 'Bearer', 'githubPagesAuditorV1', 'users/', 'anonymousSessions/'
+    ];
+    for (const pattern of forbiddenPatterns) {
+      assert.ok(!v2Str.includes(pattern), `V2 JSON export must not contain forbidden pattern: ${pattern}`);
+    }
+  });
+
+  it('proves that schema IDs are stable and not generated dynamically by calling builders multiple times', () => {
+    const v1Ex1 = buildJsonExport(liveExportSampleRows);
+    const v1Ex2 = buildJsonExport(liveExportSampleRows);
+    assert.strictEqual(v1Ex1.schemaId, v1Ex2.schemaId, 'V1 schemaId must be identical across invocations');
+    assert.strictEqual(v1Ex1.schemaId, 'urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1', 'V1 schemaId must match static constant');
+
+    const v2Ex1 = buildJsonExportV2(liveExportSampleRows);
+    const v2Ex2 = buildJsonExportV2(liveExportSampleRows);
+    assert.strictEqual(v2Ex1.schemaId, v2Ex2.schemaId, 'V2 schemaId must be identical across invocations');
+    assert.strictEqual(v2Ex1.schemaId, 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2', 'V2 schemaId must match static constant');
   });
 });
 

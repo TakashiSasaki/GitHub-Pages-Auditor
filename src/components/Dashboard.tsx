@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RepositoryResult } from '../types';
 import { buildJsonExport, buildCsvExport } from '../export/exportBuilders';
+import { buildJsonExportV2 } from '../export/exportBuildersV2';
 import { ExportBuildContext } from '../schema/exportTypes';
 import { useAuth } from '../AuthContext';
 import Ajv from 'ajv';
@@ -418,6 +419,20 @@ export default function Dashboard() {
     const a = document.createElement('a');
     a.href = url;
     a.download = getExportFilename('json');
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportJsonV2 = () => {
+    if (!results) return;
+    
+    const exportData = buildJsonExportV2(results, buildContext);
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = getExportFilename('json').replace('.json', '_v2_draft.json');
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -935,6 +950,14 @@ export default function Dashboard() {
                   >
                     <Download className="w-3.5 h-3.5 mr-2 text-slate-400" />
                     JSONをダウンロード
+                  </button>
+                  <button 
+                    onClick={exportJsonV2} 
+                    className="flex-1 md:flex-initial px-4 py-2 bg-white text-slate-800 rounded-lg hover:bg-slate-50 flex items-center justify-center border border-slate-200 shadow-2xs text-xs font-semibold hover:border-slate-300 transition-colors cursor-pointer"
+                    title="ネストされたJSON v2 構造のドラフト版をダウンロード"
+                  >
+                    <Download className="w-3.5 h-3.5 mr-2 text-slate-400" />
+                    JSON v2 (ドラフト)
                   </button>
                 </div>
               </div>

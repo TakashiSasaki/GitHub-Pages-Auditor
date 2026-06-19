@@ -19,6 +19,9 @@ export interface V2RepositoryMeta {
   ownerLogin: string;
   name: string;
   fullName: string;
+  /**
+   * @format uri
+   */
   htmlUrl: string;
   visibility: 'public' | 'private' | 'internal' | 'unknown';
   isPrivate: boolean;
@@ -27,15 +30,30 @@ export interface V2RepositoryMeta {
   isFork: boolean;
   defaultBranch: string | null;
   githubHasPagesRaw: boolean | null;
+  /**
+   * @format date-time
+   */
   createdAt: string | null;
+  /**
+   * @format date-time
+   */
   updatedAt: string | null;
+  /**
+   * @format date-time
+   */
   pushedAt: string | null;
 }
 
 export interface V2PagesMeta {
   enabled: boolean | null;
   statusRaw: string | null;
+  /**
+   * @format uri
+   */
   htmlUrl: string | null;
+  /**
+   * @format uri
+   */
   settingsUrl: string;
   publicRaw: boolean | null;
   deployment: {
@@ -51,6 +69,9 @@ export interface V2PagesMeta {
     hostname: string | null;
     githubProtectedDomainStateRaw: string | null;
     verificationState: V2VerificationState;
+    /**
+     * @format date-time
+     */
     pendingUnverifiedAt: string | null;
     stateSource: 'github_pages_api' | 'derived' | 'not_reported';
   };
@@ -60,6 +81,9 @@ export interface V2PagesMeta {
       stateRaw: string | null;
       description: string | null;
       domains: string[];
+      /**
+       * @format date-time
+       */
       expiresAt: string | null;
     };
   };
@@ -103,7 +127,13 @@ export interface V2AuditRunOptions {
 export interface V2AuditRun {
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'paused' | 'cancelled';
+  /**
+   * @format date-time
+   */
   startedAt: string | null;
+  /**
+   * @format date-time
+   */
   finishedAt: string | null;
   userMode?: 'google' | 'anonymous';
   tokenType?: 'fine_grained' | 'classic' | 'unknown' | null;
@@ -132,6 +162,9 @@ export interface V2Summary {
 export interface GitHubPagesAuditorExportV2 {
   schemaVersion: 'github-pages-auditor.export.v2';
   schemaId: 'urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2';
+  /**
+   * @format date-time
+   */
   exportedAt: string;
   application: V2AppMeta;
   auditRun: V2AuditRun;
@@ -142,6 +175,9 @@ export interface GitHubPagesAuditorExportV2 {
     repositoryCount: number;
     repositories: {
       fullName: string;
+      /**
+       * @format uri
+       */
       htmlUrl: string;
     }[];
     hasDuplicate: boolean;
