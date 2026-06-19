@@ -30,7 +30,7 @@ The application must not use:
 - GitHub App JWT
 - GitHub Actions "GITHUB_TOKEN"
 
-The browser manages the GitHub PAT temporally (in memory or via Firestore Client SDK) to pass it as `x-temp-pat` to the backend. The backend must never return or log the PAT in plaintext.
+The browser owns the PAT copy. The React frontend stores PATs in Firestore using Firebase Client SDK. The backend receives the PAT temporarily through `x-temp-pat` only for the duration of GitHub API calls. The backend must not return PAT plaintext to the browser, and must never log the PAT in plaintext.
 
 2. Endpoint Allowlist
 
@@ -44,7 +44,7 @@ Allowed optional endpoints:
 
 GET /repos/{owner}/{repo}/pages/health
 GET /rate_limit
-GET /orgs/{org}/repos
+GET /orgs/{org}/repos (allowed by specification; currently NOT implemented in Version 1 backend allowlist)
 
 "GET /orgs/{org}/repos" may be used only if organization-specific scan mode is implemented.
 

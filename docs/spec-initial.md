@@ -94,7 +94,7 @@ Forbidden providers in Version 1:
 
 Persistent Google users store PATs in Firestore through Firebase Client SDK. PAT records and audit history are persisted by the client.
 
-Anonymous users are allowed only for non-persistent guest mode. Anonymous users may run a temporary one-shot audit, and may store a session-scoped PAT under the anonymous session namespace. Server-side data for anonymous users must be temporary and have expiration metadata; automatic cleanup is a planned follow-up.
+Anonymous users are allowed only for non-persistent guest mode. Anonymous guest mode is not a long-term account model; it does not guarantee cross-device continuation. Anonymous users may run a temporary one-shot audit, and may store a session-scoped PAT under the anonymous session namespace. Server-side data for anonymous users should be treated as temporary and have expiration metadata; automatic cleanup / expiration enforcement is a known follow-up and not yet complete.
 
 Use Firebase UID as the tenant boundary. Do not use email address as the primary identity key.
 
@@ -171,7 +171,7 @@ Optional endpoints:
 
 GET /repos/{owner}/{repo}/pages/health
 GET /rate_limit
-GET /orgs/{org}/repos
+GET /orgs/{org}/repos (allowed by specification; currently NOT implemented in Version 1 backend allowlist)
 
 "GET /orgs/{org}/repos" may be used only if an organization-specific scan mode is implemented.
 
@@ -193,7 +193,8 @@ Authorization: Bearer <PAT>
 X-GitHub-Api-Version: 2026-03-10
 User-Agent: <application-name>
 
-The browser manages the GitHub PAT copy and uses Firebase Client SDK for persistence. It passes it as `x-temp-pat` to the backend. The backend must not return any GitHub Authorization header or PAT plaintext back to the browser.
+The browser owns the PAT copy. The React frontend stores PATs in Firestore using the Firebase Client SDK. The backend receives the PAT temporarily through `x-temp-pat` only for the duration of GitHub API calls. The backend must not return PAT plaintext to the browser.
+
 
 Do not log PATs or Authorization headers.
 
@@ -370,7 +371,7 @@ The UI focuses on structural clarity and minimalist, clutter-free aesthetics:
 - Dashboard & Header (Logged-in States)
   - Employs a clean layout prioritizing analytics, removing verbose permanent banners, descriptive texts, or subtitles (such as "Pages Security Audit - Analyze your GitHub repositories...").
   - Embeds a neat, discreet utility link button labeled "What's this app?" alongside an info icon.
-  - Clicking "What's this app?" exposes a modal detailing the "Security & Custom Domain Auditor" goals, emphasizing its read-only background-to-backend pipeline and dynamic browser guest-memory safety.
+  - Clicking "What's this app?" exposes a modal detailing the "Security & Custom Domain Auditor" goals, emphasizing its read-only background-to-backend pipeline and temporary session scope.
   - Repository count and statistics summary.
   - Pages enabled count.
   - Custom domain count.

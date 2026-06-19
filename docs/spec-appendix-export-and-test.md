@@ -40,6 +40,13 @@ JSON export should include:
 
 ## Schema Maintenance Rules
 
+- TypeScript types in `src/schema/exportTypes.ts` are the source of truth for the export schema.
+- The file `schemas/github-pages-auditor-export-v1.schema.json` is a generated artifact.
+- Manual edits to the generated schema file are strongly discouraged.
+- Any schema-affecting changes (modifying export interfaces) must trigger regeneration and validation via:
+  - `npm run schema:generate`
+  - `npm run schema:check`
+
 Breaking changes require a new schema version.
 Examples: `github-pages-auditor.export.v1`, `github-pages-auditor.export.v2`
 
@@ -69,15 +76,15 @@ CSV injection defense: If a cell begins with any of the following characters, es
 
 ## Detailed Test Matrix
 
-*(See original prompt for full detail)*
+Current implemented test coverage includes:
+- **Unit tests for classification**: Verifies domain logic and Pages deployment mappings.
+- **GitHub API allowlist tests**: Asserts that only explicitly allowed endpoints can be proxied.
+- **githubApi mock fetch tests**: Exercises backend API client logic without hitting standard networks.
+- **JSON schema validation tests**: Compares actual exports with the generated JSON schema using ajv.
+- **Secret leakage tests**: Ensures JSON payloads do not bleed Firestore paths or Authorization headers.
+- **CSV injection tests**: Validates that fields with formula starters (`=`, `+`, `-`, `@`) fall back safely.
 
-**Authentication & Tenant Isolation**: Secure per-user scope, no anonymous sharing to google users.
-**PAT Security**: Valid PATs work, no plaintext exposure.
-**GitHub API**: Success, 401, 403, 404, rate limits correctly captured. Write endpoint blocked.
-**Pages Classification**: Strict domain and HTTPS state translation according to rules.
-**Deployment Method**: Identifies branch roots, docs folders, workflow setups correctly.
-**Firestore**: PAT and audit cache security tested against direct Firebase Client SDK Firestore access rules (`request.auth.uid == uid`).
-**Exports**: Validate cleanly, omit secrets.
+*(See original prompt for full historical intent detail)*
 
 First Export Example (Minimal):
 ```json

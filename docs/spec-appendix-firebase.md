@@ -111,12 +111,15 @@ Anonymous cleanup strategy must be documented in "AGENTS.md".
 
 Anonymous-to-Google upgrade or credential linking is not required in Version 1. Do not implement automatic migration unless the specification is updated.
 
-5. In-Memory and Firestore Persistence (V1 / MVP)
+5. Firestore Persistence (V1 / MVP)
 
 Firebase Firestore is used for persistent PAT storage and Audit cache persistence. 
 The keys and documents are fully guarded strictly using standard Firebase Client SDK usage with `firestore.rules` where `request.auth.uid == uid`, completely locking it down securely per user.
 
-6. Data Models for Future Firestore Implementation (Not Used in V1)
+6. Data Models for Pending/Future Firestore Implementation
+
+(Note: See `src/schema/firestoreTypes.ts` for the current, provisional schema actually used.)
+
 
 User
 
@@ -154,11 +157,16 @@ Suggested fields:
 
 GitHubToken
 
-Represents persistent PAT metadata for Google users only.
+Represents persistent PAT metadata.
 
-Must not contain PAT plaintext.
+CURRENT implementation stores:
 
-Suggested fields:
+{
+  "token": "stored natively by React client",
+  "updatedAt": "timestamp"
+}
+
+FUTURE/IDEAL fields (Not Currently Implemented):
 
 {
   "uid": "firebase-auth-uid",
@@ -180,19 +188,20 @@ Suggested fields:
   "revokedAt": null
 }
 
-"encryptedToken" may be:
-
-ciphertext stored in Firestore
-secret reference to Secret Manager or another secure store
-implementation-specific sealed token record
-
-PAT plaintext is forbidden.
+PAT is natively stored in Firestore by the React client. However, the backend proxy must never log or return the PAT in plaintext.
 
 AuditRun
 
 Represents one audit execution.
 
-Suggested fields:
+CURRENT implementation stores:
+
+{
+  "results": ["array of audit result objects"],
+  "createdAt": "timestamp"
+}
+
+FUTURE/IDEAL fields (Not Currently Implemented):
 
 {
   "uid": "firebase-auth-uid",
@@ -224,9 +233,11 @@ Anonymous audit runs must have "expiresAt".
 
 RepositoryResult
 
-Represents one repository result within an audit run.
+Represents one repository result.
 
-Suggested fields:
+CURRENT IMPLEMENTATION: Repositories are stored inline within the `results` array of the AuditRun document. Repository subcollections are NOT currently implemented.
+
+FUTURE/IDEAL fields (Not Currently Implemented standalone):
 
 {
   "uid": "firebase-auth-uid",
@@ -353,7 +364,7 @@ Document required indexes in "AGENTS.md".
 8. Firestore Security Requirements
 
 Firestore is accessed directly via the frontend Firebase Client SDK. The rules MUST strictly isolate data tenanting per-UID:
-- Clients can exclusively read/write to `githubPagesAuditorV1/{environment}/users/{uid}` endpoints where `uid == request.auth.uid`.
+- Clients can exclusively read/write to `githubPagesAuditorV1/{environment}/users/{uid}` and `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}` endpoints where `uid == request.auth.uid`.
 
 9. Cloud Functions Usage
 
