@@ -16,7 +16,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - **Full-Stack Structure:** The core GitHub API proxy runs on the Express server to keep the GitHub PAT secure.
 
 ## Non-Negotiable Security Rules
-- Never return PAT plaintext to the browser.
+- The backend must never return PAT plaintext to the browser; the browser manages its own copy.
 - Never log PAT plaintext.
 - Never log GitHub Authorization headers.
 - Never log Firebase ID tokens.
@@ -26,7 +26,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Use Firebase UID as tenant boundary.
 - Do not let users access other users’ data.
 - Anonymous data must be temporary if persisted.
-- PAT storage records must not be client-readable.
+- PAT storage records must be strictly isolated using Firebase rules (`request.auth.uid == uid`).
 - Escape GitHub-originated text in HTML.
 - Escape CSV cells that can trigger spreadsheet formula execution.
 
@@ -35,9 +35,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Backend APIs require `Authorization: Bearer <firebase-id-token>`.
 
 ## Firestore Persistence Contract
-- Firestore used: Yes. (Migrated from in-memory).
-- PATs are securely stored in `/githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/default`.
-- Security Rules: Client access strictly denied (`allow read, write: if false`). Only accessible via backend Firebase Admin SDK.
+- Firestore used: Yes.
+- PATs are securely stored in `/githubPagesAuditorV1/{environment}/users/{uid}/githubTokens/default` via the **Firebase Client SDK directly from the React frontend**.
+- Audit caches are similarly stored in `/githubPagesAuditorV1/{environment}/users/{uid}/audits/{auditId}` via the Client SDK.
+- Security Rules: Client access is tightly secured to `request.auth.uid == uid`. No cross-user access allowed.
 
 ## Cloud Functions Deployment Contract
 - Cloud Functions used: Not used.
@@ -67,11 +68,14 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Rate Limit Handling is fully integrated, evaluating headers (`x-ratelimit-remaining`, `retry-after`) and interrupting loops on `429` / `403`.
 
 ## PAT Storage Decision
-- For Version 1, PAT storage originally used in-memory maps, but has now been migrated to Firestore to ensure persistence across server restarts over development iterations. The tokens are securely constrained to backend fetch contexts only, completely denying read-access from the client side using Firestore `rules`.
+- PAT storage relies on Firestore persistence using the Firebase Client SDK directly. The keys are stored per-user. The server node receives the PAT for the actual API transaction temporally via an `x-temp-pat` header. Guest sessions keep it entirely locally in memory (React context) and send it the same way.
 
 ## JSON Export Schema Contract
 - JSON export schema version: `github-pages-auditor.export.v1`
 - Schema lives in `schemas/github-pages-auditor-export-v1.schema.json` (Full schema implemented).
+- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts`.
+- **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
+- Any schema-affecting types change must trigger schema regeneration via `npm run schema:generate` and validation check via `npm run schema:check`.
 
 ## Directory Structure
 - `src/` - React frontend code.

@@ -30,12 +30,7 @@ The application must not use:
 - GitHub App JWT
 - GitHub Actions "GITHUB_TOKEN"
 
-The browser must never receive:
-
-- GitHub PAT
-- GitHub Authorization header
-- GitHub API proxy credentials
-- any token-derived secret
+The browser manages the GitHub PAT temporally (in memory or via Firestore Client SDK) to pass it as `x-temp-pat` to the backend. The backend must never return or log the PAT in plaintext.
 
 2. Endpoint Allowlist
 

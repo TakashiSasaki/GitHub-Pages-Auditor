@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   hasStoredPat: boolean;
   savePatToFirestore: (pat: string) => Promise<void>;
+  getStoredPat: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,6 +20,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasStoredPat, setHasStoredPat] = useState(false);
+
+  const getEnv = () => import.meta.env.MODE === 'production' ? 'production' : 'development';
+
+  const getDocRef = (uid: string, isAnonymous: boolean) => {
+    const env = getEnv();
+    const collectionPath = isAnonymous 
+      ? `githubPagesAuditorV1/${env}/anonymousSessions/${uid}/githubTokens`
+      : `githubPagesAuditorV1/${env}/users/${uid}/githubTokens`;
+    return doc(db, collectionPath, 'default');
+  };
+
+  const getStoredPat = async (): Promise<string | null> => {
+    if (!user) return null;
+    try {
+      const docRef = getDocRef(user.uid, user.isAnonymous);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().token) {
+        return docSnap.data().token;
+      }
+    } catch(e) {
+      console.error("Failed to fetch PAT from Firestore:", e);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -34,25 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const checkPatStatus = async () => {
-      try {
-        const token = await user.getIdToken();
-        const res = await fetch('/api/pat/status', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setHasStoredPat(!!data.hasPat);
-      } catch (e) {
-        console.error("Failed to load PAT:", e);
-        setHasStoredPat(false);
-      }
+      const pat = await getStoredPat();
+      setHasStoredPat(!!pat);
     };
     checkPatStatus();
   }, [user]);
 
   const savePatToFirestore = async (pat: string) => {
     if (!user) throw new Error('Must be logged in');
+    // First validate with backend
     const token = await user.getIdToken();
-    const res = await fetch('/api/pat', {
+    const res = await fetch('/api/pat/validate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,11 +77,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       body: JSON.stringify({ pat })
     });
+    
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.details || errData.error || 'Failed to save PAT');
+      throw new Error(errData.details || errData.error || 'Failed to validate PAT');
     }
-    setHasStoredPat(true);
+
+    // Since validation succeeded, save directly to Firestore
+    try {
+      const docRef = getDocRef(user.uid, user.isAnonymous);
+      await setDoc(docRef, {
+        token: pat,
+        updatedAt: serverTimestamp()
+      });
+      setHasStoredPat(true);
+    } catch (e: any) {
+      console.error("Failed to save to Firestore:", e);
+      throw new Error("Failed to save to Firestore: " + e.message);
+    }
   };
 
   const signInWithGoogle = async () => {
@@ -81,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInAsGuest, logout, hasStoredPat, savePatToFirestore }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInAsGuest, logout, hasStoredPat, savePatToFirestore, getStoredPat }}>
       {children}
     </AuthContext.Provider>
   );

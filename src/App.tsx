@@ -7,18 +7,22 @@ import { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import { AuthProvider, useAuth } from './AuthContext';
-import { LogOut, LogIn, UserCircle, Ghost, Key, Save, Loader2, CheckCircle, ShieldCheck as ShieldCheckIcon, HelpCircle, X, AlertCircle } from 'lucide-react';
+import { LogOut, LogIn, UserCircle, Ghost, Key, Save, Loader2, CheckCircle, Github, HelpCircle, X, AlertCircle, Database, ShieldCheck, XCircle } from 'lucide-react';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signInAsGuest, logout, hasStoredPat, savePatToFirestore } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   
   const [pat, setPat] = useState('');
   const [isSavingPat, setIsSavingPat] = useState(false);
   const [patError, setPatError] = useState<string | null>(null);
   const [patSuccess, setPatSuccess] = useState<string | null>(null);
+
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollY = useRef(0);
 
   const savePat = async () => {
     if (!pat) {
@@ -54,22 +58,45 @@ function AppContent() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const threshold = 15;
+      
+      if (currentScrollY <= 15) {
+        setShowHeader(true);
+      } else if (Math.abs(currentScrollY - lastScrollY.current) > threshold) {
+        if (currentScrollY > lastScrollY.current) {
+          setShowHeader(false);
+        } else {
+          setShowHeader(true);
+        }
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div></div>;
+    return <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div></div>;
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-[100dvh] bg-slate-50 text-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-xl w-full mx-auto space-y-8 animate-fade-in">
           {/* Visual Identity Hero - Only visible when logged out */}
           <div className="bg-slate-900 text-white rounded-2xl p-8 border border-slate-800 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-              <ShieldCheckIcon className="w-40 h-40" />
+              <ShieldCheck className="w-40 h-40" />
             </div>
             <div className="relative z-10 space-y-3">
               <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <ShieldCheckIcon className="w-3.5 h-3.5 mr-1" />
+                <ShieldCheck className="w-3.5 h-3.5 mr-1" />
                 GitHub Pages Security Auditing
               </div>
               <h2 className="text-2xl font-semibold tracking-tight">
@@ -113,14 +140,15 @@ function AppContent() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col">
-        <nav className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-900 flex items-center gap-2">
-                <ShieldCheckIcon className="w-5 h-5 text-emerald-600" />
-                GitHub Pages Auditor
-              </h1>
+      <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans flex flex-col overflow-hidden">
+        <nav className={`bg-white border-b border-gray-200 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
+          <div className="px-3 py-2 sm:px-4 sm:py-3">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-4">
+              <Link to="/" className="text-xl font-semibold tracking-tight text-slate-900 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Github className="w-5 h-5 text-slate-800" />
+                <span className="truncate">GitHub Pages Auditor</span>
+              </Link>
               <button 
                 onClick={() => setShowGuide(true)}
                 className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
@@ -128,6 +156,14 @@ function AppContent() {
                 <HelpCircle className="w-4 h-4" />
                 Token Guide
               </button>
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                <HelpCircle className="w-4 h-4" />
+                What's this app?
+              </button>
+              <div id="navbar-center-slot"></div>
             </div>
             <div className="flex items-center gap-4">
               <div className="relative" ref={menuRef}>
@@ -222,14 +258,19 @@ function AppContent() {
               </div>
             </div>
           </div>
+          </div>
+          <div id="navbar-bottom-slot"></div>
         </nav>
-        <main className="flex-1 max-w-7xl w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col overflow-hidden">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/report" element={<Dashboard />} />
+            <Route path="/results/:auditId" element={<Dashboard />} />
+            <Route path="/results/:auditId/report" element={<Dashboard />} />
           </Routes>
         </main>
-        <footer className="w-full bg-white border-t border-slate-200 py-6 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+        <footer className="shrink-0 w-full bg-white border-t border-slate-200 py-3 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-0 md:gap-4 text-xs sm:text-sm text-slate-500">
             <p>
               &copy; {new Date().getFullYear()} GitHub Pages Auditor v{__APP_VERSION__}
             </p>
@@ -248,7 +289,7 @@ function AppContent() {
             <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden">
               <div className="flex items-center justify-between p-5 border-b border-slate-100">
                 <h3 className="text-lg font-semibold flex items-center text-slate-900">
-                  <ShieldCheckIcon className="w-5 h-5 mr-2 text-emerald-600" />
+                  <ShieldCheck className="w-5 h-5 mr-2 text-emerald-600" />
                   Creating a Safe Read-Only GitHub PAT
                 </h3>
                 <button 
@@ -258,7 +299,7 @@ function AppContent() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[70vh]">
+              <div className="p-6 overflow-y-auto max-h-[70dvh]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                   <div className="space-y-3">
                     <h4 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -291,6 +332,68 @@ function AppContent() {
                 <div className="text-xs bg-blue-50/50 p-4 rounded-xl border border-blue-100 mt-6 flex items-start text-blue-800">
                   <AlertCircle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0 text-blue-600" />
                   <span className="leading-relaxed"><strong className="text-blue-900">No Write Capability:</strong> This applet is designed to never call any write, dispatch, or delete endpoints. The auditor restricts its actions strictly to page settings and metadata gathering.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog / Modal for Info */}
+        {showInfoModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            {/* Backdrop wrapper */}
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div 
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" 
+                aria-hidden="true"
+                onClick={() => setShowInfoModal(false)}
+              ></div>
+
+              {/* Centering element */}
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+              {/* Modal panel */}
+              <div className="relative inline-block align-bottom bg-slate-950 text-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-800">
+                {/* Close button */}
+                <button 
+                  type="button" 
+                  onClick={() => setShowInfoModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="sr-only">Close</span>
+                  <XCircle className="w-6 h-6" />
+                </button>
+
+                {/* Banner visual */}
+                <div className="p-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                    <Database className="w-40 h-40" />
+                  </div>
+                  <div className="relative z-10 space-y-4">
+                    <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                      GitHub Pages Security Auditing
+                    </div>
+                    <h3 className="text-2xl font-semibold tracking-tight" id="modal-title">
+                      Security & Custom Domain Auditor
+                    </h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      Audit GitHub Pages status, custom domains, HTTPS status, and deployment configurations across all your repositories in one click. Completely read-only and processed dynamically in browser guest memory.
+                    </p>
+                    <p className="text-slate-400 text-xs">
+                      This is a secure application. All checks are performed backend-to-backend or inside secure sandboxed scripts to ensure your data stays private and safe.
+                    </p>
+                    
+                    <div className="pt-4 border-t border-slate-800 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowInfoModal(false)}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

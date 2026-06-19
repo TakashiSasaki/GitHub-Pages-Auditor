@@ -15,12 +15,6 @@ import {
   checkRateLimit 
 } from './server/githubClient';
 
-import {
-  savePatToFirestore,
-  getPatFromFirestore,
-  deletePatFromFirestore
-} from './server/db';
-
 import { 
   classifyDeploymentMethod, 
   classifyCustomDomainStatus, 
@@ -99,69 +93,10 @@ app.post('/api/pat/validate', verifyAuth, async (req, res) => {
   }
 });
 
-app.post('/api/pat', verifyAuth, async (req, res) => {
-  const user = (req as any).user;
-  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
-  const { pat } = req.body;
-  if (!pat) return res.status(400).json({ error: 'PAT is required' });
-  
-  try {
-    await savePatToFirestore(user.uid, isAnonymous, pat);
-    res.json({ success: true });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Failed to save PAT', details: err.message });
-  }
-});
-
-app.get('/api/pat/status', verifyAuth, async (req, res) => {
-  const user = (req as any).user;
-  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
-  try {
-    const pat = await getPatFromFirestore(user.uid, isAnonymous);
-    res.json({ hasPat: !!pat });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to retrieve PAT status' });
-  }
-});
-
-app.delete('/api/pat', verifyAuth, async (req, res) => {
-  const user = (req as any).user;
-  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
-  try {
-    await deletePatFromFirestore(user.uid, isAnonymous);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete PAT' });
-  }
-});
-
 // 2. Audit Endpoints
-app.get('/api/audit/user', verifyAuth, async (req, res) => {
-  const user = (req as any).user;
-  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
-  const storedPat = await getPatFromFirestore(user.uid, isAnonymous);
-  
-  const pat = storedPat || req.headers['x-temp-pat'];
-  if (!pat || typeof pat !== 'string') return res.status(400).json({ error: 'No GitHub PAT provided' });
-
-  try {
-    const response = await githubApi('/user', pat);
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'GitHub API error', details: await response.text() });
-    }
-    const data = await response.json();
-    res.json(data);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.post('/api/audit/run', verifyAuth, async (req, res) => {
   const user = (req as any).user;
-  const isAnonymous = user.isAnonymous || (user.firebase && user.firebase.sign_in_provider === 'anonymous');
-  const storedPat = await getPatFromFirestore(user.uid, isAnonymous);
-  
-  const pat = storedPat || req.headers['x-temp-pat'];
+  const pat = req.headers['x-temp-pat'];
   if (!pat || typeof pat !== 'string') return res.status(400).json({ error: 'No GitHub PAT provided' });
 
   try {
@@ -295,7 +230,9 @@ app.post('/api/audit/run', verifyAuth, async (req, res) => {
       results.push(repoResult);
     }
 
-    res.json({ results });
+    const auditId = 'aud_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+
+    res.json({ results, auditId, createdAt: new Date().toISOString() });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -311,7 +248,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

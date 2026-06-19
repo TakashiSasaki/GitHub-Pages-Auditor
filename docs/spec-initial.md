@@ -132,7 +132,7 @@ prod
 
 The exact collection design may be adjusted, but the chosen namespace and data model must be documented in "AGENTS.md".
 
-PAT plaintext must never be stored in Firestore. The implementation may choose the PAT storage/encryption mechanism, but the method must be documented in "AGENTS.md".
+PAT is stored in Firestore using the Firebase Client SDK directly. To ensure security, it relies entirely on strict Firebase Security Rules (`request.auth.uid == uid`) to isolate tenants, preventing any cross-user access. This must be documented in "AGENTS.md".
 
 6. Cloud Functions
 
@@ -194,7 +194,7 @@ Authorization: Bearer <PAT>
 X-GitHub-Api-Version: 2026-03-10
 User-Agent: <application-name>
 
-Do not expose the GitHub Authorization header to the browser.
+The browser manages the GitHub PAT temporally or via Firestore Client SDK to pass it as `x-temp-pat` to the backend. The backend must not return any GitHub Authorization header or PAT plaintext back to the browser.
 
 Do not log PATs or Authorization headers.
 
@@ -379,7 +379,7 @@ The UI focuses on structural clarity and minimalist, clutter-free aesthetics:
   - HTTPS problem count.
   - Deployment method counts.
 - PAT input for Google users
-  - Add PAT (securely processed first-choice persistence via Firestore, with zero client-readability).
+  - Add PAT (securely processed via Firebase Client SDK to Firestore).
   - Validate PAT.
   - Delete PAT (safely purging Firestore records).
   - Never display PAT plaintext in the UI.
@@ -450,7 +450,7 @@ The JSON export schema can be provided in a later reference document. For now, c
 
 Mandatory rules:
 
-- Never return PAT plaintext to the browser.
+- The backend must never return PAT plaintext to the browser; the browser manages its own copy.
 - Never log PAT plaintext.
 - Never log GitHub Authorization headers.
 - Never log Firebase ID tokens.
@@ -460,7 +460,7 @@ Mandatory rules:
 - Use Firebase UID as tenant boundary.
 - Do not let users access other users’ data.
 - Anonymous data must be temporary if persisted.
-- PAT storage records must not be client-readable.
+- PAT storage records must be strictly isolated to the authenticated user via Firestore rules.
 - Escape GitHub-originated text in HTML.
 - Escape CSV cells that can trigger spreadsheet formula execution.
 - Handle 401, 403, 404, 422, 429, and 5xx GitHub API responses explicitly.

@@ -113,9 +113,10 @@ Anonymous cleanup strategy must be documented in "AGENTS.md".
 
 Anonymous-to-Google upgrade or credential linking is not required in Version 1. Do not implement automatic migration unless the specification is updated.
 
-5. In-Memory Persistence (V1 / MVP)
+5. In-Memory and Firestore Persistence (V1 / MVP)
 
-Due to Firebase Admin SDK sandbox limits (PERMISSION_DENIED on V1 projects), we strictly use in-memory PAT storage for V1 MVP. No PATs or audit runs are persisted to disk or Firestore.
+Firebase Firestore is used for persistent PAT storage and Audit cache persistence. 
+The keys and documents are fully guarded strictly using standard Firebase Client SDK usage with `firestore.rules` where `request.auth.uid == uid`, completely locking it down securely per user.
 
 6. Data Models for Future Firestore Implementation (Not Used in V1)
 
@@ -353,7 +354,8 @@ Document required indexes in "AGENTS.md".
 
 8. Firestore Security Requirements
 
-Not applicable for V1 as Firestore is not currently used to store PATs.
+Firestore is accessed directly via the frontend Firebase Client SDK. The rules MUST strictly isolate data tenanting per-UID:
+- Clients can exclusively read/write to `githubPagesAuditorV1/{environment}/users/{uid}` endpoints where `uid == request.auth.uid`.
 
 9. Cloud Functions Usage
 
@@ -437,7 +439,7 @@ Google user cannot access another anonymous user's temporary data.
 
 Firestore namespace tests:
 
-Not applicable to V1 as Firestore is not used.
+Documents confirm prefix 'githubPagesAuditorV1' and exact path routing respects `uid` checks perfectly under `rules`.
 
 Cloud Functions safety tests, if Cloud Functions are used:
 

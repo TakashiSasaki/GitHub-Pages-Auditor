@@ -1,6 +1,12 @@
 import { RepositoryResult } from '../types';
+import { 
+  GitHubPagesAuditorExport, 
+  ExportRepositoryResult, 
+  ExportClassification, 
+  ExportErrorClassification 
+} from '../schema/exportTypes';
 
-export function buildJsonExport(results: RepositoryResult[], pat: string) {
+export function buildJsonExport(results: RepositoryResult[], pat: string): GitHubPagesAuditorExport {
   const pagesEnabledList = results.filter(r => r.hasPages);
   const customDomainList = pagesEnabledList.filter(r => r.cname);
 
@@ -56,15 +62,19 @@ export function buildJsonExport(results: RepositoryResult[], pat: string) {
       deploymentUnknownCount: results.filter(r => r.deploymentMethod === 'unknown' || r.deploymentMethod === 'branch_unknown_path').length
     },
     repositories: results.map(r => {
-      const classification: string[] = [];
+      const classification: ExportClassification[] = [];
       if (r.customDomainStatus) {
-        classification.push(r.customDomainStatus);
+        classification.push(r.customDomainStatus as ExportClassification);
       }
       if (r.deploymentMethod && r.deploymentMethod !== 'not_applicable') {
-        classification.push(`pages_deploy_method_${r.deploymentMethod}`);
+        classification.push(`pages_deploy_method_${r.deploymentMethod}` as ExportClassification);
       }
 
-      return {
+      const visibilityValue = (r.visibility === 'public' || r.visibility === 'private' || r.visibility === 'internal') 
+        ? r.visibility 
+        : null;
+
+      const repoResult: ExportRepositoryResult = {
         githubRepoId: r.id,
         owner: r.ownerName,
         repo: r.repoName,
@@ -73,7 +83,7 @@ export function buildJsonExport(results: RepositoryResult[], pat: string) {
         pagesSettingsUrl: r.pagesSettingsUrl,
         pagesUrl: r.hasPages ? (r.pagesHtmlUrl || `https://${r.ownerName}.github.io/${r.repoName}/`) : null,
         private: r.visibility === 'private',
-        visibility: r.visibility,
+        visibility: visibilityValue,
         archived: r.archived,
         disabled: r.disabled,
         fork: r.isFork,
@@ -101,9 +111,10 @@ export function buildJsonExport(results: RepositoryResult[], pat: string) {
         httpsEnforced: r.httpsEnforced ?? null,
         healthStatus: 'not_requested',
         classification,
-        errorClassification: r.errorClassification || null,
+        errorClassification: (r.errorClassification || null) as ExportErrorClassification,
         diagnostics: {}
       };
+      return repoResult;
     }),
     domains: []
   };

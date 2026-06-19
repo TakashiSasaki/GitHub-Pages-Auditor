@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RepositoryResult } from '../types';
 import { buildJsonExport, buildCsvExport } from '../export/exportBuilders';
 import { useAuth } from '../AuthContext';
@@ -22,16 +24,147 @@ import {
   Database,
   RefreshCw,
   Clock,
-  Save
+  Save,
+  ArrowLeft,
+  Info
 } from 'lucide-react';
 
+const COLUMN_HELP: Record<string, { title: string; description: string; values: { label: string; desc: string; }[] }> = {
+  repository: {
+    title: "Repository",
+    description: "The name of the GitHub repository. Indicates if it's a fork or not.",
+    values: []
+  },
+  pagesStatus: {
+    title: "Pages Status",
+    description: "Indicates whether GitHub Pages is configured and active for the repository.",
+    values: [
+      { label: "enabled", desc: "Pages is active and currently published." },
+      { label: "not_found", desc: "Pages is not configured or disabled currently." },
+      { label: "error", desc: "Could not fetch Pages status due to an API error." }
+    ]
+  },
+  deploySource: {
+    title: "Deploy Source",
+    description: "Describes the method used to build and deploy the GitHub Pages site.",
+    values: [
+      { label: "actions", desc: "The site is automatically built and deployed using a GitHub Actions workflow." },
+      { label: "branch", desc: "The site is built from a specific classic branch (e.g., gh-pages, main) and directory." },
+      { label: "not_configured", desc: "No deployment source is configured." }
+    ]
+  },
+  customDomain: {
+    title: "Custom Domain",
+    description: "Indicates if a custom domain is associated with the Pages site and its current DNS verification status.",
+    values: [
+      { label: "custom_domain_configured", desc: "A custom domain is set up and successfully verified." },
+      { label: "custom_domain_pending", desc: "A custom domain has been added, but DNS verification is still pending." },
+      { label: "custom_domain_unverified_or_unknown", desc: "A custom domain is applied, but verification status could not be confirmed or failed." },
+      { label: "no_custom_domain", desc: "The site is hosted on the default *.github.io subdomain." }
+    ]
+  },
+  https: {
+    title: "HTTPS & Security",
+    description: "Shows whether the site enforces HTTPS connections to secure traffic.",
+    values: [
+      { label: "https_enforced", desc: "All HTTP requests are automatically redirected to HTTPS." },
+      { label: "https_not_enforced", desc: "Both HTTP and HTTPS traffic are accepted (enforce option is disabled)." },
+      { label: "https_unavailable_or_error", desc: "HTTPS is not available (e.g., certificate provisioning issue) or status is unknown." }
+    ]
+  }
+};
+
 export default function Dashboard() {
-  const { user, hasStoredPat } = useAuth();
+  const { user, hasStoredPat, getStoredPat } = useAuth();
+  const { auditId } = useParams<{ auditId?: string }>();
+  const navigate = useNavigate();
+
   const [isAuditing, setIsAuditing] = useState(false);
   const [results, setResults] = useState<RepositoryResult[] | null>(null);
+  const [auditCreatedAt, setAuditCreatedAt] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showDomainLockGuide, setShowDomainLockGuide] = useState(false);
+  const [columnGuideModal, setColumnGuideModal] = useState<string | null>(null);
+  const [cachedAudit, setCachedAudit] = useState<{ auditId: string; createdAt: string } | null>(null);
+  const [isLoadingCache, setIsLoadingCache] = useState(false);
+  const location = useLocation();
+  const activeTab = location.pathname.endsWith('/report') ? 'details' : 'summary';
+
+  const handleTabChange = (tab: 'summary' | 'details') => {
+    let basePath = auditId ? `/results/${auditId}` : '';
+    if (!basePath) basePath = '/';
+    
+    if (tab === 'summary') {
+      navigate(basePath);
+    } else {
+      navigate(basePath === '/' ? '/report' : `${basePath}/report`);
+    }
+  };
+
+  // Check for existing cached audit on load or after audits are finished
+  useEffect(() => {
+    if (!user || user.isAnonymous || auditId) {
+      setCachedAudit(null);
+      return;
+    }
+
+    let active = true;
+    async function checkLatestCache() {
+      setIsLoadingCache(true);
+      try {
+        const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+        const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
+        const collectionPath = `githubPagesAuditorV1/${env}/users/${user!.uid}/audits`;
+        
+        const q = query(collection(db, collectionPath), orderBy('createdAt', 'desc'), limit(1));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty && active) {
+          const doc = snapshot.docs[0];
+          const data = doc.data();
+          
+          let createdAtStr = new Date().toISOString();
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              createdAtStr = data.createdAt.toDate().toISOString();
+            } else if (data.createdAt instanceof Date) {
+              createdAtStr = data.createdAt.toISOString();
+            } else if (typeof data.createdAt === 'string') {
+              createdAtStr = data.createdAt;
+            }
+          }
+          
+          setCachedAudit({
+            auditId: doc.id,
+            createdAt: createdAtStr
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load cached audit:", err);
+      } finally {
+        if (active) {
+          setIsLoadingCache(false);
+        }
+      }
+    }
+
+    checkLatestCache();
+    return () => {
+      active = false;
+    };
+  }, [user, auditId]);
+
+  useEffect(() => {
+    if (!auditCreatedAt) return;
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [auditCreatedAt]);
 
   // Filtering & Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +175,76 @@ export default function Dashboard() {
   // Stats
   const pagesEnabledList = results?.filter(r => r.hasPages) || [];
   const customDomainList = pagesEnabledList.filter(r => r.cname);
+
+  // Fetch report when auditId changes
+  useEffect(() => {
+    let active = true;
+    async function fetchResults() {
+      if (!auditId) {
+        setResults(null);
+        setError(null);
+        setAuditCreatedAt(null);
+        return;
+      }
+
+      if (auditId === 'guest') {
+        if (!results) {
+          setError('Guest sessions are single-use/in-memory only and persist until page reload. Please start a new audit.');
+        } else if (!auditCreatedAt) {
+          setAuditCreatedAt(new Date().toISOString());
+        }
+        return;
+      }
+
+      setIsLoadingResults(true);
+      setError(null);
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+        const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
+        const collectionPath = `githubPagesAuditorV1/${env}/users/${user!.uid}/audits`;
+        
+        const docRef = doc(db, collectionPath, auditId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          throw new Error('Specified audit report was not found. It may belong to a different account or has expired.');
+        }
+
+        const data = docSnap.data();
+        if (active) {
+          setResults(data.results);
+          
+          let createdAtStr = new Date().toISOString();
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              createdAtStr = data.createdAt.toDate().toISOString();
+            } else if (data.createdAt instanceof Date) {
+              createdAtStr = data.createdAt.toISOString();
+            } else if (typeof data.createdAt === 'string') {
+              createdAtStr = data.createdAt;
+            }
+          }
+          setAuditCreatedAt(createdAtStr);
+        }
+      } catch (err: any) {
+        if (active) {
+          setError(err.message || 'An error occurred fetching the audit.');
+          setResults(null);
+          setAuditCreatedAt(null);
+        }
+      } finally {
+        if (active) {
+          setIsLoadingResults(false);
+        }
+      }
+    }
+
+    fetchResults();
+    return () => {
+      active = false;
+    };
+  }, [auditId, user]);
 
   const runAudit = async () => {
     if (!hasStoredPat) {
@@ -54,10 +257,16 @@ export default function Dashboard() {
     setResults(null);
 
     try {
+      const pat = await getStoredPat();
+      if (!pat) {
+        throw new Error("Could not retrieve stored token.");
+      }
+
       const token = await user?.getIdToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'x-temp-pat': pat
       };
 
       const res = await fetch('/api/audit/run', {
@@ -71,6 +280,29 @@ export default function Dashboard() {
       }
 
       setResults(data.results);
+      setAuditCreatedAt(data.createdAt || new Date().toISOString());
+
+      if (data.auditId && user && !user.isAnonymous) {
+        try {
+          const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+          const { db } = await import('../lib/firebase');
+          const env = import.meta.env.MODE === 'production' ? 'production' : 'development';
+          const collectionPath = `githubPagesAuditorV1/${env}/users/${user.uid}/audits`;
+          
+          await setDoc(doc(db, collectionPath, data.auditId), {
+            results: data.results,
+            createdAt: serverTimestamp()
+          });
+          
+          navigate(`/results/${data.auditId}`);
+        } catch (e) {
+          console.error("Failed to save audit cache locally:", e);
+          // Navigate to temporary session since cache failed
+          navigate('/results/guest');
+        }
+      } else {
+        navigate('/results/guest');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred during safety audit.');
     } finally {
@@ -132,75 +364,171 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus && matchesDomain && matchesHttps;
   }) || [];
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      
-      {/* Mini top utilities to show the app details dialog */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowInfoModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-        >
-          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-          What's this app?
-        </button>
-      </div>
+  const formattedTime = (() => {
+    if (!auditCreatedAt) return null;
+    const date = new Date(auditCreatedAt);
+    if (isNaN(date.getTime())) return null;
 
-      {/* Dialog / Modal for Info */}
-      {showInfoModal && (
+    const absolute = date.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    const diffMs = now - date.getTime();
+    const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    let relative = '';
+    if (diffSecs < 10) {
+      relative = 'たった今 (just now)';
+    } else if (diffSecs < 60) {
+      relative = `${diffSecs}秒前 (${diffSecs}s ago)`;
+    } else if (diffMins < 60) {
+      relative = `${diffMins}分前 (${diffMins}m ago)`;
+    } else if (diffHours < 24) {
+      relative = `${diffHours}時間前 (${diffHours}h ago)`;
+    } else {
+      relative = `${diffDays}日前 (${diffDays}d ago)`;
+    }
+
+    return { absolute, relative };
+  })();
+
+  if (isLoadingResults) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+        <p className="text-sm font-medium text-slate-500 mt-3 animate-pulse">Loading GitHub Pages audit report...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 w-full min-h-0 flex flex-col overflow-hidden max-w-7xl mx-auto py-0">
+      {/* Dialog / Modal for Domain Lock Guide */}
+      {showDomainLockGuide && (
         <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-          {/* Backdrop wrapper */}
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div 
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" 
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" 
               aria-hidden="true"
-              onClick={() => setShowInfoModal(false)}
+              onClick={() => setShowDomainLockGuide(false)}
             ></div>
 
-            {/* Centering element */}
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            {/* Modal panel */}
-            <div className="relative inline-block align-bottom bg-slate-950 text-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-800">
+            <div className="relative inline-block align-middle bg-white rounded-2xl text-slate-800 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 animate-fade-in">
               {/* Close button */}
               <button 
                 type="button" 
-                onClick={() => setShowInfoModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                onClick={() => setShowDomainLockGuide(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
                 <span className="sr-only">Close</span>
                 <XCircle className="w-6 h-6" />
               </button>
 
-              {/* Banner visual */}
-              <div className="p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-                  <Database className="w-40 h-40" />
-                </div>
-                <div className="relative z-10 space-y-4">
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <div className="p-6 sm:p-8 space-y-6">
+                <div>
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100 mb-3">
                     <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-                    GitHub Pages Security Auditing
+                    カスタムドメインのセキュリティ
                   </div>
-                  <h3 className="text-2xl font-semibold tracking-tight" id="modal-title">
-                    Security & Custom Domain Auditor
+                  <h3 className="text-xl font-bold text-slate-950 tracking-tight">
+                    教えて！GitHubの『保護ロック（ドメイン検証）』とは？
                   </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    Audit GitHub Pages status, custom domains, HTTPS status, and deployment configurations across all your repositories in one click. Completely read-only and processed dynamically in browser guest memory.
+                  <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                    「SSL証明書は正常（SSL Active）」なのに「未検証（0 verified）」と表示される理由、セキュリティ上の重要性と設定手順を解説します。
                   </p>
-                  <p className="text-slate-400 text-xs">
-                    This is a secure application. All checks are performed backend-to-backend or inside secure sandboxed scripts to ensure your data stays private and safe.
-                  </p>
-                  
-                  <div className="pt-4 border-t border-slate-800 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setShowInfoModal(false)}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                    >
-                      Got it
-                    </button>
+                </div>
+
+                {/* 1. Base Concept */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-500 tracking-wider uppercase">🔴 CNAME（表示） と TXT（保護ロック） の決定的な違い</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
+                    <div className="bg-white p-3 rounded-lg border border-slate-200">
+                      <div className="font-bold text-emerald-800 flex items-center gap-1.5 mb-11">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        SSL Active (CNAME)
+                      </div>
+                      <p className="text-slate-600 mt-1">
+                        DNSにCNAMEを登録すると、GitHub Pagesが自動でSSL/HTTPS証明書を生成して<strong>ウェブサイトを正常に表示</strong>します。ほとんどの個人サイトはこれで完了しています。
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-slate-200">
+                      <div className="font-bold text-blue-800 flex items-center gap-1.5 mb-11">
+                        <Lock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        Verified (TXT) = 保護ロック
+                      </div>
+                      <p className="text-slate-600 mt-1">
+                        DNSにTXTレコードを検証用として追加し、「このドメインの所有者は自分である」と<strong>GitHubに誓約する保護ロック機能</strong>です。
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                {/* 2. Why 0 verified? */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-slate-800">⚠️ 設定しないと、どんな危険（乗っ取りリスク）があるの？</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    もしあなたが将来<strong>GitHub Pagesからドメイン設定だけを削除</strong>したが、<strong>DNS側のCNAME設定を消し忘れていた</strong>場合、悪意ある第三者が自分のリポジトリにあなたのドメインを設定することで、<strong>あなたのドメイン名で勝手にサイトを乗っ取られてしまうリスク（Subdomain Takeover）</strong>があります。
+                  </p>
+                  <p className="text-xs text-slate-600 leading-relaxed bg-amber-50 rounded-lg p-2.5 border border-amber-100 text-amber-800 font-medium">
+                    💡 「TXTレコード登録（Verified）」を済ませておけば、あなたのGitHubアカウント以外、このドメインをGitHub Pagesに登録できなくなるため、乗っ取りが完全に防げるようになります！
+                  </p>
+                </div>
+
+                {/* 3. How to Setup steps */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-800">🛠️ 設定を保護ロックする「3ステップ」</h4>
+                  <div className="space-y-3 text-xs text-slate-600">
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] mt-0.5">1</span>
+                      <div>
+                        <strong className="text-slate-800">GitHub でTXT情報を取得する</strong>
+                        <p className="text-slate-500 mt-0.5">
+                          GitHubアカウントの右上アイコン ＞ <strong>Settings</strong> ＞ 左メニューの <strong>Pages</strong> を開き、<strong>Add a domain</strong> からお使いのカスタムドメインを登録します。提示される「TXT verification challenge」キーをコピーします。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] mt-0.5">2</span>
+                      <div>
+                        <strong className="text-slate-800">お使いのドメインDNSにTXTレコードを追記する</strong>
+                        <p className="text-slate-500 mt-0.5">
+                          ドメイン管理会社（お名前.com, Cloudflare, ムームードメイン等）のDNSレコード管理画面を開き、ホスト名に <code className="bg-slate-100 font-mono px-1 py-0.5 rounded">_github-pages-challenge-&lt;your-owner&gt;</code>、値にコピーしたTXTテキストを設定します。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] mt-0.5">3</span>
+                      <div>
+                        <strong className="text-slate-800">GitHub上で「Verify」を押して完了！</strong>
+                        <p className="text-slate-500 mt-0.5">
+                          GitHubの Pages 設定画面に戻り、<strong>Verify</strong> ボタンをクリックします。これでアカウント上のドメインが保護され、この監査ツールでも「Verified」や「Configured」として安全かつ強固に検知されるようになります。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    ※ 監査ツールは100%読み取り専用です。設定変更等を行うことはありません。
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDomainLockGuide(false)}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    閉じる (Close)
+                  </button>
                 </div>
               </div>
             </div>
@@ -209,41 +537,73 @@ export default function Dashboard() {
       )}
 
       {/* Control Section */}
-      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center">
-          {hasStoredPat ? (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <CheckCircle className="w-4 h-4 mr-1.5" />
-              Secure Token Loaded from Cloud
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
-              <Key className="w-4 h-4 mr-1.5" />
-              Token Not Configured (Set in Profile Menu)
-            </span>
-          )}
-        </div>
-        
-        <button 
-          onClick={runAudit}
-          disabled={isAuditing || !hasStoredPat}
-          className="w-full sm:w-auto px-8 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center font-medium shadow-sm transition-all text-sm cursor-pointer"
-        >
-          {isAuditing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Auditing...
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4 mr-2 fill-current" />
-              Launch Audit
-            </>
-          )}
-        </button>
-      </div>
+      {!auditId && (
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center">
+            {hasStoredPat ? (
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200" title="Due to sandbox limits, tokens are stored in memory and reset between sessions.">
+                <CheckCircle className="w-4 h-4 mr-1.5" />
+                Secure Token Loaded (Session Only)
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                <Key className="w-4 h-4 mr-1.5" />
+                GitHub Personal Access Token Not Configured (Set in Profile Menu)
+              </span>
+            )}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            {cachedAudit && !isAuditing && (
+              <button
+                type="button"
+                onClick={() => navigate(`/results/${cachedAudit.auditId}`)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center font-medium border border-slate-200 shadow-xs transition-all text-sm cursor-pointer"
+              >
+                <Clock className="w-4 h-4 mr-1.5" />
+                <span>キャッシュを表示 ({new Date(cachedAudit.createdAt).toLocaleString([], {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'})})</span>
+              </button>
+            )}
 
-      {error && (
+            <button 
+              onClick={runAudit}
+              disabled={isAuditing || !hasStoredPat}
+              className="w-full sm:w-auto px-8 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center font-medium shadow-sm transition-all text-sm cursor-pointer"
+            >
+              {isAuditing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Auditing...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2 fill-current" />
+                  Launch Audit
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && !results && (
+        <div className="p-8 bg-white border border-red-200 rounded-2xl text-center space-y-4 max-w-lg mx-auto py-12 shadow-sm">
+          <AlertCircle className="w-12 h-12 text-red-600 mx-auto" />
+          <h4 className="text-base font-semibold text-slate-900">Unable to load report</h4>
+          <p className="text-slate-600 text-sm leading-relaxed">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              navigate('/');
+            }}
+            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm inline-flex items-center gap-1.5"
+          >
+            Start New Security Audit
+          </button>
+        </div>
+      )}
+
+      {error && results && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-800 shadow-xs animate-fade-in text-sm">
           <AlertCircle className="w-5 h-5 mr-3 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
@@ -255,100 +615,196 @@ export default function Dashboard() {
 
       {/* Dashboard Stats & Results visualization */}
       {results && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="flex-1 flex flex-col min-h-0 animate-fade-in">
           
+          {/* Cached Data & Tabs Portal */}
+          {document.getElementById('navbar-center-slot') && createPortal(
+            <div className="flex space-x-1 p-0.5 bg-slate-100 rounded-lg ml-2 hidden lg:flex">
+              <button
+                onClick={() => handleTabChange('summary')}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Summary
+              </button>
+              <button
+                onClick={() => handleTabChange('details')}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Full Report
+              </button>
+            </div>,
+            document.getElementById('navbar-center-slot')!
+          )}
+
+          {formattedTime && document.getElementById('navbar-bottom-slot') && createPortal(
+            <div className="py-2 bg-slate-50/80 border-t border-slate-200 text-gray-500 font-medium">
+              <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 px-3 sm:px-4">
+                {/* Mobile Tabs (fallback for center slot) */}
+                <div className="flex lg:hidden space-x-1 p-0.5 bg-slate-200 rounded-lg max-w-fit">
+                  <button
+                    onClick={() => handleTabChange('summary')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Summary
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('details')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Full Report
+                  </button>
+                </div>
+
+                {/* Cache Info */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 flex-1">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-xs">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span className="leading-tight">
+                      Last Fetched: <span className="font-semibold text-slate-800 font-mono">{formattedTime.absolute}</span>
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                      {formattedTime.relative}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 border-l border-slate-300 pl-3 ml-1">
+                    <span className="text-[9px] text-slate-400 font-normal leading-tight hidden lg:inline">
+                      ※ Cached data
+                    </span>
+                    <button 
+                      onClick={runAudit}
+                      disabled={isAuditing}
+                      className="px-2 py-1 bg-white text-slate-800 rounded-md hover:bg-gray-50 flex items-center border border-slate-300 shadow-xs text-[10px] font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1.5 text-slate-500 ${isAuditing ? 'animate-spin' : ''}`} />
+                      Rescan
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.getElementById('navbar-bottom-slot')!
+          )}
+
+          <div className="pt-1"></div>
+
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs hover:border-gray-300 transition-colors">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block">Total Audited</span>
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-3xl font-semibold text-gray-900">{results.length}</span>
-                <span className="text-xs text-gray-400">Repositories</span>
+          {activeTab === 'summary' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="bg-slate-50/50 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider block">Total</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">{results.length}</span>
+                <span className="text-[9px] sm:text-xs text-gray-400">Repos</span>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs hover:border-gray-300 transition-colors">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block">Pages Enabled</span>
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-3xl font-semibold text-gray-900">{pagesEnabledList.length}</span>
-                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+            <div className="bg-slate-50/50 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider block">Pages Enabled</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">{pagesEnabledList.length}</span>
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-1.5 py-0.5 rounded-full">
                   {results.length ? Math.round((pagesEnabledList.length / results.length) * 100) : 0}%
                 </span>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs hover:border-gray-300 transition-colors">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block">Verified Custom Domains</span>
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-3xl font-semibold text-gray-900">
-                  {results.filter(r => r.customDomainStatus === 'custom_domain_verified').length}
-                </span>
-                <span className="text-xs text-gray-400">Active domains</span>
+            <div className="bg-slate-50/50 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors relative group flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider block">Domains</span>
+                <button 
+                  type="button"
+                  onClick={() => setShowDomainLockGuide(true)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-medium border-0 bg-transparent p-0 outline-none"
+                  title="Click to view explanation"
+                >
+                  <span className="hidden sm:inline text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">❓ Info</span>
+                  <Info className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="mt-1">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-0">
+                  <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {results.filter(r => !!r.cname).length}
+                  </span>
+                  <span className="self-start sm:self-auto text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 rounded-full whitespace-nowrap">
+                    {results.filter(r => !!r.cname && r.httpsCertificateState === 'approved').length} SSL OK
+                  </span>
+                </div>
+                <div className="mt-1 pt-1 border-t border-slate-200/60 flex justify-between items-center text-[9px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <span>Verified:</span>
+                    <button 
+                      type="button"
+                      onClick={() => setShowDomainLockGuide(true)}
+                      className="text-blue-500 hover:text-blue-700 underline font-medium cursor-pointer border-0 bg-transparent p-0 outline-none"
+                    >
+                      Protection Lock?
+                    </button>
+                  </span>
+                  <span className="font-semibold text-slate-600">
+                    {results.filter(r => r.customDomainStatus === 'custom_domain_verified').length}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs hover:border-gray-300 transition-colors">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block">Action Flow Deploy</span>
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-3xl font-semibold text-gray-900">
+            <div className="bg-slate-50/50 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider block">Action Deploy</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">
                   {results.filter(r => r.deploymentMethod === 'workflow').length}
                 </span>
-                <span className="text-xs text-gray-400">Modern build</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap font-sans">Modern build</span>
               </div>
             </div>
           </div>
+          )}
 
-          {/* Table Toolbar (Search and Filter controls) */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
-            <div className="flex flex-col md:flex-row gap-3">
+          {activeTab === 'details' && (
+            <>
+          {/* Table Toolbar (Search and Filter controls) - Flat & Seamless */}
+          <div className="py-2 space-y-2 animate-fade-in px-4 lg:px-0">
+            <div className="flex flex-col md:flex-row gap-2">
               {/* Search Bar */}
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" />
                 <input 
                   type="text" 
                   placeholder="Filter by repository name or custom domain..."
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-slate-900 focus:border-slate-900 outline-none text-sm"
+                  className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-slate-900 focus:border-slate-900 outline-none text-xs bg-slate-50/50"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-1.5 flex-wrap">
                 <button 
                   onClick={exportCsv} 
-                  className="px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 flex items-center border border-gray-300 shadow-xs text-sm font-medium transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white text-gray-750 rounded-lg hover:bg-gray-50 flex items-center border border-gray-200 shadow-2xs text-xs font-medium transition-colors cursor-pointer"
                 >
-                  <Download className="w-4 h-4 mr-2 text-gray-500" />
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
                   CSV
                 </button>
                 <button 
                   onClick={exportJson} 
-                  className="px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 flex items-center border border-gray-300 shadow-xs text-sm font-medium transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white text-gray-750 rounded-lg hover:bg-gray-50 flex items-center border border-gray-200 shadow-2xs text-xs font-medium transition-colors cursor-pointer"
                 >
-                  <Download className="w-4 h-4 mr-2 text-gray-500" />
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
                   JSON
-                </button>
-                <button 
-                  onClick={runAudit}
-                  loading={isAuditing}
-                  className="px-4 py-2 bg-gray-100 text-slate-800 rounded-lg hover:bg-gray-250 flex items-center border border-gray-300 shadow-xs text-sm font-medium transition-all cursor-pointer"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 text-slate-500 ${isAuditing ? 'animate-spin' : ''}`} />
-                  Rescan
                 </button>
               </div>
             </div>
 
             {/* Filter Pills */}
-            <div className="flex flex-wrap items-center gap-4 text-xs pt-1 border-t border-gray-100">
-              <div className="flex items-center text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-100">
+            <div className="flex flex-wrap items-center gap-3.5 text-xs pt-1.5 border-t border-gray-100">
+              <div className="flex items-center text-gray-450 bg-slate-50 px-2 py-0.5 rounded border border-gray-150">
                 <Filter className="w-3 h-3 mr-1" />
-                <span>Filters</span>
+                <span className="font-medium text-[10px] uppercase tracking-wider text-slate-500">Filters</span>
               </div>
               
               {/* Pages status */}
-              <div className="flex items-center space-x-1.5">
-                <span className="text-gray-500">Pages:</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-400 text-[11px]">Pages:</span>
                 <select 
-                  className="bg-white border border-gray-300 rounded px-2 py-1 outline-none focus:border-slate-900"
+                  className="bg-white border border-gray-200 rounded px-2 py-0.5 text-xs outline-none focus:border-slate-900"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                 >
@@ -359,10 +815,10 @@ export default function Dashboard() {
               </div>
 
               {/* Custom Domain status */}
-              <div className="flex items-center space-x-1.5">
-                <span className="text-gray-500">Domain:</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-400 text-[11px]">Domain:</span>
                 <select 
-                  className="bg-white border border-gray-300 rounded px-2 py-1 outline-none focus:border-slate-900"
+                  className="bg-white border border-gray-200 rounded px-2 py-0.5 text-xs outline-none focus:border-slate-900"
                   value={domainFilter}
                   onChange={(e) => setDomainFilter(e.target.value as any)}
                 >
@@ -375,10 +831,10 @@ export default function Dashboard() {
               </div>
 
               {/* HTTPS status */}
-              <div className="flex items-center space-x-1.5">
-                <span className="text-gray-500">HTTPS:</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-400 text-[11px]">HTTPS:</span>
                 <select 
-                  className="bg-white border border-gray-300 rounded px-2 py-1 outline-none focus:border-slate-900"
+                  className="bg-white border border-gray-200 rounded px-2 py-0.5 text-xs outline-none focus:border-slate-900"
                   value={httpsFilter}
                   onChange={(e) => setHttpsFilter(e.target.value as any)}
                 >
@@ -390,60 +846,103 @@ export default function Dashboard() {
               </div>
 
               {results && (
-                <div className="ml-auto text-gray-400 font-mono">
+                <div className="ml-auto text-gray-400 font-mono text-[11px]">
                   Showing {filteredResults.length} of {results.length} results
                 </div>
               )}
             </div>
           </div>
 
-          {/* Results Table view */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 font-sans text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200 font-mono">
+          {/* Results Table view - Seamless Flat High-Density Layout */}
+          <div className="flex-1 overflow-auto border-b border-gray-200 bg-white mt-2">
+            <div className="min-h-full">
+              <table className="min-w-[960px] w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0">
+                <thead className="bg-slate-50 font-mono">
                   <tr>
-                    <th scope="col" className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Repository</th>
-                    <th scope="col" className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Pages Status</th>
-                    <th scope="col" className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Deploy Source</th>
-                    <th scope="col" className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Custom Domain</th>
-                    <th scope="col" className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">HTTPS & Security</th>
-                    <th scope="col" className="px-6 py-4 text-right font-medium text-gray-500 uppercase tracking-wider text-xs">Link</th>
+                    <th scope="col" className="sticky top-0 left-0 z-50 bg-slate-50 px-2 py-2 text-center font-bold text-slate-400 uppercase text-[10px] w-10 border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      #
+                    </th>
+                    <th scope="col" className="sticky top-0 left-10 z-50 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      <div className="flex items-center gap-1">
+                        Repository
+                        <button onClick={() => setColumnGuideModal('repository')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
+                          <HelpCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      <div className="flex items-center gap-1">
+                        Pages Status
+                        <button onClick={() => setColumnGuideModal('pagesStatus')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
+                          <HelpCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      <div className="flex items-center gap-1">
+                        Deploy Source
+                        <button onClick={() => setColumnGuideModal('deploySource')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
+                          <HelpCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      <div className="flex items-center gap-1">
+                        Custom Domain
+                        <button onClick={() => setColumnGuideModal('customDomain')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details font-sans">
+                          <HelpCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                      <div className="flex items-center gap-1">
+                        HTTPS & Security
+                        <button onClick={() => setColumnGuideModal('https')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
+                          <HelpCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-right font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">Link</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100 font-mono text-sm">
+                <tbody className="bg-white divide-y divide-gray-100 font-mono text-xs">
                   {filteredResults.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500 bg-gray-25">
+                      <td colSpan={6} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
                         <div className="max-w-md mx-auto space-y-2 text-center">
-                          <AlertCircle className="w-8 h-8 text-gray-300 mx-auto" />
-                          <p className="font-medium text-slate-800">No matching repositories found</p>
-                          <p className="text-xs text-gray-400">Try loosening your search query or adjusting active filtering options above.</p>
+                          <AlertCircle className="w-6 h-6 text-gray-300 mx-auto" />
+                          <p className="font-medium text-slate-800 text-xs">No matching repositories found</p>
+                          <p className="text-[10px] text-gray-400">Try loosening your search query or adjusting active filtering options above.</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredResults.map((repo) => (
-                      <tr key={repo.id} className="hover:bg-slate-25/50 transition-colors">
+                    filteredResults.map((repo, index) => (
+                      <tr key={repo.id} className="hover:bg-slate-25/50 transition-colors group">
                         
-                        {/* Repository name with fork badge */}
-                        <td className="px-6 py-4.5 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-850 hover:underline inline-flex items-center leading-5 gap-1 font-sans">
-                              {repo.fullName}
-                              <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-70" />
+                        {/* Serial Number - Sticky Column */}
+                        <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50/90 px-2 py-2 text-center text-[10px] text-slate-400 font-mono border-r border-slate-100 transition-colors w-10">
+                          {index + 1}
+                        </td>
+
+                        {/* Repository name with fork badge - Sticky Column */}
+                        <td className="sticky left-10 z-10 bg-white group-hover:bg-slate-50/90 px-3 py-2 sm:py-2.5 min-w-[200px] border-r border-slate-200 transition-colors">
+                          <div className="flex flex-col whitespace-normal">
+                            <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-start gap-1 font-sans" title={repo.fullName}>
+                              <span className="leading-tight block break-all">{repo.repoName}</span>
+                              <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 opacity-70 mt-1" />
                             </a>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider leading-none ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                            <div className="flex items-center space-x-1.5 mt-0.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-amber-50 text-amber-700 border border-amber-150'}`}>
                                 {repo.visibility}
                               </span>
                               {repo.isFork && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider leading-none bg-slate-100 text-slate-500 border border-slate-200">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none bg-slate-100 text-slate-500 border border-slate-200">
                                   Fork
                                 </span>
                               )}
                               {repo.archived && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider leading-none bg-orange-50 text-orange-600 border border-orange-200">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none bg-orange-50 text-orange-600 border border-orange-150">
                                   Archived
                                 </span>
                               )}
@@ -452,36 +951,36 @@ export default function Dashboard() {
                         </td>
 
                         {/* Pages Status badge */}
-                        <td className="px-6 py-4.5 whitespace-nowrap">
+                        <td className="px-3 py-2 sm:py-2.5 whitespace-nowrap">
                           {repo.hasPages ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-150">
+                              <span className="w-1 h-1 bg-emerald-500 rounded-full mr-1 animate-pulse"></span>
                               Active ({repo.pagesStatus || 'configured'})
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                              <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-1.5"></span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-50 text-gray-550 border border-gray-200">
+                              <span className="w-1 h-1 bg-gray-300 rounded-full mr-1"></span>
                               Disabled
                             </span>
                           )}
                           {repo.errorClassification && (
-                            <div className="text-[10px] text-red-500 mt-1 flex items-center gap-1 font-sans">
-                              <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                            <div className="text-[9px] text-red-500 mt-0.5 flex items-center gap-1 font-sans">
+                              <AlertCircle className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
                               <span>{repo.errorClassification}</span>
                             </div>
                           )}
                         </td>
 
                         {/* Deployment method & publishing branch */}
-                        <td className="px-6 py-4.5 whitespace-nowrap">
+                        <td className="px-3 py-2 sm:py-2.5 whitespace-nowrap">
                           {repo.hasPages ? (
-                            <div className="space-y-1">
-                              <div className="flex items-center text-gray-700 text-xs gap-1">
-                                <GitBranch className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <div className="space-y-0.5">
+                              <div className="flex items-center text-gray-750 text-xs gap-1">
+                                <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
                                 <span className="font-sans font-medium">{repo.deploymentMethod}</span>
                               </div>
                               {repo.publishingSourceSummary && (
-                                <div className="text-[10px] text-gray-400 select-all font-mono">
+                                <div className="text-[9px] text-gray-400 select-all font-mono">
                                   {repo.publishingSourceSummary}
                                 </div>
                               )}
@@ -492,60 +991,63 @@ export default function Dashboard() {
                         </td>
 
                         {/* Custom Domain and Verification Status */}
-                        <td className="px-6 py-4.5 whitespace-nowrap">
+                        <td className="px-3 py-2 sm:py-2.5 whitespace-nowrap">
                           {repo.cname ? (
-                            <div className="space-y-1.5">
+                            <div className="space-y-0.5">
                               <div className="flex items-center gap-1.5 text-gray-800 font-sans leading-none">
-                                <Globe className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                <span className="font-semibold">{repo.cname}</span>
+                                <Globe className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                <span className="font-semibold text-xs">{repo.cname}</span>
                               </div>
                               
                               {/* Better colored domain statuses */}
                               {repo.customDomainStatus === 'custom_domain_verified' ? (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150">
                                   Verified
                                 </span>
                               ) : repo.customDomainStatus === 'custom_domain_pending' ? (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider leading-none uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-amber-50 text-amber-700 border border-amber-150">
                                   Pending Verification
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider leading-none uppercase bg-gray-50 text-gray-500 border border-gray-200">
-                                  Unverified / Unknown
+                                <span 
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide leading-none bg-blue-50 text-blue-700 border border-blue-105 cursor-help"
+                                  title="カスタムドメイン（CNAME）が設定されています。GitHubの「ドメイン所有権検証」機能が未設定のためAPI上はUnverified/Unknownとなっていますが、HTTPS証明書が承認されていれば安全に動作しています。"
+                                >
+                                  Configured
                                 </span>
                               )}
                             </div>
                           ) : repo.hasPages ? (
-                            <span className="text-xs text-gray-400 font-normal font-sans">GitHub standard URL</span>
+                            <span className="text-[11px] text-gray-400 font-normal font-sans">GitHub standard URL</span>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
 
                         {/* HTTPS and Enforcement */}
-                        <td className="px-6 py-4.5 whitespace-nowrap text-gray-500">
+                        <td className="px-3 py-2 sm:py-2.5 whitespace-nowrap text-gray-500">
                           {repo.hasPages ? (
-                            <div className="space-y-1.5">
+                            <div className="space-y-0.5">
                               {repo.httpsCertificateStatus === 'https_certificate_ok' ? (
                                 <div className="flex items-center gap-1 text-emerald-700 text-xs font-sans">
-                                  <Lock className="w-3.5 h-3.5 text-emerald-500" />
+                                  <Lock className="w-3 h-3 text-emerald-500" />
                                   <span>HTTPS Enforced & SSL OK</span>
                                 </div>
                               ) : repo.httpsCertificateStatus === 'https_not_enforced' ? (
-                                <div className="flex items-center gap-1 text-amber-600 text-xs font-sans">
-                                  <UnlockWarningIcon className="w-3.5 h-3.5 text-amber-500" />
+                                <div className="flex items-center gap-1 text-amber-605 text-xs font-sans">
+                                  <UnlockWarningIcon className="w-3 h-3 text-amber-500" />
                                   <span>Approved but Not Enforced</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1 text-red-650 text-xs font-sans">
-                                  <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                                  <AlertCircle className="w-3 h-3 text-red-500" />
                                   <span>SSL Configuration Issue</span>
                                 </div>
                               )}
                               
                               {repo.httpsCertificateState && (
-                                <div className="text-[10px] text-gray-400 font-sans">
-                                  Cert status: <span className="font-mono text-gray-500 select-all">{repo.httpsCertificateState}</span>
+                                <div className="text-[9px] text-gray-450 font-sans">
+                                  Cert status: <span className="font-mono text-gray-550 select-all">{repo.httpsCertificateState}</span>
                                 </div>
                               )}
                             </div>
@@ -555,14 +1057,14 @@ export default function Dashboard() {
                         </td>
 
                         {/* Link to settings */}
-                        <td className="px-6 py-4.5 whitespace-nowrap text-right font-medium">
+                        <td className="px-3 py-2 sm:py-2.5 whitespace-nowrap text-right font-medium">
                           <a 
                             href={repo.pagesSettingsUrl} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="inline-flex items-center text-xs text-slate-800 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 font-sans shadow-2xs cursor-pointer transition-colors"
+                            className="inline-flex items-center text-[11px] text-slate-800 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded-md border border-slate-200 font-sans shadow-3xs cursor-pointer transition-colors"
                           >
-                            <Settings className="w-3 h-3 mr-1" />
+                            <Settings className="w-2.5 h-2.5 mr-1" />
                             Settings
                           </a>
                         </td>
@@ -571,6 +1073,61 @@ export default function Dashboard() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+          </>
+          )}
+        </div>
+      )}
+
+      {/* Column Guide Modal */}
+      {columnGuideModal && COLUMN_HELP[columnGuideModal] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                {COLUMN_HELP[columnGuideModal].title}
+              </h3>
+              <button
+                onClick={() => setColumnGuideModal(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <p className="text-sm text-slate-700 leading-relaxed mb-6">
+                {COLUMN_HELP[columnGuideModal].description}
+              </p>
+              
+              {COLUMN_HELP[columnGuideModal].values.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Possible Values</h4>
+                  <ul className="space-y-4">
+                    {COLUMN_HELP[columnGuideModal].values.map((val, i) => (
+                      <li key={i} className="flex gap-3 text-sm">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5"></div>
+                        </div>
+                        <div>
+                          <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded mr-2 break-all">
+                            {val.label}
+                          </span>
+                          <span className="text-slate-600 text-sm">{val.desc}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setColumnGuideModal(null)}
+                className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

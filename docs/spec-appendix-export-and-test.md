@@ -76,7 +76,7 @@ CSV injection defense: If a cell begins with any of the following characters, es
 **GitHub API**: Success, 401, 403, 404, rate limits correctly captured. Write endpoint blocked.
 **Pages Classification**: Strict domain and HTTPS state translation according to rules.
 **Deployment Method**: Identifies branch roots, docs folders, workflow setups correctly.
-**Firestore**: Not applicable to V1 (MVP uses strictly in-memory PAT storage due to limits).
+**Firestore**: PAT and audit cache security tested against direct Firebase Client SDK Firestore access rules (`request.auth.uid == uid`).
 **Exports**: Validate cleanly, omit secrets.
 
 First Export Example (Minimal):

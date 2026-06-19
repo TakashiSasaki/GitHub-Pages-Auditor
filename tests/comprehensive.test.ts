@@ -1,5 +1,8 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
+import * as fs from 'fs';
+import * as path from 'path';
+import Ajv from 'ajv';
 import { githubApi, ALLOWED_ENDPOINTS } from '../server.js';
 import { 
   classifyDeploymentMethod, 
@@ -248,7 +251,24 @@ describe('JSON Export and Schema Structure Check', () => {
     // Validate classification never contains invalid "pages_deploy_method_not_applicable"
     const repoWithNoPages = json.repositories.find(r => r.githubRepoId === 789012);
     assert.ok(repoWithNoPages);
-    assert.ok(!repoWithNoPages.classification.includes('pages_deploy_method_not_applicable'));
+    assert.ok(!repoWithNoPages.classification.includes('pages_deploy_method_not_applicable' as any));
+  });
+
+  it('validates generated export data against the generated JSON schema', () => {
+    const json = buildJsonExport(dummyResults, 'ghp_dummy');
+    const schemaContent = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v1.schema.json'), 'utf-8')
+    );
+    
+    // Create Ajv instance with standard options. Allow dual union schemas.
+    const ajv = new Ajv({ strict: false });
+    const validate = ajv.compile(schemaContent);
+    const valid = validate(json);
+    
+    if (!valid) {
+      console.error('Validation errors:', validate.errors);
+    }
+    assert.ok(valid, 'The built export data must strictly pass the JSON schema layout specification validated by Ajv.');
   });
 });
 

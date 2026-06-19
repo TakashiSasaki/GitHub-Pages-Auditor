@@ -47,6 +47,18 @@ Run the comprehensive synchronous test suite:
 npm test
 ```
 
+### 6. TypeScript-First JSON Schema Pipeline
+The data model for JSON exports (interchangeable result assets) is maintained using TypeScript types (`src/schema/exportTypes.ts`) as the absolute Source of Truth. The JSON Schema is a generated artifact.
+
+- **Generate Schema**: Recompile and generate the schemas from TypeScript source types:
+  ```bash
+  npm run schema:generate
+  ```
+- **Check Schema Freshness**: Test and verify if compiled JSON schemas have drifted compared to the TypeScript declarations:
+  ```bash
+  npm run schema:check
+  ```
+
 ## Non-Negotiable Security Rules & Constraints (MVP)
 - **PAT-Only Authentication**: The application remains strictly PAT-only. No GitHub OAuth or GitHub Apps are implemented.
 - **Read-Only Proxy**: The backend only allowlists exact `GET` endpoints. The system will never support write actions (e.g., POST/PUT/DELETE pages settings or repository metadata).
