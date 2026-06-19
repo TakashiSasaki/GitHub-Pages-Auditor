@@ -302,6 +302,16 @@
         "customDomainConfigured": {
           "type": "boolean"
         },
+        "customDomainVerificationState": {
+          "enum": [
+            "verified",
+            "pending",
+            "unverified",
+            "unknown",
+            "not_applicable"
+          ],
+          "type": "string"
+        },
         "defaultBranch": {
           "type": [
             "string",

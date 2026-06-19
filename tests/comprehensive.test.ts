@@ -552,6 +552,74 @@ describe('CSV Export Regression and Live Data Diagnostics', () => {
     const valid = validate(jsonExport);
     assert.ok(valid, 'The updated JSON export (including new summary fields) must strictly validate against the regenerated schema');
   });
+
+  it('guarantees custom-domain blank protection translates specifically to unknown verification state', () => {
+    const jsonExport = buildJsonExport(liveExportSampleRows, {
+      auditRunId: 'test-unknown-handshake'
+    });
+
+    // Row id 103 has undefined/blank protectedDomainState. It must be mapped to 'unknown'.
+    const repo103 = jsonExport.repositories.find(r => r.githubRepoId === 103);
+    assert.ok(repo103, 'Repo 103 must be present in JSON export');
+    assert.strictEqual(repo103.customDomainVerificationState, 'unknown', 'Blank/undefined protectedDomainState must map to customDomainVerificationState unknown');
+
+    // Row id 104 has verified state
+    const repo104 = jsonExport.repositories.find(r => r.githubRepoId === 104);
+    assert.ok(repo104);
+    assert.strictEqual(repo104.customDomainVerificationState, 'verified', 'Verified protectedDomainState must map to customDomainVerificationState verified');
+
+    // Row id 101 has no pages
+    const repo101 = jsonExport.repositories.find(r => r.githubRepoId === 101);
+    assert.ok(repo101);
+    assert.strictEqual(repo101.customDomainVerificationState, 'not_applicable', 'Deactivated Pages must map to customDomainVerificationState not_applicable');
+  });
+
+  it('proves that export context controls auditRun metadata and does not leak raw tokens or database paths', () => {
+    const context = {
+      auditRunId: 'system-verified-audit-999',
+      exportedAt: '2026-06-19T23:59:59Z',
+      userMode: 'google' as const,
+      githubLogin: 'TakashiSasaki',
+      appEnvironment: 'production'
+    };
+
+    const jsonExport = buildJsonExport(liveExportSampleRows, context);
+    const csvContent = buildCsvExport(liveExportSampleRows, context);
+
+    // Verify context overrides auditRun identifiers
+    assert.strictEqual(jsonExport.auditRun.id, 'system-verified-audit-999');
+    assert.strictEqual(jsonExport.exportedAt, '2026-06-19T23:59:59Z');
+    assert.strictEqual(jsonExport.auditRun.userMode, 'google');
+    assert.strictEqual(jsonExport.application.environment, 'production');
+
+    // Verify CSV aligns with JSON on context IDs and dates
+    const csvLines = csvContent.split('\n');
+    assert.ok(csvLines.length > 1);
+    const firstDataRow = csvLines[1].split(',');
+    assert.strictEqual(firstDataRow[0], 'system-verified-audit-999', 'CSV audit_run_id must match context');
+    assert.strictEqual(firstDataRow[1], '2026-06-19T23:59:59Z', 'CSV exported_at must match context');
+
+    // Strict security shield: Verify no secrets or config files exist anywhere in the export payloads
+    const jsonStr = JSON.stringify(jsonExport);
+    const forbiddenPatterns = [
+      'ghp_', 'github_pat_', 'Bearer', 'githubPagesAuditorV1', 'users/', 'anonymousSessions/'
+    ];
+
+    for (const forbidden of forbiddenPatterns) {
+      assert.ok(!jsonStr.includes(forbidden), `JSON export must not leak configuration paths or tokens matching "${forbidden}"`);
+      assert.ok(!csvContent.includes(forbidden), `CSV export must not leak configuration paths or tokens matching "${forbidden}"`);
+    }
+  });
+
+  it('produces valid guest export scope IDs when no persisted audit ID parameter is loaded', () => {
+    // Audit context without auditRunId
+    const jsonExport = buildJsonExport(liveExportSampleRows, {
+      exportedAt: '2026-06-19T13:00:00Z',
+      userMode: 'anonymous'
+    });
+
+    assert.ok(jsonExport.auditRun.id.startsWith('export-'), 'Guest/anonymous exports without loaded audit IDs must generate safe dynamic export scope IDs');
+  });
 });
 
 

@@ -96,9 +96,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ## JSON Export Schema Contract
 - JSON export schema version: `github-pages-auditor.export.v1`
 - Schema lives in `schemas/github-pages-auditor-export-v1.schema.json` (Full schema implemented).
-- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts`.
+- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and drafted V2 schemas live in `src/schema/exportTypesV2.ts`).
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
-- Any schema-affecting types change must trigger schema regeneration via `npm run schema:generate` and validation check via `npm run schema:check`.
+- Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
+- **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 draft layout lives in `docs/export-schema-v2-draft.md`.
 
 ## Directory Structure
 - `src/` - React frontend code.

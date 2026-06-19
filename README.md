@@ -61,9 +61,13 @@ Maintain absolute coverage using these verification commands:
 | `npm test` | Complete Suite | Runs all automated test suites, including unit metrics and Firestore rules. |
 | `npm run test:unit` | Classification & API Proxy | Runs core unit validation, JSON schemas, CSV defense, and mock client proxy limits. |
 | `npm run test:rules` | Firestore Rules | Runs independent local simulation test cases verifying `firestore.rules` paths (does not require full Firebase Local Emulator). |
-| `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypes.ts` to output standard Export JSON Schema. |
+| `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypes.ts` (and V2 draft `src/schema/exportTypesV2.ts`) to output standard Export JSON Schema. |
 | `npm run schema:check` | Schema Drift | Guarantees that built JSON schema matches types exactly. |
 | `npm run build` | Production Compilation | Bundles Vite static assets and compiles the ES Express backend into self-contained `dist/server.cjs` via esbuild. |
+
+For detailed metadata, properties, classification mappings, and future nested schema developments, consult:
+* **docs/export-schema-vocabulary.md** — Property-by-property dictionary comparing V1 names to raw GitHub API counterparts.
+* **docs/export-schema-v2-draft.md** — Conceptual design and draft structures for next-generation nested data schema records.
 
 ---
 

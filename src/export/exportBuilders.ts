@@ -61,6 +61,15 @@ export function toExportRepositoryResult(r: RepositoryResult): ExportRepositoryR
     healthStatus: 'not_requested',
     classification,
     errorClassification: (r.errorClassification || null) as ExportErrorClassification,
+    customDomainVerificationState: !r.hasPages || !r.cname
+      ? 'not_applicable'
+      : r.protectedDomainState === 'verified'
+        ? 'verified'
+        : r.protectedDomainState === 'pending' || r.pendingDomainUnverifiedAt
+          ? 'pending'
+          : r.protectedDomainState === undefined || r.protectedDomainState === null || r.protectedDomainState === ''
+            ? 'unknown'
+            : 'unverified',
     diagnostics: {}
   };
 }

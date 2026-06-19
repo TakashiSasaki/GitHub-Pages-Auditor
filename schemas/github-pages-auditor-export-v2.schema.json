@@ -1,0 +1,679 @@
+{
+  "$ref": "#/definitions/GitHubPagesAuditorExportV2",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "GitHubPagesAuditorExportV2": {
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "$ref": "#/definitions/V2AppMeta"
+        },
+        "auditRun": {
+          "$ref": "#/definitions/V2AuditRun"
+        },
+        "domains": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "domain": {
+                "type": "string"
+              },
+              "hasDuplicate": {
+                "type": "boolean"
+              },
+              "repositories": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "fullName": {
+                      "type": "string"
+                    },
+                    "htmlUrl": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "fullName",
+                    "htmlUrl"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "repositoryCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "domain",
+              "repositoryCount",
+              "repositories",
+              "hasDuplicate"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "exportedAt": {
+          "type": "string"
+        },
+        "repositories": {
+          "items": {
+            "$ref": "#/definitions/V2AuditRepositoryRecord"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "github-pages-auditor.export.v2",
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/definitions/V2Summary"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "exportedAt",
+        "application",
+        "auditRun",
+        "summary",
+        "repositories"
+      ],
+      "type": "object"
+    },
+    "V2AppMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "type": "object"
+    },
+    "V2AuditRepositoryRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "findings": {
+          "items": {
+            "$ref": "#/definitions/V2Finding"
+          },
+          "type": "array"
+        },
+        "pages": {
+          "$ref": "#/definitions/V2PagesMeta"
+        },
+        "repository": {
+          "$ref": "#/definitions/V2RepositoryMeta"
+        }
+      },
+      "required": [
+        "repository",
+        "pages",
+        "findings"
+      ],
+      "type": "object"
+    },
+    "V2AuditRun": {
+      "additionalProperties": false,
+      "properties": {
+        "finishedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "githubLogin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/definitions/V2AuditRunOptions"
+        },
+        "startedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "completed",
+            "failed",
+            "paused",
+            "cancelled"
+          ],
+          "type": "string"
+        },
+        "tokenType": {
+          "enum": [
+            "fine_grained",
+            "classic",
+            "unknown",
+            null
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userMode": {
+          "enum": [
+            "google",
+            "anonymous"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "startedAt",
+        "finishedAt",
+        "options"
+      ],
+      "type": "object"
+    },
+    "V2AuditRunOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "affiliation": {
+          "type": "string"
+        },
+        "includeArchived": {
+          "type": "boolean"
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "includeHealthCheck": {
+          "type": "boolean"
+        },
+        "ownerFilter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "strictPagesCheck": {
+          "type": "boolean"
+        },
+        "visibility": {
+          "enum": [
+            "all",
+            "public",
+            "private"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "affiliation",
+        "visibility",
+        "includeArchived",
+        "includeDisabled",
+        "strictPagesCheck",
+        "includeHealthCheck"
+      ],
+      "type": "object"
+    },
+    "V2DeploymentMethod": {
+      "enum": [
+        "workflow",
+        "branch_root",
+        "branch_docs",
+        "branch_unknown_path",
+        "unknown",
+        "not_applicable"
+      ],
+      "type": "string"
+    },
+    "V2Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": [
+            "pages",
+            "custom_domain",
+            "https",
+            "dns",
+            "deployment",
+            "permissions",
+            "api"
+          ],
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "evidence": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ],
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "github_repository_api",
+            "github_pages_api",
+            "github_pages_health_api",
+            "app_derived"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "category",
+        "severity",
+        "source"
+      ],
+      "type": "object"
+    },
+    "V2PagesMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "customDomain": {
+          "additionalProperties": false,
+          "properties": {
+            "cnameRaw": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "configured": {
+              "type": "boolean"
+            },
+            "githubProtectedDomainStateRaw": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hostname": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pendingUnverifiedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "stateSource": {
+              "enum": [
+                "github_pages_api",
+                "derived",
+                "not_reported"
+              ],
+              "type": "string"
+            },
+            "verificationState": {
+              "$ref": "#/definitions/V2VerificationState"
+            }
+          },
+          "required": [
+            "configured",
+            "cnameRaw",
+            "hostname",
+            "githubProtectedDomainStateRaw",
+            "verificationState",
+            "pendingUnverifiedAt",
+            "stateSource"
+          ],
+          "type": "object"
+        },
+        "deployment": {
+          "additionalProperties": false,
+          "properties": {
+            "displaySummary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "githubBuildTypeRaw": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "method": {
+              "$ref": "#/definitions/V2DeploymentMethod"
+            },
+            "sourceBranch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sourcePath": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "method",
+            "githubBuildTypeRaw",
+            "sourceBranch",
+            "sourcePath"
+          ],
+          "type": "object"
+        },
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "healthCheck": {
+          "additionalProperties": false,
+          "properties": {
+            "requested": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "requested",
+            "status"
+          ],
+          "type": "object"
+        },
+        "htmlUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "https": {
+          "additionalProperties": false,
+          "properties": {
+            "certificate": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "domains": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "stateRaw": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "stateRaw",
+                "description",
+                "domains",
+                "expiresAt"
+              ],
+              "type": "object"
+            },
+            "enforced": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "enforced",
+            "certificate"
+          ],
+          "type": "object"
+        },
+        "publicRaw": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "settingsUrl": {
+          "type": "string"
+        },
+        "statusRaw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "statusRaw",
+        "htmlUrl",
+        "settingsUrl",
+        "publicRaw",
+        "deployment",
+        "customDomain",
+        "https",
+        "healthCheck"
+      ],
+      "type": "object"
+    },
+    "V2RepositoryMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "createdAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "defaultBranch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "githubHasPagesRaw": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "githubId": {
+          "type": "string"
+        },
+        "githubIdNumber": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "htmlUrl": {
+          "type": "string"
+        },
+        "isArchived": {
+          "type": "boolean"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "isFork": {
+          "type": "boolean"
+        },
+        "isPrivate": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ownerLogin": {
+          "type": "string"
+        },
+        "pushedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updatedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "private",
+            "internal",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "githubId",
+        "ownerLogin",
+        "name",
+        "fullName",
+        "htmlUrl",
+        "visibility",
+        "isPrivate",
+        "isArchived",
+        "isDisabled",
+        "isFork",
+        "defaultBranch",
+        "githubHasPagesRaw",
+        "createdAt",
+        "updatedAt",
+        "pushedAt"
+      ],
+      "type": "object"
+    },
+    "V2Summary": {
+      "additionalProperties": false,
+      "properties": {
+        "approvedCertButHttpsNotEnforcedCount": {
+          "type": "number"
+        },
+        "customDomainCount": {
+          "type": "number"
+        },
+        "customDomainHttpsNotEnforcedCount": {
+          "type": "number"
+        },
+        "customDomainUnverifiedOrUnknownCount": {
+          "type": "number"
+        },
+        "customDomainVerifiedCount": {
+          "type": "number"
+        },
+        "deploymentBranchDocsCount": {
+          "type": "number"
+        },
+        "deploymentBranchRootCount": {
+          "type": "number"
+        },
+        "deploymentUnknownCount": {
+          "type": "number"
+        },
+        "deploymentWorkflowCount": {
+          "type": "number"
+        },
+        "dnsHealthProblemCount": {
+          "type": "number"
+        },
+        "errorCount": {
+          "type": "number"
+        },
+        "httpsNotEnforcedCount": {
+          "type": "number"
+        },
+        "httpsProblemCount": {
+          "type": "number"
+        },
+        "pagesEnabledCount": {
+          "type": "number"
+        },
+        "repositoryCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "repositoryCount",
+        "pagesEnabledCount",
+        "customDomainCount",
+        "customDomainVerifiedCount",
+        "customDomainUnverifiedOrUnknownCount",
+        "httpsProblemCount",
+        "dnsHealthProblemCount",
+        "errorCount",
+        "deploymentWorkflowCount",
+        "deploymentBranchRootCount",
+        "deploymentBranchDocsCount",
+        "deploymentUnknownCount",
+        "httpsNotEnforcedCount",
+        "approvedCertButHttpsNotEnforcedCount",
+        "customDomainHttpsNotEnforcedCount"
+      ],
+      "type": "object"
+    },
+    "V2VerificationState": {
+      "enum": [
+        "verified",
+        "pending",
+        "unverified",
+        "unknown",
+        "not_applicable"
+      ],
+      "type": "string"
+    }
+  }
+}

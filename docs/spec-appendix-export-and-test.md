@@ -50,6 +50,18 @@ JSON export should include:
 Breaking changes require a new schema version.
 Examples: `github-pages-auditor.export.v1`, `github-pages-auditor.export.v2`
 
+For comprehensive structural layouts, see:
+* **docs/export-schema-vocabulary.md** for a complete 1:1 mapping table of all fields.
+* **docs/export-schema-v2-draft.md** for the future nested structures layout specification.
+
+### V1 Backwards-Compatible Extensions
+To support high-integrity domain reviews without introducing breaking changes, we added optional, V1-compatible fields to the schema:
+* `customDomainVerificationState`: Provides precise granular states (`verified`, `pending`, `unverified`, `unknown`, `not_applicable`), isolating blank raw protected states specifically into `"unknown"` to prevent conflation with true `"unverified"` statuses.
+* Advanced Summary Fields:
+  - `httpsNotEnforcedCount`
+  - `approvedCertButHttpsNotEnforcedCount`
+  - `customDomainHttpsNotEnforcedCount`
+
 When schemaVersion changes, update in the same change set:
 - JSON export generator
 - JSON export tests

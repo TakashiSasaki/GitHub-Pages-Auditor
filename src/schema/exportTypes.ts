@@ -100,6 +100,7 @@ export interface ExportRepositoryResult {
   healthStatus: ExportHealthStatus;
   classification: ExportClassification[];
   errorClassification: ExportErrorClassification;
+  customDomainVerificationState?: 'verified' | 'pending' | 'unverified' | 'unknown' | 'not_applicable';
   diagnostics?: Record<string, any>;
 }
 
