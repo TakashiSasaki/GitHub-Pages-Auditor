@@ -18,12 +18,12 @@ X-GitHub-Api-Version: 2026-03-10
 User-Agent: <application-name>
 
 "<PAT>" must be either:
-
 - fine-grained personal access token
 - personal access token classic
 
-The application must not use:
+GitHub OAuth and GitHub App authentication are not planned for this project. They are permanently out of scope.
 
+The application must not use and does not support:
 - GitHub OAuth token
 - GitHub App installation token
 - GitHub App user access token

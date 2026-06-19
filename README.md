@@ -88,14 +88,20 @@ firebase deploy --only firestore:rules
 ---
 
 ## Production Deployment Targets
-*   **Current Status**: Pre-Production Validation Baseline.
-*   **Target Environments**: Fully compatible with **Cloud Run** or **Firebase App Hosting**.
+*   **Current Status**: Release Candidate Baseline.
+*   **Target Environments**: Highly compatible with Container platforms like **Cloud Run** or Full-stack platforms like **Firebase App Hosting**.
+*   **Dockerization**: Includes a highly optimized, dual-stage production `Dockerfile` and custom `.dockerignore` for compact, secure, and fast deployment runs.
+*   **Dynamic Ports**: Supports dynamic port injection via standard `PORT` environment variables (defaults to 3000), allowing plug-and-play scaling behind ingress reverse-proxies.
+*   **Health Endpoints**: Exposes a secure, unauthenticated `/healthz` checkpoint returning `{ "ok": true }` to allow external uptime monitoring and health checks without revealing system secrets.
 *   **Firebase Hosting Restriction**: Deploying to static Firebase Hosting alone is **insufficient** as the application requires the Express API service to proxy PAT requests safely. Firebase Hosting must be paired with Cloud Run via proxy rewrites matching `/api/*`.
 
 ---
 
-## Non-Negotiable Rules & Exclusions in V1
-1.  **No GitHub OAuth / No GitHub Apps**: Authentication is strictly browser-owned Personal Access Tokens (PATs).
-2.  **No GitHub Write APIs**: Restricts all proxy calls to GET operations. No settings, repos, or workflows are ever modified.
-3.  **No Workflow/Actions APIs**: Workflows and Actions routes are absolutely forbidden to safeguard repository CI/CD configurations.
-4.  **No Cloud Functions**: Audit caches and transient records are read/written directly via the Firebase Client SDK.
+## Non-Negotiable Rules & Exclusions
+1.  **Exclusion of GitHub OAuth**: GitHub OAuth is not planned for this project. It is permanently out of scope.
+2.  **Exclusion of GitHub App Authentication**: GitHub App authentication is not planned for this project. It is permanently out of scope.
+3.  **Strictly PAT-Only**: GitHub API access is strictly PAT-only (Personal Access Tokens - classic or fine-grained).
+4.  **Firebase Auth Purpose**: Firebase Auth is strictly for application user identity, never for GitHub workspace privileges or OAuth authorization.
+5.  **No GitHub Write APIs**: Restricts all proxy calls to GET operations. No settings, repos, or workflows are ever modified.
+6.  **No Workflow/Actions APIs**: Workflows and Actions routes are absolutely forbidden to safeguard repository CI/CD configurations.
+7.  **No Cloud Functions**: Audit caches and transient records are read/written directly via the Firebase Client SDK.

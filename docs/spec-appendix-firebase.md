@@ -6,16 +6,15 @@ The initial specification remains authoritative. This appendix provides Firebase
 
 1. Firebase Authentication Contract
 
-Version 1 allows only these Firebase Authentication providers:
+We support and allow only these Firebase Authentication providers:
 
 Google provider
 Anonymous provider
 
 Google provider is for persistent users.
-
 Anonymous provider is for non-persistent guest mode.
 
-Forbidden providers:
+Explicitly forbidden and permanently out of scope:
 
 Firebase GitHub provider
 email/password
@@ -28,11 +27,11 @@ SAML
 custom OIDC
 any other persistent external provider
 
-GitHub OAuth must not be implemented.
+GitHub OAuth and GitHub App authentication are not planned and must not be implemented.
 
 The app must not use Firebase Authentication to obtain GitHub API access.
 
-GitHub API access is PAT-only.
+GitHub API access is PAT-only. Firebase Auth is strictly for application user identity, never for GitHub workspace access.
 
 2. Firebase ID Token Handling
 

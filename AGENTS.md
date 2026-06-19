@@ -11,20 +11,27 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Authentication: Firebase Authentication (Google provider for persistent use, Anonymous for guest mode). Backend verification of Firebase ID tokens.
 
 ## Implementation Decisions
-- **Firebase Auth Plan:** We are using Firebase Auth (Google + Anonymous) to manage application user identity.
+- **Firebase Auth Plan:** We are using Firebase Auth (Google + Anonymous) to manage application user identity. Firebase Auth is strictly for application user identity, never for GitHub workspace access.
 - **Backend GitHub API Client:** We use `fetch` targeting `https://api.github.com` strictly wrapped in helper functions to prevent calling forbidden endpoints.
 - **Full-Stack Structure:** The core GitHub API proxy runs on the Express server. The browser owns the PAT and temporarily sends it to the server strictly via an `x-temp-pat` header. The server must never return it to the browser.
 - **PAT Truth:** The current implementation is the absolute source of truth for PAT behavior. Design documents must follow the implementation, not the other way around.
+- **Port and Health Configuration:** The backend binds dynamically using `process.env.PORT ? parseInt(process.env.PORT, 10) : 3000` to support container runtimes. It implements an unauthenticated GET `/healthz` endpoint returning `{ ok: true }` without revealing secrets or credentials.
 - **Firestore Schema:** Firestore document types defined in `src/schema/firestoreTypes.ts` reflect the actual currently-stored shapes, not future ideals.
 
 ## Non-Negotiable Security Rules
+- GitHub OAuth is not planned for this project.
+- GitHub App authentication is not planned for this project.
+- GitHub API access is PAT-only.
+- Firebase Auth is strictly for application identity.
+- There are no callback routes, installation hooks, or token-handling structures for OAuth or App integrations.
+- Do not describe GitHub OAuth or GitHub App as "future work", "not used in Version 1", or "could be added later".
 - The backend must never return PAT plaintext to the browser; the browser manages its own copy.
 - Never log PAT plaintext.
 - Never log GitHub Authorization headers.
 - Never log Firebase ID tokens.
 - Never implement a generic GitHub API proxy.
-- Never call GitHub write APIs in Version 1.
-- Never call GitHub Actions workflow APIs in Version 1.
+- Never call GitHub write APIs.
+- Never call GitHub Actions workflow APIs.
 - Use Firebase UID as tenant boundary.
 - Do not let users access other users’ data.
 - Anonymous data must be temporary if persisted.
@@ -128,6 +135,11 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Full browser E2E automated regressions is a future roadmap milestone documented under `docs/ui-regression-plan.md`.
 
 ## Change Log for Agents
+- Completed dynamic PORT environment variable integration in `server.ts` to allow fully decoupled container deployments.
+- Exposed unauthenticated `/healthz` on the Express backend for secure liveness/readiness probes in orchestrations like Cloud Run or GKE.
+- Shipped professional, compact dual-stage `Dockerfile` and a comprehensive `.dockerignore` mapping modern containerization practices.
+- Fully standardized the GitHub OAuth and GitHub App authentication exclusions, guaranteeing they are permanently noted as out of scope.
+- Hardened all related spec documents (`spec-initial.md`, `spec-appendix-firebase.md`, `spec-appendix-github-api.md`) to align with out-of-scope directives.
 - Decoupled environment normalization and user path resolution into pure module `src/lib/firestorePaths.ts`.
 - Integrated automated rules validation test suite in `tests/rules.test.ts` proving cross-tenant security holds.
 - Introduced formal environment validators: `server/env.ts` warns about production configs and `src/lib/env.ts` displays a persistent, non-crashing banner in the UI when Firebase is unprovisioned.

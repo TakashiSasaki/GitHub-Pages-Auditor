@@ -49,14 +49,14 @@ The app may show links to GitHub, but all actual configuration changes must be d
 
 3. GitHub Authentication Model
 
-GitHub API authentication is PAT-only.
+GitHub API authentication is PAT-only. GitHub OAuth and GitHub App authentication are not planned and must not be implemented. There are no callback routes, installation routes, or token-handling structures for them.
 
 Supported GitHub token types:
 
 - fine-grained personal access token
 - personal access token classic
 
-Out of scope:
+Explicitly forbidden & permanently out of scope:
 
 - GitHub OAuth
 - GitHub OAuth callback flow
@@ -69,7 +69,7 @@ Out of scope:
 
 Do not implement GitHub login.
 
-The app’s user login is separate from GitHub API access. A logged-in app user manually registers a GitHub PAT. The backend uses that PAT to call GitHub API endpoints.
+The app’s user login is separate from GitHub API access. Firebase Auth is only for application identity, not for GitHub API authorization. A logged-in app user manually registers a GitHub PAT. The backend uses that PAT to call GitHub API endpoints.
 
 4. Application Authentication Model
 
@@ -80,7 +80,7 @@ Allowed Firebase Authentication providers:
 - Google provider for persistent users
 - Anonymous provider for non-persistent guest mode
 
-Forbidden providers in Version 1:
+Explicitly forbidden and permanently out of scope:
 
 - Firebase GitHub provider
 - email/password

@@ -44,7 +44,7 @@ try {
 const app = express();
 app.use(express.json());
 
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Middleware to verify Firebase ID Token
 async function verifyAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -239,6 +239,11 @@ app.post('/api/audit/run', verifyAuth, async (req, res) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// 3. Unauthenticated Health Check
+app.get('/healthz', (req, res) => {
+  res.json({ ok: true });
 });
 
 async function startServer() {
