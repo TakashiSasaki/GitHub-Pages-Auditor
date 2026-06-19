@@ -74,7 +74,7 @@ export function classifyCustomDomainStatus(inputs: ClassificationInputs): Custom
     return 'custom_domain_verified';
   }
 
-  if (pendingDomainUnverifiedAt) {
+  if (protectedDomainState === 'pending' || pendingDomainUnverifiedAt) {
     return 'custom_domain_pending';
   }
 

@@ -3,7 +3,8 @@ import {
   GitHubPagesAuditorExport, 
   ExportRepositoryResult, 
   ExportClassification, 
-  ExportErrorClassification 
+  ExportErrorClassification,
+  ExportBuildContext
 } from '../schema/exportTypes';
 
 export function toExportRepositoryResult(r: RepositoryResult): ExportRepositoryResult {
@@ -13,6 +14,9 @@ export function toExportRepositoryResult(r: RepositoryResult): ExportRepositoryR
   }
   if (r.deploymentMethod && r.deploymentMethod !== 'not_applicable') {
     classification.push(`pages_deploy_method_${r.deploymentMethod}` as ExportClassification);
+  }
+  if (r.httpsEnforced === false || r.httpsCertificateStatus === 'https_not_enforced') {
+    classification.push('https_not_enforced');
   }
 
   const visibilityValue = (r.visibility === 'public' || r.visibility === 'private' || r.visibility === 'internal') 
@@ -61,47 +65,73 @@ export function toExportRepositoryResult(r: RepositoryResult): ExportRepositoryR
   };
 }
 
-export function buildJsonExport(results: RepositoryResult[], pat: string): GitHubPagesAuditorExport {
+export function buildJsonExport(results: RepositoryResult[], patOrContext?: string | ExportBuildContext): GitHubPagesAuditorExport {
   const pagesEnabledList = results.filter(r => r.hasPages);
   const customDomainList = pagesEnabledList.filter(r => r.cname);
 
-  let tokenType: 'fine_grained' | 'classic' | 'unknown' | null = 'unknown';
-  if (pat) {
-    if (pat.startsWith('github_pat_')) {
-      tokenType = 'fine_grained';
-    } else if (pat.startsWith('ghp_')) {
-      tokenType = 'classic';
+  let context: ExportBuildContext = {};
+  if (typeof patOrContext === 'string') {
+    const pat = patOrContext;
+    let tokenType: 'fine_grained' | 'classic' | 'unknown' | null = 'unknown';
+    if (pat) {
+      if (pat.startsWith('github_pat_')) {
+        tokenType = 'fine_grained';
+      } else if (pat.startsWith('ghp_')) {
+        tokenType = 'classic';
+      }
+    } else {
+      tokenType = null;
     }
-  } else {
-    tokenType = null;
+    context = { tokenType };
+  } else if (patOrContext) {
+    context = patOrContext;
+  }
+
+  const finalTokenType = context.tokenType ?? null;
+
+  const httpsNotEnforcedList = pagesEnabledList.filter(r => r.httpsCertificateStatus === 'https_not_enforced' || r.httpsEnforced === false);
+  const approvedCertButHttpsNotEnforcedList = pagesEnabledList.filter(r => r.httpsCertificateState === 'approved' && r.httpsEnforced === false);
+  const customDomainHttpsNotEnforcedList = customDomainList.filter(r => r.httpsEnforced === false);
+
+  const exportedAtStr = context.exportedAt || new Date().toISOString();
+  const startedAtStr = context.auditCreatedAt || exportedAtStr;
+  const finishedAtStr = context.auditCreatedAt || exportedAtStr;
+
+  const appMeta = {
+    name: 'GitHub Pages Auditor',
+    version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.2.0',
+    environment: context.appEnvironment || 'dev'
+  };
+
+  const auditRunId = context.auditRunId || `export-${Date.now()}`;
+
+  const auditRunData: any = {
+    id: auditRunId,
+    status: 'completed',
+    startedAt: startedAtStr,
+    finishedAt: finishedAtStr,
+    tokenType: finalTokenType,
+    githubLogin: context.githubLogin || null,
+    options: {
+      affiliation: 'owner,collaborator,organization_member',
+      visibility: 'all',
+      includeArchived: true,
+      includeDisabled: true,
+      strictPagesCheck: false,
+      includeHealthCheck: false,
+      ownerFilter: null
+    }
+  };
+
+  if (context.userMode === 'google' || context.userMode === 'anonymous') {
+    auditRunData.userMode = context.userMode;
   }
 
   return {
     schemaVersion: 'github-pages-auditor.export.v1',
-    exportedAt: new Date().toISOString(),
-    application: {
-      name: 'GitHub Pages Auditor',
-      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0-test',
-      environment: 'dev'
-    },
-    auditRun: {
-      id: `audit-run-${Date.now()}`,
-      status: 'completed',
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-      userMode: 'anonymous',
-      tokenType,
-      githubLogin: null,
-      options: {
-        affiliation: 'owner,collaborator,organization_member',
-        visibility: 'all',
-        includeArchived: true,
-        includeDisabled: true,
-        strictPagesCheck: false,
-        includeHealthCheck: false,
-        ownerFilter: null
-      }
-    },
+    exportedAt: exportedAtStr,
+    application: appMeta,
+    auditRun: auditRunData,
     summary: {
       repositoryCount: results.length,
       pagesEnabledCount: pagesEnabledList.length,
@@ -114,7 +144,10 @@ export function buildJsonExport(results: RepositoryResult[], pat: string): GitHu
       deploymentWorkflowCount: results.filter(r => r.deploymentMethod === 'workflow').length,
       deploymentBranchRootCount: results.filter(r => r.deploymentMethod === 'branch_root').length,
       deploymentBranchDocsCount: results.filter(r => r.deploymentMethod === 'branch_docs').length,
-      deploymentUnknownCount: results.filter(r => r.deploymentMethod === 'unknown' || r.deploymentMethod === 'branch_unknown_path').length
+      deploymentUnknownCount: results.filter(r => r.deploymentMethod === 'unknown' || r.deploymentMethod === 'branch_unknown_path').length,
+      httpsNotEnforcedCount: httpsNotEnforcedList.length,
+      approvedCertButHttpsNotEnforcedCount: approvedCertButHttpsNotEnforcedList.length,
+      customDomainHttpsNotEnforcedCount: customDomainHttpsNotEnforcedList.length
     },
     repositories: results.map(toExportRepositoryResult),
     domains: []
@@ -140,7 +173,7 @@ export function escapeCsvCell(val: any): string {
   return str;
 }
 
-export function buildCsvExport(results: RepositoryResult[]): string {
+export function buildCsvExport(results: RepositoryResult[], context?: ExportBuildContext): string {
   const headers = [
     'audit_run_id', 'exported_at', 'owner', 'repo', 'full_name', 'repository_top_url', 
     'pages_settings_url', 'pages_url', 'visibility', 'archived', 'disabled', 'has_pages', 
@@ -150,7 +183,8 @@ export function buildCsvExport(results: RepositoryResult[]): string {
     'https_enforced', 'health_status', 'classification', 'error_classification'
   ];
 
-  const nowStr = new Date().toISOString();
+  const auditRunId = context?.auditRunId || `export-${Date.now()}`;
+  const nowStr = context?.exportedAt || new Date().toISOString();
 
   const rows = results.map(r => {
     const classificationList = [];
@@ -160,10 +194,13 @@ export function buildCsvExport(results: RepositoryResult[]): string {
     if (r.deploymentMethod && r.deploymentMethod !== 'not_applicable') {
       classificationList.push(`pages_deploy_method_${r.deploymentMethod}`);
     }
+    if (r.httpsEnforced === false || r.httpsCertificateStatus === 'https_not_enforced') {
+      classificationList.push('https_not_enforced');
+    }
     const classificationStr = classificationList.join('; ');
 
     return [
-      'audit-run-1',
+      auditRunId,
       nowStr,
       r.ownerName,
       r.repoName,

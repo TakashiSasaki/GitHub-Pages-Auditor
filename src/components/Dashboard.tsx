@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RepositoryResult } from '../types';
 import { buildJsonExport, buildCsvExport } from '../export/exportBuilders';
+import { ExportBuildContext } from '../schema/exportTypes';
 import { useAuth } from '../AuthContext';
 import Ajv from 'ajv';
 import schema from '@/schemas/github-pages-auditor-export-v1.schema.json';
@@ -120,10 +121,65 @@ export default function Dashboard() {
   };
 
   // Memoized JSON export string and tokenized elements to address extreme latency issues
+  const [exportContext, setExportContext] = useState<ExportBuildContext>({
+    userMode: 'anonymous',
+    appEnvironment: import.meta.env.MODE === 'production' ? 'production' : 'dev',
+    tokenType: null,
+    githubLogin: null
+  });
+
+  useEffect(() => {
+    async function determineTokenDetails() {
+      if (!user) return;
+      try {
+        const pat = await getStoredPat();
+        let derivedTokenType: 'classic' | 'fine_grained' | 'unknown' | null = null;
+        if (pat) {
+          derivedTokenType = pat.startsWith('github_pat_') ? 'fine_grained' : (pat.startsWith('ghp_') ? 'classic' : 'unknown');
+        }
+        
+        let login: string | null = null;
+        if (results && results.length > 0) {
+          const owners = results.map(r => r.ownerName);
+          const counts = owners.reduce((acc, curr) => {
+            acc[curr] = (acc[curr] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          const maxOwner = Object.entries(counts).sort((a, b) => (b[1] as number) - (a[1] as number))[0];
+          if (maxOwner) {
+            login = maxOwner[0];
+          }
+        }
+
+        setExportContext(prev => ({
+          ...prev,
+          userMode: user.isAnonymous ? 'anonymous' : 'google',
+          tokenType: derivedTokenType,
+          githubLogin: login
+        }));
+      } catch (err) {
+        console.error("Error determining token details for export context:", err);
+      }
+    }
+    determineTokenDetails();
+  }, [user, results, getStoredPat]);
+
+  const buildContext = useMemo((): ExportBuildContext => {
+    return {
+      auditRunId: auditId && auditId !== 'guest' ? auditId : null,
+      auditCreatedAt: auditCreatedAt,
+      exportedAt: new Date().toISOString(),
+      userMode: user ? (user.isAnonymous ? 'anonymous' : 'google') : undefined,
+      githubLogin: exportContext.githubLogin,
+      appEnvironment: import.meta.env.MODE === 'production' ? 'production' : 'dev',
+      tokenType: exportContext.tokenType
+    };
+  }, [auditId, auditCreatedAt, user, exportContext.githubLogin, exportContext.tokenType]);
+
   const jsonExportString = useMemo(() => {
     if (!results) return '';
-    return JSON.stringify(buildJsonExport(results, ""), null, 2);
-  }, [results]);
+    return JSON.stringify(buildJsonExport(results, buildContext), null, 2);
+  }, [results, buildContext]);
 
   const schemaString = useMemo(() => {
     return JSON.stringify(schema, null, 2);
@@ -355,7 +411,7 @@ export default function Dashboard() {
   const exportJson = () => {
     if (!results) return;
     
-    const exportData = buildJsonExport(results, "");
+    const exportData = buildJsonExport(results, buildContext);
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -369,7 +425,7 @@ export default function Dashboard() {
   const exportCsv = () => {
     if (!results) return;
     
-    const csvContent = buildCsvExport(results);
+    const csvContent = buildCsvExport(results, buildContext);
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -384,7 +440,7 @@ export default function Dashboard() {
     setIsValidatingSchema(true);
     setTimeout(() => {
       try {
-        const exportData = buildJsonExport(results, "");
+        const exportData = buildJsonExport(results, buildContext);
         const ajv = new Ajv({ strict: false });
         const validate = ajv.compile(schema);
         const valid = validate(exportData);

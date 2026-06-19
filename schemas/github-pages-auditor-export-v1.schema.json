@@ -506,7 +506,13 @@
     "ExportSummary": {
       "additionalProperties": false,
       "properties": {
+        "approvedCertButHttpsNotEnforcedCount": {
+          "type": "number"
+        },
         "customDomainCount": {
+          "type": "number"
+        },
+        "customDomainHttpsNotEnforcedCount": {
           "type": "number"
         },
         "customDomainUnverifiedOrUnknownCount": {
@@ -533,6 +539,9 @@
         "errorCount": {
           "type": "number"
         },
+        "httpsNotEnforcedCount": {
+          "type": "number"
+        },
         "httpsProblemCount": {
           "type": "number"
         },
@@ -555,7 +564,10 @@
         "deploymentWorkflowCount",
         "deploymentBranchRootCount",
         "deploymentBranchDocsCount",
-        "deploymentUnknownCount"
+        "deploymentUnknownCount",
+        "httpsNotEnforcedCount",
+        "approvedCertButHttpsNotEnforcedCount",
+        "customDomainHttpsNotEnforcedCount"
       ],
       "type": "object"
     },

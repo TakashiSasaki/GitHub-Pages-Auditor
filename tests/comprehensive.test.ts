@@ -16,6 +16,7 @@ import {
 } from '../src/export/exportBuilders.js';
 import { RepositoryResult } from '../src/types.js';
 import { getEnvironmentName, getGithubTokenDocPath, getAuditCollectionPath } from '../src/lib/firestorePaths.js';
+import { liveExportSampleRows } from './fixtures/liveExportRows.js';
 
 describe('GitHub API Allowlist and Subpaths', () => {
   it('allows allowlisted endpoints', () => {
@@ -452,4 +453,105 @@ describe('Express Server Contracts and Boundary Defenses', () => {
     );
   });
 });
+
+describe('CSV Export Regression and Live Data Diagnostics', () => {
+  it('guarantees header stability and correct column count', () => {
+    const csvContent = buildCsvExport(liveExportSampleRows, {
+      auditRunId: 'test-audit-456',
+      exportedAt: '2026-06-19T13:00:00Z',
+      userMode: 'google'
+    });
+
+    const lines = csvContent.split('\n');
+    assert.ok(lines.length > 1, 'CSV must contain headers and at least some rows');
+
+    const headers = lines[0].split(',');
+    assert.strictEqual(headers.length, 27, 'CSV must provide precisely 27 headers');
+
+    // Confirm core headers exist in the exact required layout
+    assert.strictEqual(headers[0], 'audit_run_id');
+    assert.strictEqual(headers[1], 'exported_at');
+    assert.strictEqual(headers[26], 'error_classification');
+
+    // Verify all rows have precisely 27 columns
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      // Simple parse for commas that are not wrapped in quotes
+      const columns = [];
+      let current = '';
+      let inQuotes = false;
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          columns.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      columns.push(current);
+
+      assert.strictEqual(
+        columns.length, 
+        27, 
+        `Row ${i} must have precisely 27 elements. Actual column count: ${columns.length}. Line content: "${line}"`
+      );
+
+      // Verify that audit_run_id corresponds to the supplied context
+      assert.strictEqual(columns[0], 'test-audit-456', 'Row must reflect context auditRunId');
+      assert.strictEqual(columns[1], '2026-06-19T13:00:00Z', 'Row must reflect context timestamp');
+    }
+  });
+
+  it('verifies custom domain status mappings and HTTPS enforcement findings in CSV output', () => {
+    const csvContent = buildCsvExport(liveExportSampleRows, {
+      auditRunId: 'test-audit-123',
+      exportedAt: '2026-06-19T13:00:00Z'
+    });
+
+    const lines = csvContent.split('\n');
+    
+    // Find row with id 103 (custom-domain-blank-protected)
+    const line103 = lines.find(l => l.includes('custom-domain-blank-protected'));
+    assert.ok(line103, 'Row 103 must exist');
+    assert.ok(line103.includes('custom_domain_configured'), 'Blank protected state must default to custom_domain_configured');
+
+    // Find row with id 104 (enforced)
+    const line104 = lines.find(l => l.includes('custom-domain-enforced'));
+    assert.ok(line104, 'Row 104 must exist');
+    assert.ok(line104.includes('custom_domain_verified'), 'Verified state must map to custom_domain_verified');
+
+    // Find row with id 105 (unenforced)
+    const line105 = lines.find(l => l.includes('custom-domain-unenforced'));
+    assert.ok(line105, 'Row 105 must exist');
+    assert.ok(line105.includes('https_not_enforced'), 'Unenforced HTTPS must map to include https_not_enforced in the classifications column');
+  });
+
+  it('validates JSON export summary indicators reflect correct unenforced HTTPS statistics', () => {
+    const jsonExport = buildJsonExport(liveExportSampleRows, {
+      auditRunId: 'test-json-run',
+      exportedAt: '2026-06-19T13:00:00Z',
+      userMode: 'google'
+    });
+
+    assert.strictEqual(jsonExport.summary.repositoryCount, 5, 'Must contain 5 repositories');
+    assert.strictEqual(jsonExport.summary.httpsNotEnforcedCount, 1, 'Only row id 105 has unenforced HTTPS');
+    assert.strictEqual(jsonExport.summary.approvedCertButHttpsNotEnforcedCount, 1, 'Row 105 has approved certificate but false enforcement');
+    assert.strictEqual(jsonExport.summary.customDomainHttpsNotEnforcedCount, 1, 'Row 105 is custom-domain-configured and unenforced');
+
+    // Make sure JSON is correct against the Ajv validator
+    const schemaContent = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'schemas/github-pages-auditor-export-v1.schema.json'), 'utf-8')
+    );
+    const ajv = new Ajv({ strict: false });
+    const validate = ajv.compile(schemaContent);
+    const valid = validate(jsonExport);
+    assert.ok(valid, 'The updated JSON export (including new summary fields) must strictly validate against the regenerated schema');
+  });
+});
+
 
