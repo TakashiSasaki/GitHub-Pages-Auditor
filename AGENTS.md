@@ -22,7 +22,8 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - GitHub OAuth is not planned for this project.
 - GitHub App authentication is not planned for this project.
 - GitHub API access is PAT-only.
-- Firebase Auth is strictly for application identity.
+- Firebase Auth is strictly for application user identity.
+- No Gemini/AI Integration: The application does not use Gemini, Google GenAI SDK, or "GEMINI_API_KEY" for auditing, authentication, persistence, deployment, or export. It is strictly client-and-backend procedural code without any AI dependencies.
 - There are no callback routes, installation hooks, or token-handling structures for OAuth or App integrations.
 - Do not describe GitHub OAuth or GitHub App as "future work", "not used in Version 1", or "could be added later".
 - The backend must never return PAT plaintext to the browser; the browser manages its own copy.
@@ -125,11 +126,14 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
   - Anonymous guest users: `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/githubTokens/default` and `githubPagesAuditorV1/{environment}/anonymousSessions/{uid}/settings/{settingId}`
   - Restricts access strictly to matching `request.auth.uid == uid` and blocks all other paths, denying generic top-level collections (e.g. `/users`, `/tokens`).
 - **Deploy Command**: `firebase deploy --only firestore:rules` after choosing your active Firebase project.
-- **Rule Verification**: Done via `npx tsx --test tests/rules.test.ts` (runs pre-compiled simulations matching rules logic under the standard Node unit runner).
+- **Rule Verification**: Done via `npx tsx --test tests/rules.test.ts` (runs pre-compiled local sandbox simulations matching rules logic under the standard Node unit runner; does not use or require a full Firebase Local Emulator integration).
 
 ## Recommended Deployment Target
-- **Primary recommendation**: **Cloud Run (Docker)** or **Firebase App Hosting**.
-- **Crucial Warning**: Standard Firebase Hosting alone *cannot* run the Express backend. Firebase Hosting must be paired with Cloud Run via rewrites matching `/api/*` if edge CDN is desired.
+- **Primary deployment target**: **Cloud Run** (Active, Live).
+  - Current Live Production URL: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
+  - Region: `asia-east1`
+  - Custom Domain Status: Planned but pending assignment (Current major milestone is custom domain assignment readiness).
+- **Crucial Warning**: Standard Firebase Hosting alone *cannot* run the Express backend. Firebase Hosting alone cannot run the Express backend. It must be paired with Cloud Run via proxy rewrites matching `/api/*` if edge CDN is desired.
 
 ## Known Constraints and Open Questions
 - Automatic token cleanup for timed-out/expired anonymous sessions is currently not enforced and is recognized as a future serverless/scheduler capability.

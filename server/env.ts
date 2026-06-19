@@ -58,7 +58,20 @@ export function validateBackendEnv(): BackendEnv {
   }
 
   if (ALLOW_DUMMY_AUTH && NODE_ENV === 'production') {
-    console.warn("⚠️ SECURITY WARNING: ALLOW_DUMMY_AUTH is enabled in production! This bypasses security checks and should be disabled.");
+    const fatalSecMsg = [
+      "==============================================================================",
+      "❌ FATAL SECURITY ERROR: ALLOW_DUMMY_AUTH IS ENABLED IN PRODUCTION!",
+      "==============================================================================",
+      "This configuration bypasses core authentication signature checks and presents",
+      "an unacceptable security risk under production environments.",
+      "",
+      "👉 TO RESOLVE:",
+      "Ensure the ALLOW_DUMMY_AUTH environment variable is removed, set to 'false',",
+      "or that NODE_ENV is set to 'development' for local/integration mock testing.",
+      "=============================================================================="
+    ].join('\n');
+    console.error(fatalSecMsg);
+    throw new Error("ALLOW_DUMMY_AUTH is strictly forbidden in production environments.");
   } else if (ALLOW_DUMMY_AUTH) {
     console.log("ℹ️ INFO: ALLOW_DUMMY_AUTH is active. Client bypass using 'dummy-token' is permitted.");
   }

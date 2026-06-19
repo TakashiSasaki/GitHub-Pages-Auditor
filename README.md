@@ -30,7 +30,7 @@ ALLOW_DUMMY_AUTH="true"
 # App URL for absolute references and self-routing
 APP_URL="http://localhost:3000"
 
-# Note: GEMINI_API_KEY is an optional hook and NOT required for core auditor services.
+# Note: GEMINI_API_KEY is NOT required. GitHub Pages Auditor does not use Gemini or AI for any core features.
 ```
 
 ### 3. Firebase Configuration & Startup Check
@@ -62,7 +62,7 @@ Maintain absolute coverage using these verification commands:
 | `npm run lint` | Code Quality | Compiles TypeScript without emitting to check for syntax and type errors. |
 | `npm test` | Complete Suite | Runs all automated test suites, including unit metrics and Firestore rules. |
 | `npm run test:unit` | Classification & API Proxy | Runs core unit validation, JSON schemas, CSV defense, and mock client proxy limits. |
-| `npm run test:rules` | Firestore Rules | Runs independent simulation test cases verifying `firestore.rules` paths. |
+| `npm run test:rules` | Firestore Rules | Runs independent local simulation test cases verifying `firestore.rules` paths (does not require full Firebase Local Emulator). |
 | `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypes.ts` to output standard Export JSON Schema. |
 | `npm run schema:check` | Schema Drift | Guarantees that built JSON schema matches types exactly. |
 | `npm run build` | Production Compilation | Bundles Vite static assets and compiles the ES Express backend into self-contained `dist/server.cjs` via esbuild. |
@@ -87,13 +87,20 @@ firebase deploy --only firestore:rules
 
 ---
 
-## Production Deployment Targets
-*   **Current Status**: Release Candidate Baseline.
-*   **Target Environments**: Highly compatible with Container platforms like **Cloud Run** or Full-stack platforms like **Firebase App Hosting**.
+## Production & Infrastructure Status
+
+*   **Active Live Production URL**: [https://github-pages-auditor-1042140630327.asia-east1.run.app](https://github-pages-auditor-1042140630327.asia-east1.run.app)
+*   **Active Production Region**: `asia-east1`
+*   **Deployment Status**: Google Cloud Run is our active, live runtime.
+*   **Custom Domain Status**: Planned but pending assignment (Current operational milestone is custom domain readiness).
+
+---
+
+## Production Deployment & Operational Controls
 *   **Dockerization**: Includes a highly optimized, dual-stage production `Dockerfile` and custom `.dockerignore` for compact, secure, and fast deployment runs.
-*   **Dynamic Ports**: Supports dynamic port injection via standard `PORT` environment variables (defaults to 3000), allowing plug-and-play scaling behind ingress reverse-proxies.
-*   **Health Endpoints**: Exposes a secure, unauthenticated `/healthz` checkpoint returning `{ "ok": true }` to allow external uptime monitoring and health checks without revealing system secrets.
-*   **Firebase Hosting Restriction**: Deploying to static Firebase Hosting alone is **insufficient** as the application requires the Express API service to proxy PAT requests safely. Firebase Hosting must be paired with Cloud Run via proxy rewrites matching `/api/*`.
+*   **Dynamic Ports**: Supports dynamic port injection via standard `PORT` environment variables (defaults to 3000), allowing seamless container ingress and routing under Cloud Run.
+*   **Health Check Endpoint**: Exposes a secure, unauthenticated `/healthz` checkpoint returning `{ "ok": true }` with status `200` to support uptime probes without revealing system config or secrets.
+*   **Firebase Hosting Restriction**: Deploying to static Firebase Hosting alone is **insufficient** as the application requires the Express API service to proxy PAT requests safely. Firebase Hosting alone cannot run the Express backend. It must be paired with Cloud Run via proxy rewrites matching `/api/*`.
 
 ---
 
@@ -105,3 +112,4 @@ firebase deploy --only firestore:rules
 5.  **No GitHub Write APIs**: Restricts all proxy calls to GET operations. No settings, repos, or workflows are ever modified.
 6.  **No Workflow/Actions APIs**: Workflows and Actions routes are absolutely forbidden to safeguard repository CI/CD configurations.
 7.  **No Cloud Functions**: Audit caches and transient records are read/written directly via the Firebase Client SDK.
+8.  **No Gemini/AI Integration**: Google Gemini, `@google/genai` libraries, and `GEMINI_API_KEY` are strictly out of scope. The application does not use artificial intelligence, LLM generation, or cognitive agents for auditing, authentication, persistence, deployment, or export.

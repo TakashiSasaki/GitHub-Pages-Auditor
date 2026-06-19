@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'node:test';
 import * as fs from 'fs';
 import * as path from 'path';
 import Ajv from 'ajv';
-import { githubApi, ALLOWED_ENDPOINTS } from '../server.js';
+import { githubApi, ALLOWED_ENDPOINTS, app } from '../server.js';
 import { 
   classifyDeploymentMethod, 
   classifyCustomDomainStatus, 
@@ -404,3 +404,52 @@ describe('Firestore Path Helpers', () => {
     assert.ok(!auditPath.startsWith('audits/'), 'Paths must not use generic top-level collections');
   });
 });
+
+describe('Express Server Contracts and Boundary Defenses', () => {
+  it('defines a secure and unauthenticated /healthz endpoint', () => {
+    // Inspect Express stack routes to ensure /healthz is registered correctly
+    const routes = app._router.stack
+      .filter((layer: any) => layer.route)
+      .map((layer: any) => ({
+        path: layer.route.path,
+        methods: layer.route.methods
+      }));
+    
+    const healthzRoute = routes.find((r: any) => r.path === '/healthz');
+    assert.ok(healthzRoute, '/healthz endpoint must be registered on the Express router');
+    assert.ok(healthzRoute.methods.get, '/healthz endpoint must respond to GET requests');
+  });
+
+  it('prohibits any OAuth/App callback or installation routes in the routing table', () => {
+    // Ensure absolutely NO routes matching OAuth, github-app, callback or installation exist
+    // Express stack contains route layers. Let's inspect paths.
+    const routes = app._router.stack
+      .filter((layer: any) => layer.route)
+      .map((layer: any) => layer.route.path);
+
+    const forbiddenSubstrings = ['oauth', 'callback', 'github-app', 'install', 'webhook'];
+    for (const routePath of routes) {
+      for (const forbidden of forbiddenSubstrings) {
+        assert.ok(
+          !routePath.toLowerCase().includes(forbidden),
+          `Production security security constraint: found forbidden routes mapping URL "${routePath}" containing string "${forbidden}". All third-party callback routes are strictly out of scope!`
+        );
+      }
+    }
+  });
+
+  it('guarantees key audit and validation APIs require auth middleware headers', () => {
+    // Verify that /api/pat/validate is protected by auth barriers in the stack
+    const patRouteLayer = app._router.stack.find(
+      (layer: any) => layer.route && layer.route.path === '/api/pat/validate'
+    );
+    assert.ok(patRouteLayer, '/api/pat/validate route must be defined');
+    
+    // Stack length is at least 2: verifyAuth middleware + endpoint callback handler
+    assert.ok(
+      patRouteLayer.route.stack.length >= 2,
+      '/api/pat/validate must possess authentic middleware protection (such as verifyAuth) preceding the callback handler'
+    );
+  });
+});
+

@@ -272,3 +272,4 @@ if (process.env.NODE_ENV !== 'test' && !process.argv.some(arg => arg.includes('t
 
 // Re-export from server for easier consumption in tests
 export { githubApi, ALLOWED_ENDPOINTS } from './server/githubClient';
+export { app };

@@ -1,7 +1,7 @@
 # GitHub Pages Auditor - Deployment Readiness Baseline
 Version: `1.1.0` (Release Candidate Milestone)
 
-This document formalizes the production deployment strategies, architectural targets, and infrastructure requirements for the **GitHub Pages Auditor** application.
+This document formalizes the production deployment status, custom domain readiness, and infrastructure requirements for the **GitHub Pages Auditor** application.
 
 ---
 
@@ -13,31 +13,24 @@ GitHub Pages Auditor is a full-stack application:
 *   **Database**: Direct Firestore client integration via the Firebase Client SDK.
 *   **Auth**: Direct client integration with Firebase Authentication (Google & Anonymous).
 
-Because the backend serves as a secure proxy to handle GitHub API calls (using the temporary `x-temp-pat` header mechanism) and validates incoming Firebase ID tokens, you **cannot** run this application purely on static-site hosting solutions (like basic Firebase Hosting or GitHub Pages) without a dynamic server component.
+Because the backend serves as a secure proxy to handle GitHub API calls (using the temporary `x-temp-pat` header mechanism) and validates incoming Firebase ID tokens, you **cannot** run this application purely on static-site hosting solutions (like basic Firebase Hosting or GitHub Pages) without a dynamic server component. Firebase Hosting alone cannot run the Express backend.
 
 ---
 
-## 2. Intended Deployment Target Option Analysis
+## 2. Active Deployment Target: Cloud Run (Live Runtime)
 
-### Option A: Cloud Run (Highly Recommended Target)
-*   **Description**: Packaged as a standard Docker container running Express, serving both the REST API and the bundled static assets.
-*   **Pros**:
-    *   Direct matching of the current development, validation, and container runtime environment.
-    *   Scale-to-zero capabilities for cost efficiency.
-    *   Simplified container security and environment variable injection behind Google Cloud Secret Manager.
-*   **Configuration**: Standard port 3000 ingress target with CJS server runtime entry `node dist/server.cjs`.
+The application is already running on **Google Cloud Run** in containerized production. This is the active, live runtime environment.
 
-### Option B: Firebase App Hosting
-*   **Description**: Next-generation hosting from Firebase built specifically for full-stack framework-driven workflows (supporting Node.js, NextJS, Vite servers natively).
-*   **Pros**:
-    *   Full-stack builds managed automatically from Git repos.
-    *   Simplified configuration under a unified billing boundary.
+*   **Current Live Production URL**: [https://github-pages-auditor-1042140630327.asia-east1.run.app](https://github-pages-auditor-1042140630327.asia-east1.run.app)
+*   **Region**: `asia-east1`
+*   **Status**: Active & Live
+*   **Custom Domain Status**: Pending custom domain assignment trial.
+*   **Next Milestone**: Cloud Run Production Hardening and Custom Domain Assignment Readiness.
 
-### Option C: Firebase Hosting + Cloud Run Rewrites
-*   **Description**: Static UI assets deployed directly to Firebase CDN, with all `/api/*` calls routed asynchronously to an Express backend running on Cloud Run.
-*   **Pros**:
-    *   Blazing-fast frontend asset loads from CDN edge caching.
-    *   Lower server loads since Express only processes API requests.
+### Deployment Runtime Details:
+*   **Container Image**: Dual-stage light Alpine build with Node.js 20.
+*   **Configuration**: Standard port 3000 ingress target, binding dynamically via `process.env.PORT` in the container.
+*   **Startup command**: `node dist/server.cjs` (standard standalone JS output compiled by `esbuild`).
 
 ---
 
