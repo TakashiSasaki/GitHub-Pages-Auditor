@@ -94,8 +94,8 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Any change to auth, PAT storage, Firestore paths, or GitHub API allowlist must update `AGENTS.md`, README, and relevant docs in the same commit.
 
 ## JSON Export Schema Contract
-- JSON export schema version: `github-pages-auditor.export.v1`
-- Schema lives in `schemas/github-pages-auditor-export-v1.schema.json` (Full schema implemented).
+- JSON export schema version: `github-pages-auditor.export.v2`
+- Schema lives in `schemas/github-pages-auditor-export-v2.schema.json` (Full schema implemented).
 - **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and drafted V2 schemas live in `src/schema/exportTypesV2.ts`).
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
 - Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
@@ -124,7 +124,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
   - `firebase.json`: Present
   - `.firebaserc`: Absent (must be set individually or explicitly before hosting deployment is triggered)
   - `firestore.rules`: Present
-  - `firestore.indexes.json`: Absent (no active complex compound filtering indexes needed for V1 audits list)
+  - `firestore.indexes.json`: Absent (no active complex compound filtering indexes needed for V2 audits list)
   - `.env.example`: Present with structured sectioning
   - `vite.config.ts`: Present
   - `src/lib/firebase.ts`: Present
@@ -153,7 +153,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Decoupled PAT reference from export contexts and replaced it with safe token metadata (`tokenType`).
 - Generated proper external consumer sample artifacts (`json` and `csv`) with static IDs safely under `examples/`.
 - Introduced `schemas/schema-identifiers.json` as the local manifest mapping semantic schema versions to URNs.
-- Created `scripts/validateExamples.js` to continuously assert compliance for V1 and V2 exported samples alongside `npm run examples:validate`.
+- Created `scripts/validateExamples.js` to continuously assert compliance for V2 and V2 exported samples alongside `npm run examples:validate`.
 - Defined `docs/external-consumer-guide.md` with strict interoperability requirements, ensuring registries and runtime retrievals remain out-of-scope.
 - Completely verified coverage of V2 deeply-nested `findings` taxonomy reflecting GitHub Pages DNS/SSL statuses.
 - Advanced primary build threshold to `1.2.0 (External Consumer Trial Readiness Baseline)`.

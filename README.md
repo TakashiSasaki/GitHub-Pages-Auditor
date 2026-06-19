@@ -66,7 +66,7 @@ Maintain absolute coverage using these verification commands:
 | `npm run build` | Production Compilation | Bundles Vite static assets and compiles the ES Express backend into self-contained `dist/server.cjs` via esbuild. |
 
 For detailed metadata, properties, classification mappings, and future nested schema developments, consult:
-* **docs/export-schema-vocabulary.md** — Property-by-property dictionary comparing V1 names to raw GitHub API counterparts.
+* **docs/export-schema-vocabulary.md** — Property-by-property dictionary comparing V2 names to raw GitHub API counterparts.
 * **docs/export-schema-v2-draft.md** — Conceptual design and draft structures for next-generation nested data schema records.
 
 ---
@@ -96,7 +96,7 @@ firebase deploy --only firestore:rules
 *   **Deployment Status**: Google Cloud Run is our active, live runtime.
 *   **Planned Custom Domain**: `pages.moukaeritai.work`
 *   **Custom Domain Status**: planned, not yet assigned (Current milestone: Custom Domain Assignment Readiness for pages.moukaeritai.work)
-*   **Export Schema Status**: V1 default, V2 draft/interchange candidate, examples validation.
+*   **Export Schema Status**: V2 default, V2 draft/interchange candidate, examples validation.
 
 ---
 

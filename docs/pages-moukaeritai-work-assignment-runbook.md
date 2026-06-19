@@ -13,7 +13,7 @@ This runbook outlines the operational steps to assign the planned custom domain 
 *   `https://pages.moukaeritai.work` serves the same app.
 *   Firebase Auth works from `pages.moukaeritai.work`.
 *   API routes work from the custom domain.
-*   CSV, JSON v1, and JSON v2 draft exports work.
+*   CSV and JSON exports work.
 *   Default Cloud Run URL remains available as fallback unless explicitly disabled later.
 
 ## 3. Prerequisites

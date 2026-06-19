@@ -2,7 +2,7 @@
 
 This document designs and drafts the **Version 2 (v2)** data interchange schema, registered under `github-pages-auditor.export.v2`. 
 
-While the **V1** schema (current default) utilizes a flat, single-level dictionary optimised for CSV grids, the **V2** design (draft/interchange candidate) leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability.
+While the **V1** schema (current default) utilizes a flat, single-level dictionary optimised for CSV grids, the **V2** design (current default) leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability.
 
 ### Samples and Tooling
 External consumer tools and developers can evaluate V2 payloads by inspecting:

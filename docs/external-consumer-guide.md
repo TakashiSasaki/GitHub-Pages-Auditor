@@ -5,20 +5,19 @@ This document provides instructions for external systems and users consuming dat
 
 ## Schema Identification
 All exported JSON files are defined by a JSON Schema. You can identify the schema identity and version using two fields located at the root of the exported JSON:
-- `schemaVersion`: A human-readable identifier of the schema (e.g., `github-pages-auditor.export.v1` or `github-pages-auditor.export.v2`).
+- `schemaVersion`: A human-readable identifier of the schema (e.g., `github-pages-auditor.export.v2` or `github-pages-auditor.export.v2`).
 - `schemaId`: A stable and opaque machine identifier mapping to a specific JSON Schema version. It takes the form of a UUID standard URN: `urn:uuid:<uuid-v4>`.
 
 ### Available Schema Versions
-1. **Version 1 (V1) - Current Default:** Flat structure targeting spreadsheet ingestion. `schemaVersion: "github-pages-auditor.export.v1"`.
+1. **Version 2 (V2) - Current Default:** Flat structure targeting spreadsheet ingestion. `schemaVersion: "github-pages-auditor.export.v2"`.
 2. **Version 2 (V2) - Interchange Draft:** Deeply-nested structure designed for system-to-system interchange. `schemaVersion: "github-pages-auditor.export.v2"`.
 
 For JSON exports, you will find `schemaId` inside the exported payload, which must strictly match the `$id` of the actual JSON Schema definitions. These schema documents are self-contained and version-controlled alongside this application.
 
 ## Sample Assets and Validation
 Sample datasets that emulate different repository configurations—such as disabled pages, workflow deployments, and unverified custom domains—are provided under the `examples/` directory inside this project:
-- `examples/github-pages-auditor-export-v1.sample.json`
 - `examples/github-pages-auditor-export-v2.sample.json`
-- `examples/github-pages-auditor-export-v1.sample.csv`
+- `examples/github-pages-auditor-export.sample.csv`
 
 The `schemas/schema-identifiers.json` file is a local manifest that binds a human-readable `schemaVersion` to its absolute `schemaId` and the relative `path` for its definition file.
 
@@ -42,7 +41,7 @@ Here is a functional translation of the most important concepts found inside sta
 - **`findings`**: Derived signals injected autonomously to simplify data aggregation for compliance.
 
 ### Severity and Actionability
-The `findings` output array is automatically aggregated (V2) or heavily encoded (V1's customDomainVerificationState columns).
+The `findings` output array is automatically aggregated (V2) or heavily encoded (V2's customDomainVerificationState columns).
 Findings carry a `severity` property, typically `info`, `warning`, or `error`. An error indicates actionable, insecure issues (e.g., HTTPS not enforced, unverified domains) that need to be prioritized. Warnings denote edge conditions (such unknown legacy states) that require manual review.
 
 ## Handling Future Configurations

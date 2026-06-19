@@ -110,7 +110,7 @@ Anonymous cleanup strategy must be documented in "AGENTS.md".
 
 Anonymous-to-Google upgrade or credential linking is not required in Version 1. Do not implement automatic migration unless the specification is updated.
 
-5. Firestore Persistence (V1 / MVP)
+5. Firestore Persistence (V2 / MVP)
 
 Firebase Firestore is used for persistent PAT storage and Audit cache persistence. 
 The keys and documents are fully guarded strictly using standard Firebase Client SDK usage with `firestore.rules` where `request.auth.uid == uid`, completely locking it down securely per user.
@@ -175,7 +175,7 @@ FUTURE/IDEAL fields (Not Currently Implemented):
   "githubUserId": 123456,
   "fingerprint": "display-safe-token-fingerprint",
   "encryptedToken": "implementation-defined-ciphertext-or-secret-reference",
-  "tokenStorageVersion": "v1",
+  "tokenStorageVersion": "v2",
   "defaultAffiliation": "owner,collaborator,organization_member",
   "defaultVisibility": "all",
   "allowHealthCheck": false,

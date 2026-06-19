@@ -426,12 +426,12 @@ JSON export must have a schema.
 Every JSON export must include:
 
 {
-  "schemaVersion": "github-pages-auditor.export.v1"
+  "schemaVersion": "github-pages-auditor.export.v2"
 }
 
 Create this schema file:
 
-schemas/github-pages-auditor-export-v1.schema.json
+schemas/github-pages-auditor-export-v2.schema.json
 
 Do not include in exports:
 
@@ -473,7 +473,7 @@ Create or update at least these files:
 
 AGENTS.md
 docs/spec-initial.md
-schemas/github-pages-auditor-export-v1.schema.json
+schemas/github-pages-auditor-export-v2.schema.json
 README.md
 
 "docs/spec-initial.md" should contain this initial specification.
@@ -528,7 +528,7 @@ Start by creating a safe project foundation:
 
 1. Create "AGENTS.md".
 2. Create "docs/spec-initial.md".
-3. Create placeholder "schemas/github-pages-auditor-export-v1.schema.json".
+3. Create placeholder "schemas/github-pages-auditor-export-v2.schema.json".
 4. Set up the project structure.
 5. Implement or stub Firebase Authentication verification on the backend.
 6. Define typed models for:

@@ -1,8 +1,8 @@
-# GitHub Pages Auditor - Export Schema Vocabulary (V1)
+# GitHub Pages Auditor - Export Schema Vocabulary (V2)
 
-This volume provides a rigorous, property-by-property dictionary of the application's V1 JSON export schema. It defines the origin, semantics, and recommended standard V2 naming maps for all keys to ensure high-fidelity data interchange across auditing pipelines.
+This volume provides a rigorous, property-by-property dictionary of the application's V2 JSON export schema. It defines the origin, semantics, and recommended standard V2 naming maps for all keys to ensure high-fidelity data interchange across auditing pipelines.
 
-V1 is the current default schema optimized for both flat tabular JSON rendering and CSV generation. External consumers can find sample payloads for evaluation under `examples/github-pages-auditor-export-v1.sample.json` and its corresponding CSV generation in the same folder.
+V2 is the current default schema optimized for both flat tabular JSON rendering and CSV generation. External consumers can find sample payloads for evaluation under `examples/github-pages-auditor-export-v2.sample.json` and its corresponding CSV generation in the same folder.
 
 
 ---
@@ -22,7 +22,7 @@ Each property represents a logical value originating from one of the following c
 ## Part 2: Export Elements and Domain Vocabulary
 
 ### 1. Application Envelope Metadata (`application`)
-| JSON Path | Current V1 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
+| JSON Path | Current V2 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `application.name` | `name` | `export_metadata` | No | Machine | N/A | Human-readable app name identifier. | `name` |
 | `application.version` | `version` | `export_metadata` | No | Machine | N/A | Dynamic package version reading `package.json` compilation context. | `version` |
@@ -31,7 +31,7 @@ Each property represents a logical value originating from one of the following c
 ---
 
 ### 2. Audit Run execution Headers (`auditRun`)
-| JSON Path | Current V1 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
+| JSON Path | Current V2 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `auditRun.id` | `id` | `export_metadata` | No | Machine | N/A | UID of the audit run (corresponds to real Firestore ID or session container export descriptor). | `id` |
 | `auditRun.status` | `status` | `export_metadata` | No | Machine | N/A | Verification completion state enum mapping. | `status` |
@@ -45,7 +45,7 @@ Each property represents a logical value originating from one of the following c
 ---
 
 ### 3. Aggregate Statistical summary (`summary`)
-| JSON Path | Current V1 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
+| JSON Path | Current V2 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `summary.repositoryCount` | `repositoryCount` | `derived_summary` | No | Machine | N/A | Total number of evaluated repositories. | `repositoryCount` |
 | `summary.pagesEnabledCount` | `pagesEnabledCount` | `derived_summary` | No | Machine | N/A | Number of repositories containing active Pages publishing settings. | `pagesEnabledCount` |
@@ -66,7 +66,7 @@ Each property represents a logical value originating from one of the following c
 ---
 
 ### 4. Repository-Level Record Struct (`repositories[]`)
-| JSON Path | Current V1 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
+| JSON Path | Current V2 Name | Category | Nullable? | Readability | GitHub Source Field | Meaning / Intended Semantics | Recommended V2 Name |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `repositories[].githubRepoId` | `githubRepoId` | `github_repository_api_raw` | Yes | Machine | `id` | Unique raw database integer index assigned by GitHub representing the repository. | `repository.id` |
 | `repositories[].owner` | `owner` | `github_repository_api_raw` | No | Machine | `owner.login` | Organization or personal account identity text owning the target code base. | `repository.ownerLogin` |
@@ -111,7 +111,7 @@ Each property represents a logical value originating from one of the following c
 ---
 
 ### 5. Multi-Domain Verification Indexes (`domains[]`)
-| JSON Path | Current V1 Name | Category | Nullable? | Readability | Meaning / Intended Semantics | Recommended V2 Name |
+| JSON Path | Current V2 Name | Category | Nullable? | Readability | Meaning / Intended Semantics | Recommended V2 Name |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- |
 | `domains[].domain` | `domain` | `app_normalized` | No | Machine | Target custom cname string. | `domain` |
 | `domains[].repositoryCount` | `repositoryCount` | `derived_summary` | No | Machine | Count of repositories mapping to the exact identical custom domain (revealing duplicates). | `repositoryCount` |
@@ -125,7 +125,7 @@ Each property represents a logical value originating from one of the following c
 
 ## Part 3: Semantic Analysis & Name Ambiguity Reviews
 
-This section details the formal conclusions reached regarding current property mappings inside the V1 structure to prevent systematic logic drift:
+This section details the formal conclusions reached regarding current property mappings inside the V2 structure to prevent systematic logic drift:
 
 ### 1. Repository Identity & State
 *   `disabled`: **Must be understood exclusively as a repository-level attribute** signifying general repository freeze. It is not associated with Pages-specific enablement.
@@ -186,8 +186,8 @@ Each published JSON Schema is bound permanently to a stable, unique machine ID `
 - **Identifier format**: `urn:uuid:<uuid-v4>`
 
 The identification boundaries assigned are:
-*   **V1 Schema (Flat Layout)**:
-    - `schemaVersion`: `github-pages-auditor.export.v1`
+*   **V2 Schema (Flat Layout)**:
+    - `schemaVersion`: `github-pages-auditor.export.v2`
     - `schemaId` / JSON Schema `$id`: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1`
 *   **V2 Schema (Nested Layout)**:
     - `schemaVersion`: `github-pages-auditor.export.v2`

@@ -1,5 +1,5 @@
 import { RepositoryResult } from '../types';
-import { ExportBuildContext } from '../schema/exportTypes';
+import { ExportBuildContext } from './exportContext';
 import {
   GitHubPagesAuditorExportV2,
   V2AuditRepositoryRecord,

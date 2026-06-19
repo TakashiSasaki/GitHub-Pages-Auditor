@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import LauncherPage from './components/LauncherPage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { validateFrontendFirebaseConfig } from './lib/env';
 import { saveLastPath, getLastPath } from './lib/userPrefs';
@@ -133,6 +134,13 @@ function AppContent() {
   }
 
   if (!user) {
+    if (location.pathname === '/launcher') {
+      return (
+        <Routes>
+          <Route path="/launcher" element={<LauncherPage />} />
+        </Routes>
+      );
+    }
     return (
       <div className="min-h-[100dvh] bg-slate-50 text-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-xl w-full mx-auto space-y-8 animate-fade-in">
@@ -324,6 +332,7 @@ function AppContent() {
         )}
         <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col overflow-hidden">
           <Routes>
+            <Route path="/launcher" element={<LauncherPage />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/report" element={<Dashboard />} />
             <Route path="/json" element={<Dashboard />} />

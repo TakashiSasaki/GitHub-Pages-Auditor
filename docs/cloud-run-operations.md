@@ -95,7 +95,7 @@ Once the custom domain is mapped:
 2.  [ ] **Homepage Render**: Load `https://pages.moukaeritai.work`.
 3.  [ ] **Sign-In Options**: Verify Google sign-in and anonymous guest sign-in work without origin errors.
 4.  [ ] **Core Auditing Workflow**: Verify PAT validation, audit run, and audit view logic operates correctly.
-5.  [ ] **Export Generation**: Confirm all export outputs (CSV, JSON V1, JSON V2 Draft) generate successfully.
+5.  [ ] **Export Generation**: Confirm all export outputs (CSV, JSON) generate successfully.
 6.  [ ] **UI Elements**: Confirm no unauthorized environment banners or unexpected OAuth buttons appear.
 
 ### Rollback Strategy
