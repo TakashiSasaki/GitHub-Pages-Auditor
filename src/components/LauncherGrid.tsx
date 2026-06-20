@@ -124,7 +124,7 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
                 <tspan className="text-blue-600 fill-blue-600 transition-colors duration-300" fill="#2563eb">
                   {lowestFragment}
                 </tspan>
-                <tspan className="text-slate-300 fill-slate-300 transition-colors duration-300" fill="currentColor">
+                <tspan className="text-slate-200 fill-slate-200 transition-colors duration-300" fill="currentColor">
                   {restSuffix} •{" "}
                 </tspan>
               </React.Fragment>
@@ -637,22 +637,7 @@ export default function LauncherGrid({
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply opacity-20 animate-[pulse_10s_ease-in-out_infinite]"></div>
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         
-        <div className="flex justify-between items-center mb-6 px-4 sm:px-0 pt-4 sm:pt-0">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-200/50 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-200">
-            {readOnly ? "ReadOnly Interactive Canvas" : "Drag Balls to Arrange Order"}
-          </div>
-          {showReset && !readOnly && onReset && (
-            <button
-              onClick={onReset}
-              disabled={saving}
-              className="group flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-all duration-300 disabled:opacity-50 hover:bg-slate-100 px-3 py-1.5 rounded-full bg-white/50 backdrop-blur-sm"
-            >
-              <RotateCcw className="w-4 h-4 group-hover:-rotate-[360deg] transition-transform duration-700 ease-out" />
-              <span>Reset Order</span>
-            </button>
-          )}
-        </div>
-
+        {/* Instruction and Reset removed */}
         {saveWarning && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">
             <AlertCircle className="w-4 h-4 shrink-0 text-yellow-600" />
