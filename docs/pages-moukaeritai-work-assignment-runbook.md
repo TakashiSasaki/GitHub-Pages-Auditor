@@ -36,7 +36,6 @@ Run the following checks locally or via CI to ensure the application is healthy 
 *   [ ] Verify PAT validation and audit run on default Cloud Run URL.
 *   [ ] Verify CSV export.
 *   [ ] Verify JSON V2 export.
-*   [ ] Verify JSON V2 export.
 
 ## 5. Cloud Run domain mapping checklist
 *   [ ] Navigate to the Google Cloud Console -> Cloud Run.
@@ -80,7 +79,6 @@ Run the following checks locally or via CI to ensure the application is healthy 
 *   [ ] Confirm cached audit view works for Google user.
 *   [ ] Confirm CSV export downloads.
 *   [ ] Confirm JSON tab schema validation export downloads.
-*   [ ] Confirm JSON tab schema validation export downloads if exposed.
 *   [ ] Confirm schema tab / JSON preview works if present.
 *   [ ] Confirm no GitHub OAuth / GitHub App login appears.
 *   [ ] Confirm browser console has no Firebase unauthorized-domain error.

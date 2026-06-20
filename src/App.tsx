@@ -226,12 +226,14 @@ function AppContent() {
                 <HelpCircle className="w-4 h-4" />
                 What's this app?
               </button>
-              <Link
-                to="/launcher"
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-              >
-                Launcher
-              </Link>
+              {user && !user.isAnonymous && (
+                <Link
+                  to="/launcher"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                >
+                  Launcher
+                </Link>
+              )}
               <div id="navbar-center-slot"></div>
             </div>
             <div className="flex items-center gap-4">
@@ -339,6 +341,7 @@ function AppContent() {
         <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col overflow-hidden">
           <Routes>
             <Route path="/launcher" element={<LauncherPage />} />
+            <Route path="/launcher-preview" element={<Dashboard />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/report" element={<Dashboard />} />
             <Route path="/json" element={<Dashboard />} />
@@ -347,6 +350,7 @@ function AppContent() {
             <Route path="/results/:auditId/report" element={<Dashboard />} />
             <Route path="/results/:auditId/json" element={<Dashboard />} />
             <Route path="/results/:auditId/schema" element={<Dashboard />} />
+            <Route path="/results/:auditId/launcher" element={<Dashboard />} />
           </Routes>
         </main>
         <footer className="shrink-0 w-full bg-white border-t border-slate-200 py-3 mt-auto">

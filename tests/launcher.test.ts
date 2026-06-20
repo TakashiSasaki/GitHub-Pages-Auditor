@@ -1,48 +1,58 @@
 import { describe, it } from 'node:test';
 import assert from 'assert';
-import { extractLauncherSites, applySavedOrder } from '../src/lib/launcherSites.js';
+import { extractLauncherSites, applySavedOrder, applyLocalOrderChange } from '../src/lib/launcherSites.js';
+import { RepositoryResult } from '../src/types.js';
+import { liveExportSampleRows } from './fixtures/liveExportRows.js';
 
 describe('Launcher Functions', () => {
   it('excludes repositories with Pages disabled', () => {
-    const repos: any[] = [
-      { id: 1, full_name: 'o/r1', name: 'r1', owner: { login: 'o' }, pages: { hasPages: false } },
-      { id: 2, full_name: 'o/r2', name: 'r2', owner: { login: 'o' } },
-      { id: 3, full_name: 'o/r3', name: 'r3', owner: { login: 'o' }, pages: { hasPages: true, html_url: 'https://o.github.io/r3/' } }
+    const repos: Partial<RepositoryResult>[] = [
+      { id: 1, fullName: 'o/r1', repoName: 'r1', ownerName: 'o', hasPages: false },
+      { id: 2, fullName: 'o/r2', repoName: 'r2', ownerName: 'o', hasPages: false },
+      { id: 3, fullName: 'o/r3', repoName: 'r3', ownerName: 'o', hasPages: true, pagesHtmlUrl: 'https://o.github.io/r3/' }
     ];
-    const sites = extractLauncherSites(repos);
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
     assert.strictEqual(sites.length, 1);
     assert.strictEqual(sites[0].id, '3');
   });
 
   it('prefers pagesHtmlUrl over fallback', () => {
-    const repos: any[] = [
-      { id: 1, full_name: 'o/r', name: 'r', owner: { login: 'o' }, pages: { hasPages: true, html_url: 'https://custom.test/' } }
+    const repos: Partial<RepositoryResult>[] = [
+      { id: 1, fullName: 'o/r', repoName: 'r', ownerName: 'o', hasPages: true, pagesHtmlUrl: 'https://custom.test/' }
     ];
-    const sites = extractLauncherSites(repos);
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
     assert.strictEqual(sites[0].url, 'https://custom.test/');
   });
 
   it('uses fallback URL when pagesHtmlUrl is missing', () => {
-    const repos: any[] = [
-      { id: 1, full_name: 'o/r', name: 'r', owner: { login: 'o' }, pages: { hasPages: true, html_url: null } }
+    const repos: Partial<RepositoryResult>[] = [
+      { id: 1, fullName: 'o/r', repoName: 'r', ownerName: 'o', hasPages: true, pagesHtmlUrl: null }
     ];
-    const sites = extractLauncherSites(repos);
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
     assert.strictEqual(sites[0].url, 'https://o.github.io/r/');
   });
 
   it('rejects non-HTTP(S) URLs', () => {
-    const repos: any[] = [
-      { id: 1, full_name: 'o/r', name: 'r', owner: { login: 'o' }, pages: { hasPages: true, html_url: 'javascript:alert(1)' } }
+    const repos: Partial<RepositoryResult>[] = [
+      { id: 1, fullName: 'o/r', repoName: 'r', ownerName: 'o', hasPages: true, pagesHtmlUrl: 'javascript:alert(1)' }
     ];
-    const sites = extractLauncherSites(repos);
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
+    assert.strictEqual(sites.length, 0);
+  });
+
+  it('rejects invalid URLs', () => {
+    const repos: Partial<RepositoryResult>[] = [
+      { id: 1, fullName: 'o/r', repoName: 'r', ownerName: 'o', hasPages: true, pagesHtmlUrl: 'https:// this is not a url' }
+    ];
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
     assert.strictEqual(sites.length, 0);
   });
 
   it('prefers GitHub repo ID string, falls back to full_name', () => {
-    const repos: any[] = [
-      { full_name: 'o/r', name: 'r', owner: { login: 'o' }, pages: { hasPages: true, html_url: 'https://o.github.io/r/' } }
+    const repos: Partial<RepositoryResult>[] = [
+      { fullName: 'o/r', repoName: 'r', ownerName: 'o', hasPages: true, pagesHtmlUrl: 'https://o.github.io/r/' }
     ];
-    const sites = extractLauncherSites(repos);
+    const sites = extractLauncherSites(repos as RepositoryResult[]);
     assert.strictEqual(sites[0].id, 'o/r');
   });
 
@@ -75,5 +85,37 @@ describe('Launcher Functions', () => {
     const ordered = applySavedOrder(sites, []);
     assert.strictEqual(ordered[0].id, '1');
     assert.strictEqual(ordered[1].id, '2');
+  });
+
+  it('extracts correctly from live export fixtures', () => {
+    const sites = extractLauncherSites(liveExportSampleRows);
+
+    // Check it properly filtered out row ID 101 (pages disabled)
+    assert.ok(sites.every(s => s.id !== '101'), 'Should not include pages disabled repos');
+
+    const row102 = sites.find(s => s.id === '102');
+    assert.ok(row102, 'Should find 102');
+    assert.strictEqual(row102.url, 'https://takashisasaki.github.io/no-custom-domain/');
+    assert.strictEqual(row102.hostname, 'takashisasaki.github.io');
+    assert.strictEqual(row102.deploymentMethod, 'workflow');
+
+    const row104 = sites.find(s => s.id === '104');
+    assert.ok(row104, 'Should find 104');
+    assert.strictEqual(row104.url, 'https://enforced.com/');
+    assert.strictEqual(row104.hostname, 'enforced.com');
+  });
+
+  it('applyLocalOrderChange behaves functionally', () => {
+    const currentIds = ['A', 'B', 'C'];
+
+    // moving first left is a no-op
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 0, -1), currentIds);
+    // moving last right is a no-op
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 2, 1), currentIds);
+
+    // moving middle left
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, -1), ['B', 'A', 'C']);
+    // moving middle right
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, 1), ['A', 'C', 'B']);
   });
 });

@@ -5,12 +5,12 @@ This document provides instructions for external systems and users consuming dat
 
 ## Schema Identification
 All exported JSON files are defined by a JSON Schema. You can identify the schema identity and version using two fields located at the root of the exported JSON:
-- `schemaVersion`: A human-readable identifier of the schema (e.g., `github-pages-auditor.export.v2` or `github-pages-auditor.export.v2`).
-- `schemaId`: A stable and opaque machine identifier mapping to a specific JSON Schema version. It takes the form of a UUID standard URN: `urn:uuid:<uuid-v4>`.
+- `schemaVersion`: A human-readable identifier of the schema (e.g., `github-pages-auditor.export.v2`).
+- `schemaId`: A stable and opaque machine identifier mapping to a specific JSON Schema version. It takes the form of a UUID standard URN: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2`.
 
 ### Available Schema Versions
-1. **Version 2 (V2) - Current Default:** Flat structure targeting spreadsheet ingestion. `schemaVersion: "github-pages-auditor.export.v2"`.
-2. **Version 2 (V2) - Current Default:** Deeply-nested structure designed for system-to-system interchange. `schemaVersion: "github-pages-auditor.export.v2"`.
+1. **Version 2 (V2) - Current Default JSON:** Deeply-nested structure designed for system-to-system interchange. `schemaVersion: "github-pages-auditor.export.v2"`.
+2. **CSV - Separate Format:** A flat export format targeting spreadsheet ingestion. CSV is NOT V1 JSON, and is an entirely separate flat export mechanism.
 
 For JSON exports, you will find `schemaId` inside the exported payload, which must strictly match the `$id` of the actual JSON Schema definitions. These schema documents are self-contained and version-controlled alongside this application.
 

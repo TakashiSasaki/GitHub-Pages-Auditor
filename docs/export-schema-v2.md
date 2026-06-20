@@ -1,8 +1,8 @@
-# GitHub Pages Auditor - Proposed V2 Export Schema Architecture
+# GitHub Pages Auditor - V2 Export Schema Architecture
 
 This document details the **Version 2 (v2)** data interchange schema, registered under `github-pages-auditor.export.v2`. 
 
-While the **V1** schema (current default) utilizes a flat, single-level dictionary optimised for CSV grids, the **V2** design (current default) leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability.
+The **V2** design leverages deeply nested, domain-focused JSON sub-objects to achieve structural clarity and clean machine readability. It is the only JSON export schema. CSV is provided as a separate flat export format.
 
 ### Samples and Tooling
 External consumer tools and developers can evaluate V2 payloads by inspecting:
@@ -13,7 +13,7 @@ For referencing the stable `$id` and schema version, a local schema manifest is 
 
 ---
 
-## 1. Why Transition to V2?
+## 1. Design Principles
 *   **Structural Honesty**: Prevents namespaces pollution by grouping raw GitHub properties and local app classifications into domain-isolated maps.
 *   **Decoupled Findings**: Replaces multi-purpose tag array fields (`classification[]`, `errorClassification`) with a unified, structured `findings[]` registry.
 *   **Strict String Typings**: Implements formalized RFC-3339 constraints and URI matching patterns across dates and links.

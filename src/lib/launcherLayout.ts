@@ -10,7 +10,8 @@ export interface LauncherLayoutDoc {
   updatedAt?: any;
 }
 
-export async function getLauncherLayout(uid: string, isAnonymous: boolean, env: string = 'production'): Promise<LauncherLayoutDoc | null> {
+export async function getLauncherLayout(uid: string, isAnonymous: boolean, env: string): Promise<LauncherLayoutDoc | null> {
+  if (!env) throw new Error("Environment string must be explicitly provided");
   const path = getUserSettingDocPath(env, uid, isAnonymous, 'launcherLayout');
   try {
     const d = await getDoc(doc(db, path));
@@ -23,7 +24,8 @@ export async function getLauncherLayout(uid: string, isAnonymous: boolean, env: 
   return null;
 }
 
-export async function saveLauncherLayout(uid: string, isAnonymous: boolean, orderedSiteIds: string[], env: string = 'production'): Promise<void> {
+export async function saveLauncherLayout(uid: string, isAnonymous: boolean, orderedSiteIds: string[], env: string): Promise<void> {
+  if (!env) throw new Error("Environment string must be explicitly provided");
   const path = getUserSettingDocPath(env, uid, isAnonymous, 'launcherLayout');
   const payload: LauncherLayoutDoc = {
     schemaVersion: 'github-pages-auditor.launcherLayout.v1',
@@ -32,9 +34,7 @@ export async function saveLauncherLayout(uid: string, isAnonymous: boolean, orde
     hiddenSiteIds: [],
     updatedAt: serverTimestamp()
   };
-  try {
-    await setDoc(doc(db, path), payload);
-  } catch (e) {
-    console.error("Failed to save launcher layout", e);
-  }
+
+  // Throw errors here so the UI can catch and warn the user
+  await setDoc(doc(db, path), payload);
 }

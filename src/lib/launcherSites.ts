@@ -5,29 +5,86 @@ export interface LauncherSite {
   name: string;
   ownerRepo: string;
   url: string;
-  httpsState: string;
+  hostname: string;
+  customDomain: string | null;
+  httpsState: 'enforced' | 'not_enforced' | 'certificate_ok' | 'problem_or_unknown' | 'unknown';
   deploymentMethod: string;
 }
 
+export function getLauncherSiteId(repo: RepositoryResult): string {
+  if (repo.id) return String(repo.id);
+  return repo.fullName;
+}
+
+export function buildLauncherUrl(repo: RepositoryResult): string | null {
+  if (!repo.hasPages) return null;
+
+  const rawUrl = repo.pagesHtmlUrl || `https://${repo.ownerName}.github.io/${repo.repoName}/`;
+
+  try {
+    const urlObj = new URL(rawUrl);
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      return urlObj.href;
+    }
+  } catch (e) {
+    // Invalid URL
+  }
+
+  return null;
+}
+
+export function getDefaultLauncherOrder(sites: LauncherSite[]): string[] {
+  return sites.map(s => s.id);
+}
+
 export function extractLauncherSites(repositories: RepositoryResult[]): LauncherSite[] {
-  return repositories
-    .filter(repo => {
-      if (!repo.pages || !repo.pages.hasPages) return false;
-      const url = repo.pages.html_url || `https://${repo.owner.login}.github.io/${repo.name}/`;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
-      return true;
-    })
-    .map(repo => {
-      const url = repo.pages!.html_url || `https://${repo.owner.login}.github.io/${repo.name}/`;
-      return {
-        id: repo.id ? String(repo.id) : repo.full_name,
-        name: repo.name,
-        ownerRepo: repo.full_name,
-        url,
-        httpsState: repo.pages?.https_enforced ? 'Enforced' : (repo.pages?.https_certificate ? 'Approved' : 'Unknown'),
-        deploymentMethod: repo.pages?.build_type || 'unknown'
-      };
+  const sites: LauncherSite[] = [];
+
+  for (const repo of repositories) {
+    if (!repo.hasPages) continue;
+
+    const url = buildLauncherUrl(repo);
+    if (!url) continue;
+
+    const hostname = new URL(url).hostname;
+
+    let httpsState: LauncherSite['httpsState'] = 'unknown';
+    if (repo.httpsEnforced) {
+      httpsState = 'enforced';
+    } else if (repo.httpsCertificateStatus === 'https_certificate_ok') {
+      httpsState = 'certificate_ok';
+    } else if (repo.httpsCertificateStatus === 'https_certificate_problem_or_unknown') {
+      httpsState = 'problem_or_unknown';
+    } else if (repo.httpsCertificateStatus === 'https_not_enforced') {
+      httpsState = 'not_enforced';
+    }
+
+    sites.push({
+      id: getLauncherSiteId(repo),
+      name: repo.repoName,
+      ownerRepo: repo.fullName,
+      url,
+      hostname,
+      customDomain: repo.cname || null,
+      httpsState,
+      deploymentMethod: repo.deploymentMethod || 'unknown'
     });
+  }
+
+  return sites;
+}
+
+export function applyLocalOrderChange(currentIds: string[], fromIndex: number, direction: -1 | 1): string[] {
+  if (fromIndex < 0 || fromIndex >= currentIds.length) return currentIds;
+  const toIndex = fromIndex + direction;
+  if (toIndex < 0 || toIndex >= currentIds.length) return currentIds;
+
+  const newIds = [...currentIds];
+  const temp = newIds[fromIndex];
+  newIds[fromIndex] = newIds[toIndex];
+  newIds[toIndex] = temp;
+
+  return newIds;
 }
 
 export function applySavedOrder(sites: LauncherSite[], savedIds: string[]): LauncherSite[] {

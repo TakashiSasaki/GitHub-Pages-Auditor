@@ -40,7 +40,7 @@ JSON export should include:
 
 ## Schema Maintenance Rules
 
-- TypeScript types in `src/schema/exportTypes.ts` are the source of truth for the export schema.
+- TypeScript types in `src/schema/exportTypesV2.ts` are the source of truth for the export schema.
 - The file `schemas/github-pages-auditor-export-v2.schema.json` is a generated artifact.
 - Manual edits to the generated schema file are strongly discouraged.
 - Any schema-affecting changes (modifying export interfaces) must trigger regeneration and validation via:
@@ -129,11 +129,13 @@ First Export Example (Minimal):
 }
 ```
 
-## Launcher (`/launcher`)
-The **Launcher** page displays a user's detected GitHub Pages sites from their most recent audit.
+## Launcher & Dashboard Preview
+The **Launcher** surface displays a user's detected GitHub Pages sites, sharing a common `LauncherGrid` component.
+- **Standalone Page (`/launcher`)**: Renders sites from the latest saved audit.
+- **Dashboard Preview Tab (`/results/:auditId/launcher`)**: Previews sites using the currently loaded Dashboard audit result.
 - Tiles open target URLs safely in new windows using `noopener noreferrer`.
 - Only Pages-enabled sites with safe `http:` or `https:` URLs are included.
-- Tile ordering can be customized and is persisted in Firestore under `settings/launcherLayout`.
+- Tile ordering can be customized from either surface and is persisted in Firestore under `settings/launcherLayout`. Layout persistence is optimistic: UI updates immediately upon moving a tile; a save failure will produce a non-blocking warning without reverting the display.
 - The app stores only layout metadata (IDs and order), not duplicated audit payloads.
 - Icons are generated locally based on the app's initial; no external favicon service is used.
 - Layout stores the ordered array of IDs rather than absolute x/y coordinates.

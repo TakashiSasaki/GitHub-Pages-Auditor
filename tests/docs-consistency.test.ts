@@ -37,6 +37,39 @@ describe('Documentation Consistency Diagnostics', () => {
     }
   });
 
+  it('README.md should contain launcher documentation', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'README.md'), 'utf-8');
+    assert.ok(content.includes('/launcher'), 'README.md does not contain /launcher');
+    assert.ok(content.includes('/results/:auditId/launcher'), 'README.md does not contain /results/:auditId/launcher');
+    assert.ok(content.includes('settings/launcherLayout'), 'README.md does not contain settings/launcherLayout');
+    assert.ok(content.includes('external favicon'), 'README.md does not contain external favicon mention');
+  });
+
+  it('App routes must contain Launcher routes', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/App.tsx'), 'utf-8');
+    assert.ok(content.includes('/launcher'), 'App.tsx does not contain /launcher');
+    assert.ok(content.includes('/results/:auditId/launcher'), 'App.tsx does not contain /results/:auditId/launcher');
+  });
+
+  it('Dashboard should contain the label Launcher', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/components/Dashboard.tsx'), 'utf-8');
+    assert.ok(content.includes('>\n                Launcher\n              </button>'), 'Dashboard.tsx does not contain Launcher label');
+  });
+
+  it('useLatestAuditResults should be safely loading from data.results', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/hooks/useLatestAuditResults.ts'), 'utf-8');
+    assert.ok(!content.includes("getAuditCollectionPath('production'"), 'Must not hardcode production environment');
+    assert.ok(!content.includes("data.repositories"), 'Must read from results, not data.repositories');
+    assert.ok(content.includes("data.results"), 'Must read from data.results');
+  });
+
+  it('LauncherGrid.tsx must contain strict safe external linking attributes and no data fetching', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/components/LauncherGrid.tsx'), 'utf-8');
+    assert.ok(content.includes('rel="noopener noreferrer"'), 'LauncherGrid must use rel="noopener noreferrer"');
+    assert.ok(content.includes('target="_blank"'), 'LauncherGrid must use target="_blank"');
+    assert.ok(!content.includes('firebase/firestore'), 'LauncherGrid must not fetch data from Firestore directly');
+  });
+
   it('No stale V1 or draft V2 wording remains in code, docs, tests, and scripts', () => {
     const checkDir = (dirPath) => {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -62,6 +95,9 @@ describe('Documentation Consistency Diagnostics', () => {
             assert.ok(!content.includes('V1 default'), `Forbidden wording V1 default found in ${fullPath}`);
             assert.ok(!content.includes('v1 JSON export'), `Forbidden wording v1 JSON export found in ${fullPath}`);
             assert.ok(!content.includes('v1 CSV export'), `Forbidden wording v1 CSV export found in ${fullPath}`);
+            assert.ok(!content.includes('src/schema/exportTypes.ts'), `Forbidden identifier src/schema/exportTypes.ts found in ${fullPath}`);
+            assert.ok(!content.includes('docs/export-schema-v2-draft.md'), `Forbidden identifier docs/export-schema-v2-draft.md found in ${fullPath}`);
+            assert.ok(!content.includes('V2/interchange candidate'), `Forbidden identifier V2/interchange candidate found in ${fullPath}`);
           }
         }
       }
