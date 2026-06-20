@@ -123,12 +123,12 @@ export default function LauncherGrid({
                   href={site.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-slate-900 text-lg hover:text-blue-600 transition-colors line-clamp-1 inline-flex items-center gap-1 group/link"
+                  className="font-semibold text-slate-900 text-lg hover:text-blue-600 transition-colors inline-block break-all group/link"
                 >
                   {site.name}
-                  <ExternalLink className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                  <ExternalLink className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity inline ml-1 align-text-bottom" />
                 </a>
-                <p className="text-xs text-slate-500 truncate" title={site.ownerRepo}>{site.ownerRepo}</p>
+                <p className="text-xs text-slate-500 break-all mt-1" title={site.ownerRepo}>{site.ownerRepo}</p>
               </div>
 
               <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100">

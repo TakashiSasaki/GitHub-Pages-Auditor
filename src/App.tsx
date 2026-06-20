@@ -10,7 +10,7 @@ import LauncherPage from './components/LauncherPage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { validateFrontendFirebaseConfig } from './lib/env';
 import { saveLastPath, getLastPath } from './lib/userPrefs';
-import { LogOut, LogIn, UserCircle, Ghost, Key, Save, Loader2, CheckCircle, Github, HelpCircle, X, AlertCircle, Database, ShieldCheck, XCircle } from 'lucide-react';
+import { LogOut, LogIn, UserCircle, Ghost, Key, Save, Loader2, CheckCircle, Github, HelpCircle, X, AlertCircle, Database, ShieldCheck, XCircle, LayoutGrid, List } from 'lucide-react';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signInAsGuest, logout, hasStoredPat, savePatToFirestore } = useAuth();
@@ -283,6 +283,29 @@ function AppContent() {
                 </div>
 
                 <div className="p-1">
+                  {isLauncherPath ? (
+                    <button 
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate('/');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
+                    >
+                      <List className="w-4 h-4 text-slate-500" />
+                      Normal Mode
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate('/launcher');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
+                    >
+                      <LayoutGrid className="w-4 h-4 text-slate-500" />
+                      Launcher Mode
+                    </button>
+                  )}
                   <button 
                     onClick={() => {
                       setMenuOpen(false);
@@ -407,6 +430,29 @@ function AppContent() {
                       </div>
 
                       <div className="p-1">
+                        {isLauncherPath ? (
+                          <button 
+                            onClick={() => {
+                              setMenuOpen(false);
+                              navigate('/');
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
+                          >
+                            <List className="w-4 h-4 text-slate-500" />
+                            Normal Mode
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => {
+                              setMenuOpen(false);
+                              navigate('/launcher');
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
+                          >
+                            <LayoutGrid className="w-4 h-4 text-slate-500" />
+                            Launcher Mode
+                          </button>
+                        )}
                         <button 
                           onClick={() => {
                             setMenuOpen(false);
