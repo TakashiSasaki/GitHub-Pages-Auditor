@@ -205,7 +205,14 @@ function AppContent() {
   const isLauncherPath = location.pathname === '/launcher';
 
   return (
-    <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans flex flex-col overflow-hidden">
+    <div className="relative h-[100dvh] bg-gray-50 text-gray-900 font-sans flex flex-col overflow-hidden">
+        {/* Environment Badge */}
+        <div className={`absolute top-0 right-0 z-[100] px-2 py-0.5 rounded-bl-[4px] text-[10px] font-bold uppercase tracking-widest text-white shadow-sm pointer-events-none select-none ${
+          import.meta.env.MODE === 'production' ? 'bg-emerald-500/90' : 'bg-amber-500/90'
+        }`}>
+          {import.meta.env.MODE === 'production' ? 'PROD' : 'DEV'}
+        </div>
+
         {isLauncherPath ? (
           <div className="absolute top-4 right-4 z-50" ref={menuRef}>
             <button
