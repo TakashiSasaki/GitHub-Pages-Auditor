@@ -5,6 +5,7 @@ import LauncherGrid from './LauncherGrid';
 import { useLatestAuditResults } from '../hooks/useLatestAuditResults';
 import { useLauncherLayout } from '../hooks/useLauncherLayout';
 import { useLauncherSitesFromResults } from '../hooks/useLauncherSitesFromResults';
+import { applyLocalOrderChange } from '../lib/launcherSites';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LauncherPage() {
@@ -13,22 +14,15 @@ export default function LauncherPage() {
   const env = getEnvironmentName(import.meta.env.MODE);
 
   const { results, loading: resultsLoading, error } = useLatestAuditResults(user?.uid, isAnonymous, env);
-  const { orderedSiteIds, saving, saveWarning, layoutLoading, saveOrder, clearWarning } = useLauncherLayout(user?.uid, isAnonymous, env);
+  const { orderedSiteIds, saving, saveWarning, layoutLoading, saveOrder } = useLauncherLayout(user?.uid, isAnonymous, env);
 
   const { sites, defaultOrderedSiteIds } = useLauncherSitesFromResults(results, orderedSiteIds);
 
   const loading = resultsLoading || layoutLoading;
 
   const handleMove = async (index: number, direction: -1 | 1) => {
-    if ((direction === -1 && index === 0) || (direction === 1 && index === sites.length - 1)) return;
-
-    // Compute new local order
-    const newSites = [...sites];
-    const temp = newSites[index];
-    newSites[index] = newSites[index + direction];
-    newSites[index + direction] = temp;
-    
-    const newIds = newSites.map(s => s.id);
+    const currentIds = sites.map(s => s.id);
+    const newIds = applyLocalOrderChange(currentIds, index, direction);
     await saveOrder(newIds);
   };
 
@@ -67,8 +61,11 @@ export default function LauncherPage() {
     <LauncherGrid
       sites={sites}
       saving={saving}
-      saveWarning={!!saveWarning}
+      saveWarning={saveWarning}
       emptyMessage={emptyMessage}
+      emptyActionLabel="Go to Dashboard"
+      emptyActionTo="/"
+      showEmptyAction={true}
       onMove={handleMove}
       onReset={handleReset}
       showReset={true}

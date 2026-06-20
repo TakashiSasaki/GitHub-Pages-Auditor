@@ -63,6 +63,13 @@ describe('Documentation Consistency Diagnostics', () => {
     assert.ok(content.includes("data.results"), 'Must read from data.results');
   });
 
+  it('LauncherGrid.tsx must contain strict safe external linking attributes and no data fetching', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/components/LauncherGrid.tsx'), 'utf-8');
+    assert.ok(content.includes('rel="noopener noreferrer"'), 'LauncherGrid must use rel="noopener noreferrer"');
+    assert.ok(content.includes('target="_blank"'), 'LauncherGrid must use target="_blank"');
+    assert.ok(!content.includes('firebase/firestore'), 'LauncherGrid must not fetch data from Firestore directly');
+  });
+
   it('No stale V1 or draft V2 wording remains in code, docs, tests, and scripts', () => {
     const checkDir = (dirPath) => {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });

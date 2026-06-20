@@ -35,11 +35,14 @@ export function useLauncherLayout(uid: string | undefined, isAnonymous: boolean,
 
   const saveOrder = useCallback(async (ids: string[]) => {
     if (!uid) return;
+
+    // Optimistic UI update
+    setOrderedSiteIds(ids);
     setSaving(true);
     setSaveWarning(null);
+
     try {
       await saveLauncherLayout(uid, isAnonymous, ids, env);
-      setOrderedSiteIds(ids);
     } catch (e) {
       console.warn("Failed to save layout order", e);
       setSaveWarning("Could not save your layout to the server. Your changes are visible locally but will not persist.");

@@ -12,6 +12,7 @@ import { getEnvironmentName, getAuditCollectionPath } from '../lib/firestorePath
 import LauncherGrid from './LauncherGrid';
 import { useLauncherLayout } from '../hooks/useLauncherLayout';
 import { useLauncherSitesFromResults } from '../hooks/useLauncherSitesFromResults';
+import { applyLocalOrderChange } from '../lib/launcherSites';
 import { 
   Play, 
   Key, 
@@ -139,17 +140,13 @@ export default function Dashboard() {
 
   const env = getEnvironmentName(import.meta.env.MODE);
   const isAnonymous = !!user?.isAnonymous;
-  const { orderedSiteIds, saving: layoutSaving, saveWarning, saveOrder, clearWarning } = useLauncherLayout(user?.uid, isAnonymous, env);
+  const { orderedSiteIds, saving: layoutSaving, saveWarning, saveOrder } = useLauncherLayout(user?.uid, isAnonymous, env);
   const { sites, defaultOrderedSiteIds } = useLauncherSitesFromResults(results, orderedSiteIds);
 
   const handleLauncherMove = async (index: number, direction: -1 | 1) => {
-    if ((direction === -1 && index === 0) || (direction === 1 && index === sites.length - 1)) return;
-    const newSites = [...sites];
-    const temp = newSites[index];
-    newSites[index] = newSites[index + direction];
-    newSites[index + direction] = temp;
-
-    await saveOrder(newSites.map(s => s.id));
+    const currentIds = sites.map(s => s.id);
+    const newIds = applyLocalOrderChange(currentIds, index, direction);
+    await saveOrder(newIds);
   };
 
   const handleLauncherReset = async () => {
@@ -1590,9 +1587,10 @@ export default function Dashboard() {
               <LauncherGrid
                 sites={sites}
                 saving={layoutSaving}
-                saveWarning={!!saveWarning}
+                saveWarning={saveWarning}
                 emptyTitle="No GitHub Pages sites detected."
                 emptyMessage="Your currently loaded audit has no valid Pages sites. Adjust your scope or run a new audit."
+                showEmptyAction={false}
                 onMove={handleLauncherMove}
                 onReset={handleLauncherReset}
                 showReset={true}

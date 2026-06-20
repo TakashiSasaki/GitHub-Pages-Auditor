@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'assert';
-import { extractLauncherSites, applySavedOrder } from '../src/lib/launcherSites.js';
+import { extractLauncherSites, applySavedOrder, applyLocalOrderChange } from '../src/lib/launcherSites.js';
 import { RepositoryResult } from '../src/types.js';
 import { liveExportSampleRows } from './fixtures/liveExportRows.js';
 
@@ -103,5 +103,19 @@ describe('Launcher Functions', () => {
     assert.ok(row104, 'Should find 104');
     assert.strictEqual(row104.url, 'https://enforced.com/');
     assert.strictEqual(row104.hostname, 'enforced.com');
+  });
+
+  it('applyLocalOrderChange behaves functionally', () => {
+    const currentIds = ['A', 'B', 'C'];
+
+    // moving first left is a no-op
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 0, -1), currentIds);
+    // moving last right is a no-op
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 2, 1), currentIds);
+
+    // moving middle left
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, -1), ['B', 'A', 'C']);
+    // moving middle right
+    assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, 1), ['A', 'C', 'B']);
   });
 });

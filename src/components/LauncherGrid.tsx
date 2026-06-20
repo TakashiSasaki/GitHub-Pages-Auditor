@@ -6,10 +6,13 @@ import { Link } from 'react-router-dom';
 export interface LauncherGridProps {
   sites: LauncherSite[];
   saving?: boolean;
-  saveWarning?: boolean;
+  saveWarning?: string | null;
   loading?: boolean;
   emptyTitle?: string;
   emptyMessage?: string;
+  emptyActionLabel?: string;
+  emptyActionTo?: string;
+  showEmptyAction?: boolean;
   onMove?: (index: number, direction: -1 | 1) => void | Promise<void>;
   onReset?: () => void | Promise<void>;
   showReset?: boolean;
@@ -19,10 +22,13 @@ export interface LauncherGridProps {
 export default function LauncherGrid({
   sites,
   saving = false,
-  saveWarning = false,
+  saveWarning = null,
   loading = false,
   emptyTitle = "No GitHub Pages sites detected.",
   emptyMessage = "Run an audit from the dashboard to populate the launcher.",
+  emptyActionLabel = "Go to Dashboard",
+  emptyActionTo = "/",
+  showEmptyAction = true,
   onMove,
   onReset,
   showReset = true,
@@ -47,9 +53,11 @@ export default function LauncherGrid({
         <p className="text-slate-600 mb-6 text-center max-w-sm">
           {emptyMessage}
         </p>
-        <Link to="/" className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors shadow-sm">
-          Go to Dashboard
-        </Link>
+        {showEmptyAction && (
+          <Link to={emptyActionTo} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors shadow-sm">
+            {emptyActionLabel}
+          </Link>
+        )}
       </div>
     );
   }
@@ -77,7 +85,7 @@ export default function LauncherGrid({
         {saveWarning && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">
             <AlertCircle className="w-4 h-4 shrink-0 text-yellow-600" />
-            <p>Could not save your layout to the server. Your changes are visible locally but will not persist.</p>
+            <p>{saveWarning}</p>
           </div>
         )}
 

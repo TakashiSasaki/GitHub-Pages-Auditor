@@ -74,6 +74,19 @@ export function extractLauncherSites(repositories: RepositoryResult[]): Launcher
   return sites;
 }
 
+export function applyLocalOrderChange(currentIds: string[], fromIndex: number, direction: -1 | 1): string[] {
+  if (fromIndex < 0 || fromIndex >= currentIds.length) return currentIds;
+  const toIndex = fromIndex + direction;
+  if (toIndex < 0 || toIndex >= currentIds.length) return currentIds;
+
+  const newIds = [...currentIds];
+  const temp = newIds[fromIndex];
+  newIds[fromIndex] = newIds[toIndex];
+  newIds[toIndex] = temp;
+
+  return newIds;
+}
+
 export function applySavedOrder(sites: LauncherSite[], savedIds: string[]): LauncherSite[] {
   if (!savedIds || savedIds.length === 0) return sites;
   
