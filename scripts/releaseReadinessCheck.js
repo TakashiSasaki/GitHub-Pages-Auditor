@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.5.3';
+  const EXPECTED_VERSION = '1.5.4';
   
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -337,10 +337,20 @@ try {
     'Gemini/AI' + ' can be added later',
     'future work: ' + 'GitHub OAuth',
     'future work: ' + 'GitHub App',
-    'future work: ' + 'Gemini/AI',
-    '1.5.0',
-    '1.5.1'
+    'future work: ' + 'Gemini/AI'
   ];
+
+  const packageJsonForStale = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  const currentVersionStr = packageJsonForStale.version;
+  const parts = currentVersionStr.split('.');
+  if (parts.length === 3) {
+    const major = parseInt(parts[0], 10);
+    const minor = parseInt(parts[1], 10);
+    const patch = parseInt(parts[2], 10);
+    for (let i = 0; i < patch; i++) {
+      stalePhrases.push(`${major}.${minor}.${i}`);
+    }
+  }
 
   for (const f of filesToScanForStale) {
     if (fs.existsSync(f)) {

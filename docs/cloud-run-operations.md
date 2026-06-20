@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - Cloud Run Operations Manual
-Version: `1.5.3` (Repository Hygiene & Baseline Consistency Closure)
+Version: `1.5.4` (Release Gate Generalization & Stale PR Closure Baseline)
 
 This document outlines standard operating procedures, architectural summaries, and verification guides for the production container runtime deployed on Google Cloud Run.
 

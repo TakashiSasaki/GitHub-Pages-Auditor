@@ -1,5 +1,5 @@
 # External Consumer Guide
-Version: `1.5.3` (Repository Hygiene & Baseline Consistency Closure)
+Version: `1.5.4` (Release Gate Generalization & Stale PR Closure Baseline)
 
 This document provides instructions for external systems and users consuming data exported by the GitHub Pages Auditor. The application supports exporting audit data in JSON and CSV formats.
 
