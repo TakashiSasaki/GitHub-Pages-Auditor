@@ -633,8 +633,16 @@ export default function LauncherGrid({
   }
 
   return (
-    <div className="flex flex-col min-h-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 p-0 sm:p-6 md:p-10 font-sans h-full overflow-hidden relative">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply opacity-20 animate-[pulse_10s_ease-in-out_infinite]"></div>
+    <div className="flex flex-col min-h-0 bg-slate-50 p-0 sm:p-6 md:p-10 font-sans h-full overflow-hidden relative">
+      {/* Dynamic Ambient Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-indigo-200/30 rounded-full blur-[120px] animate-[pulse_12s_ease-in-out_infinite]" />
+        <div className="absolute top-[20%] -right-[5%] w-[40%] h-[40%] bg-sky-200/30 rounded-full blur-[100px] animate-[pulse_15s_ease-in-out_infinite_2s]" />
+        <div className="absolute -bottom-[10%] left-[10%] w-[60%] h-[60%] bg-purple-200/20 rounded-full blur-[140px] animate-[pulse_18s_ease-in-out_infinite_4s]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30%] h-[30%] bg-blue-100/40 rounded-full blur-[80px] animate-[pulse_10s_ease-in-out_infinite_1s]" />
+      </div>
+
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.12] pointer-events-none mix-blend-multiply animate-[pulse_10s_ease-in-out_infinite]"></div>
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         
         {/* Instruction and Reset removed */}

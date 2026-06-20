@@ -299,30 +299,36 @@ function AppContent() {
                   {patSuccess && <p className="text-[10px] text-emerald-600 mt-1.5">{patSuccess}</p>}
                 </div>
 
+                <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-2 rounded-lg transition-colors ${isLauncherPath ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        {isLauncherPath ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">View Mode</p>
+                        <p className="text-sm font-bold text-slate-800 leading-none">
+                          {isLauncherPath ? 'Launcher' : 'Normal'}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate(isLauncherPath ? '/' : '/launcher');
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none cursor-pointer ${isLauncherPath ? 'bg-blue-600' : 'bg-slate-300'}`}
+                      title={`${isLauncherPath ? 'Switch to Normal Mode' : 'Switch to Launcher Mode'}`}
+                    >
+                      <span className="sr-only">Switch Mode</span>
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-md ${isLauncherPath ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
                 <div className="p-1">
-                  {isLauncherPath ? (
-                    <button 
-                      onClick={() => {
-                        setMenuOpen(false);
-                        navigate('/');
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
-                    >
-                      <List className="w-4 h-4 text-slate-500" />
-                      Normal Mode
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        setMenuOpen(false);
-                        navigate('/launcher');
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
-                    >
-                      <LayoutGrid className="w-4 h-4 text-slate-500" />
-                      Launcher Mode
-                    </button>
-                  )}
                   <button 
                     onClick={() => {
                       setMenuOpen(false);
@@ -447,30 +453,36 @@ function AppContent() {
                         {patSuccess && <p className="text-[10px] text-emerald-600 mt-1.5">{patSuccess}</p>}
                       </div>
 
+                      <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`p-2 rounded-lg transition-colors ${isLauncherPath ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                              {isLauncherPath ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">View Mode</p>
+                              <p className="text-sm font-bold text-slate-800 leading-none">
+                                {isLauncherPath ? 'Launcher' : 'Normal'}
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              setMenuOpen(false);
+                              navigate(isLauncherPath ? '/' : '/launcher');
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none cursor-pointer ${isLauncherPath ? 'bg-blue-600' : 'bg-slate-300'}`}
+                            title={`${isLauncherPath ? 'Switch to Normal Mode' : 'Switch to Launcher Mode'}`}
+                          >
+                            <span className="sr-only">Switch Mode</span>
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-md ${isLauncherPath ? 'translate-x-6' : 'translate-x-1'}`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
                       <div className="p-1">
-                        {isLauncherPath ? (
-                          <button 
-                            onClick={() => {
-                              setMenuOpen(false);
-                              navigate('/');
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
-                          >
-                            <List className="w-4 h-4 text-slate-500" />
-                            Normal Mode
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => {
-                              setMenuOpen(false);
-                              navigate('/launcher');
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors mb-1"
-                          >
-                            <LayoutGrid className="w-4 h-4 text-slate-500" />
-                            Launcher Mode
-                          </button>
-                        )}
                         <button 
                           onClick={() => {
                             setMenuOpen(false);
