@@ -1,8 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'assert';
-import { extractLauncherSites, applySavedOrder, applyLocalOrderChange } from '../src/lib/launcherSites.js';
+import { extractLauncherSites, applySavedOrder, applyLocalOrderChange, buildLauncherUrl } from '../src/lib/launcherSites.js';
 import { RepositoryResult } from '../src/types.js';
 import { liveExportSampleRows } from './fixtures/liveExportRows.js';
+import { validateFirebaseConfigObject } from '../src/lib/env.js';
 
 describe('Launcher Functions', () => {
   it('excludes repositories with Pages disabled', () => {
@@ -117,5 +118,85 @@ describe('Launcher Functions', () => {
     assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, -1), ['B', 'A', 'C']);
     // moving middle right
     assert.deepStrictEqual(applyLocalOrderChange(currentIds, 1, 1), ['A', 'C', 'B']);
+  });
+
+  describe('Pure URL Construction & Strict Protocol Checks', () => {
+    it('returns null if hasPages is false', () => {
+      const repo = { hasPages: false, pagesHtmlUrl: 'https://foo.io' } as any;
+      assert.strictEqual(buildLauncherUrl(repo), null);
+    });
+
+    it('rejects custom ftp, gopher, and mailto schemas', () => {
+      const ftpRepo = { hasPages: true, pagesHtmlUrl: 'ftp://ftp.example.com' } as any;
+      const mailtoRepo = { hasPages: true, pagesHtmlUrl: 'mailto:webmaster@example.com' } as any;
+      const dataRepo = { hasPages: true, pagesHtmlUrl: 'data:text/html,<html></html>' } as any;
+      
+      assert.strictEqual(buildLauncherUrl(ftpRepo), null);
+      assert.strictEqual(buildLauncherUrl(mailtoRepo), null);
+      assert.strictEqual(buildLauncherUrl(dataRepo), null);
+    });
+
+    it('accepts valid http and https urls', () => {
+      const httpRepo = { hasPages: true, pagesHtmlUrl: 'http://my-blog.com/' } as any;
+      const httpsRepo = { hasPages: true, pagesHtmlUrl: 'https://secure-blog.com/' } as any;
+      
+      assert.strictEqual(buildLauncherUrl(httpRepo), 'http://my-blog.com/');
+      assert.strictEqual(buildLauncherUrl(httpsRepo), 'https://secure-blog.com/');
+    });
+  });
+
+  describe('Pure Firebase Config Validation Checks', () => {
+    it('rejects null, undefined, or empty configurations list', () => {
+      const nullRes = validateFirebaseConfigObject(null);
+      const undefRes = validateFirebaseConfigObject(undefined);
+      const strRes = validateFirebaseConfigObject("not-an-object");
+
+      assert.strictEqual(nullRes.valid, false);
+      assert.strictEqual(undefRes.valid, false);
+      assert.strictEqual(strRes.valid, false);
+    });
+
+    it('rejects configurations with placeholder variables or unedited templates', () => {
+      const placeholderConfig = {
+        apiKey: "YOUR-API-KEY-PLACEHOLDER",
+        authDomain: "YOUR-PROJECT-ID-PLACEHOLDER.firebaseapp.com",
+        projectId: "YOUR-PROJECT-ID-PLACEHOLDER",
+        appId: "YOUR-APP-ID-PLACEHOLDER"
+      };
+
+      const res = validateFirebaseConfigObject(placeholderConfig);
+      assert.strictEqual(res.valid, false);
+      // It should specifically identify the invalid placeholder fields as missing
+      assert.ok(res.missingFields.includes('apiKey'), 'should detect key is placeholder');
+      assert.ok(res.missingFields.includes('authDomain'), 'should detect authDomain is placeholder');
+      assert.ok(res.missingFields.includes('projectId'), 'should detect projectId is placeholder');
+      assert.ok(res.missingFields.includes('appId'), 'should detect appId is placeholder');
+    });
+
+    it('rejects empty configs or configs missing required parameters', () => {
+      const incompleteConfig = {
+        apiKey: "AIzaSyC-some-real-looking-key",
+        authDomain: "my-valid-project.firebaseapp.com",
+        // projectId is missing
+        appId: "1:1234:web:abcd"
+      };
+
+      const res = validateFirebaseConfigObject(incompleteConfig);
+      assert.strictEqual(res.valid, false);
+      assert.deepStrictEqual(res.missingFields, ['projectId']);
+    });
+
+    it('accepts fully completed production-ready configurations without placeholders', () => {
+      const validConfig = {
+        apiKey: "AIzaSyC_valid_api_key_for_this_project",
+        authDomain: "perfectlyvalid-999.firebaseapp.com",
+        projectId: "perfectlyvalid-999",
+        appId: "1:999999999:web:abcdefgh123456"
+      };
+
+      const res = validateFirebaseConfigObject(validConfig);
+      assert.strictEqual(res.valid, true);
+      assert.strictEqual(res.missingFields.length, 0);
+    });
   });
 });

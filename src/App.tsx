@@ -202,136 +202,231 @@ function AppContent() {
   );
   }
 
+  const isLauncherPath = location.pathname === '/launcher';
+
   return (
     <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans flex flex-col overflow-hidden">
-        <nav className={`bg-white border-b border-gray-200 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
-          <div className="px-3 py-2 sm:px-4 sm:py-3">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4">
-              <Link to="/" className="text-xl font-semibold tracking-tight text-slate-900 flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <Github className="w-5 h-5 text-slate-800" />
-                <span className="truncate">GitHub Pages Auditor</span>
-              </Link>
-              <button 
-                onClick={() => setShowGuide(true)}
-                className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              >
-                <HelpCircle className="w-4 h-4" />
-                Token Guide
-              </button>
-              <button
-                onClick={() => setShowInfoModal(true)}
-                className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              >
-                <HelpCircle className="w-4 h-4" />
-                What's this app?
-              </button>
-              {user && !user.isAnonymous && (
-                <Link
-                  to="/launcher"
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                >
-                  Launcher
-                </Link>
+        {isLauncherPath ? (
+          <div className="absolute top-4 right-4 z-50" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-2 bg-white/95 backdrop-blur-sm hover:bg-slate-100 p-2 sm:px-3 text-slate-600 rounded-full border border-slate-200 shadow-sm transition-colors cursor-pointer"
+            >
+              {user.isAnonymous ? (
+                <Ghost className="w-7 h-7 text-slate-500" />
+              ) : user.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <UserCircle className="w-7 h-7 text-slate-500" />
               )}
-              <div id="navbar-center-slot"></div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 p-2 sm:px-3 text-slate-600 rounded-full border border-slate-200 transition-colors cursor-pointer"
-                >
-                  {user.isAnonymous ? (
-                    <Ghost className="w-7 h-7 text-slate-500" />
-                  ) : user.photoURL ? (
-                    <img src={user.photoURL} alt="Profile" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
-                  ) : (
-                    <UserCircle className="w-7 h-7 text-slate-500" />
-                  )}
-                  <span className="text-sm font-medium hidden sm:block">
-                    {user.isAnonymous ? 'Guest' : user.email?.split('@')[0]}
-                  </span>
-                </button>
-                
-                {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg sm:w-80 overflow-hidden z-50">
-                    <div className="p-3 border-b border-slate-100 sm:hidden">
-                      <div className="flex items-center gap-3">
-                        {user.isAnonymous ? (
-                          <Ghost className="w-10 h-10 text-slate-500 bg-slate-100 p-2 rounded-full" />
-                        ) : user.photoURL ? (
-                          <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
-                        ) : (
-                          <UserCircle className="w-10 h-10 text-slate-500" />
-                        )}
-                        <div className="overflow-hidden">
-                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Account</p>
-                          <p className="text-sm text-slate-800 truncate font-medium" title={user.email || 'Guest Session'}>
-                            {user.isAnonymous ? 'Guest Session' : user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                          <Key className="w-3.5 h-3.5" />
-                          GitHub PAT
-                          <button onClick={() => setShowGuide(true)} className="text-slate-400 hover:text-emerald-600 transition-colors ml-0.5 cursor-pointer" title="How to get a PAT">
-                            <HelpCircle className="w-3.5 h-3.5" />
-                          </button>
-                        </label>
-                        {hasStoredPat && (
-                          <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-medium tracking-wide">
-                            <CheckCircle className="w-3 h-3 mr-0.5" /> Set
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <input 
-                          type="password" 
-                          placeholder={hasStoredPat ? "Update token..." : "ghp_... or github_pat_..."}
-                          className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded shadow-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-shadow"
-                          value={pat}
-                          onChange={(e) => setPat(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') savePat();
-                          }}
-                        />
-                        <button 
-                          onClick={savePat}
-                          disabled={!pat || isSavingPat}
-                          className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-xs font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors flex flex-shrink-0 items-center justify-center min-w-[60px] cursor-pointer"
-                        >
-                          {isSavingPat ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
-                        </button>
-                      </div>
-                      {patError && <p className="text-[10px] text-red-600 mt-1.5">{patError}</p>}
-                      {patSuccess && <p className="text-[10px] text-emerald-600 mt-1.5">{patSuccess}</p>}
-                    </div>
-
-                    <div className="p-1">
-                      <button 
-                        onClick={() => {
-                          setMenuOpen(false);
-                          logout();
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
-                      </button>
+              <span className="text-sm font-medium hidden sm:block">
+                {user.isAnonymous ? 'Guest' : user.email?.split('@')[0]}
+              </span>
+            </button>
+            
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg sm:w-80 overflow-hidden z-50">
+                <div className="p-3 border-b border-slate-100 sm:hidden">
+                  <div className="flex items-center gap-3">
+                    {user.isAnonymous ? (
+                      <Ghost className="w-10 h-10 text-slate-500 bg-slate-100 p-2 rounded-full" />
+                    ) : user.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
+                    ) : (
+                      <UserCircle className="w-10 h-10 text-slate-500" />
+                    )}
+                    <div className="overflow-hidden">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Account</p>
+                      <p className="text-sm text-slate-800 truncate font-medium" title={user.email || 'Guest Session'}>
+                        {user.isAnonymous ? 'Guest Session' : user.email}
+                      </p>
                     </div>
                   </div>
+                </div>
+                
+                <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5" />
+                      GitHub PAT
+                      <button onClick={() => setShowGuide(true)} className="text-slate-400 hover:text-emerald-600 transition-colors ml-0.5 cursor-pointer" title="How to get a PAT">
+                        <HelpCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </label>
+                    {hasStoredPat && (
+                      <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-medium tracking-wide">
+                        <CheckCircle className="w-3 h-3 mr-0.5" /> Set
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="password" 
+                      placeholder={hasStoredPat ? "Update token..." : "ghp_... or github_pat_..."}
+                      className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded shadow-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-shadow"
+                      value={pat}
+                      onChange={(e) => setPat(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') savePat();
+                      }}
+                    />
+                    <button 
+                      onClick={savePat}
+                      disabled={!pat || isSavingPat}
+                      className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-xs font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors flex flex-shrink-0 items-center justify-center min-w-[60px] cursor-pointer"
+                    >
+                      {isSavingPat ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                    </button>
+                  </div>
+                  {patError && <p className="text-[10px] text-red-600 mt-1.5">{patError}</p>}
+                  {patSuccess && <p className="text-[10px] text-emerald-600 mt-1.5">{patSuccess}</p>}
+                </div>
+
+                <div className="p-1">
+                  <button 
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <nav className={`bg-white border-b border-gray-200 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
+            <div className="px-3 py-2 sm:px-4 sm:py-3">
+              <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                <Link to="/" className="text-xl font-semibold tracking-tight text-slate-900 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <Github className="w-5 h-5 text-slate-800" />
+                  <span className="truncate">GitHub Pages Auditor</span>
+                </Link>
+                <button 
+                  onClick={() => setShowGuide(true)}
+                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Token Guide
+                </button>
+                <button
+                  onClick={() => setShowInfoModal(true)}
+                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  What's this app?
+                </button>
+                {user && !user.isAnonymous && (
+                  <Link
+                    to="/launcher"
+                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Launcher
+                  </Link>
                 )}
+                <div id="navbar-center-slot"></div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 p-2 sm:px-3 text-slate-600 rounded-full border border-slate-200 transition-colors cursor-pointer"
+                  >
+                    {user.isAnonymous ? (
+                      <Ghost className="w-7 h-7 text-slate-500" />
+                    ) : user.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+                    ) : (
+                      <UserCircle className="w-7 h-7 text-slate-500" />
+                    )}
+                    <span className="text-sm font-medium hidden sm:block">
+                      {user.isAnonymous ? 'Guest' : user.email?.split('@')[0]}
+                    </span>
+                  </button>
+                  
+                  {menuOpen && (
+                    <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg sm:w-80 overflow-hidden z-50">
+                      <div className="p-3 border-b border-slate-100 sm:hidden">
+                        <div className="flex items-center gap-3">
+                          {user.isAnonymous ? (
+                            <Ghost className="w-10 h-10 text-slate-500 bg-slate-100 p-2 rounded-full" />
+                          ) : user.photoURL ? (
+                            <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
+                          ) : (
+                            <UserCircle className="w-10 h-10 text-slate-500" />
+                          )}
+                          <div className="overflow-hidden">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Account</p>
+                            <p className="text-sm text-slate-800 truncate font-medium" title={user.email || 'Guest Session'}>
+                              {user.isAnonymous ? 'Guest Session' : user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                            <Key className="w-3.5 h-3.5" />
+                            GitHub PAT
+                            <button onClick={() => setShowGuide(true)} className="text-slate-400 hover:text-emerald-600 transition-colors ml-0.5 cursor-pointer" title="How to get a PAT">
+                              <HelpCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </label>
+                          {hasStoredPat && (
+                            <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-medium tracking-wide">
+                              <CheckCircle className="w-3 h-3 mr-0.5" /> Set
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input 
+                            type="password" 
+                            placeholder={hasStoredPat ? "Update token..." : "ghp_... or github_pat_..."}
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded shadow-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-shadow"
+                            value={pat}
+                            onChange={(e) => setPat(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') savePat();
+                            }}
+                          />
+                          <button 
+                            onClick={savePat}
+                            disabled={!pat || isSavingPat}
+                            className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-xs font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors flex flex-shrink-0 items-center justify-center min-w-[60px] cursor-pointer"
+                          >
+                            {isSavingPat ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                          </button>
+                        </div>
+                        {patError && <p className="text-[10px] text-red-600 mt-1.5">{patError}</p>}
+                        {patSuccess && <p className="text-[10px] text-emerald-600 mt-1.5">{patSuccess}</p>}
+                      </div>
+
+                      <div className="p-1">
+                        <button 
+                          onClick={() => {
+                            setMenuOpen(false);
+                            logout();
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          </div>
-          <div id="navbar-bottom-slot"></div>
-        </nav>
+            </div>
+            <div id="navbar-bottom-slot"></div>
+          </nav>
+        )}
         {firebaseConfigError && (
           <div className="bg-red-50 border-b border-red-200 text-red-800 p-3 text-xs flex items-center justify-center gap-2 shadow-sm shrink-0">
             <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
@@ -353,19 +448,21 @@ function AppContent() {
             <Route path="/results/:auditId/launcher" element={<Dashboard />} />
           </Routes>
         </main>
-        <footer className="shrink-0 w-full bg-white border-t border-slate-200 py-3 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-0 md:gap-4 text-xs sm:text-sm text-slate-500">
-            <p>
-              &copy; {new Date().getFullYear()} GitHub Pages Auditor v{__APP_VERSION__}
-            </p>
-            <p className="flex items-center gap-1 text-center md:text-left">
-              Created by <span className="font-medium text-slate-700">Takashi Sasaki</span> | 
-              <a href="https://x.com/TakashiSasaki" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700 hover:underline transition-colors ml-1">
-                x.com/TakashiSasaki
-              </a>
-            </p>
-          </div>
-        </footer>
+        {!isLauncherPath && (
+          <footer className="shrink-0 w-full bg-white border-t border-slate-200 py-3 mt-auto">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-0 md:gap-4 text-xs sm:text-sm text-slate-500">
+              <p>
+                &copy; {new Date().getFullYear()} GitHub Pages Auditor v{__APP_VERSION__}
+              </p>
+              <p className="flex items-center gap-1 text-center md:text-left">
+                Created by <span className="font-medium text-slate-700">Takashi Sasaki</span> | 
+                <a href="https://x.com/TakashiSasaki" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700 hover:underline transition-colors ml-1">
+                  x.com/TakashiSasaki
+                </a>
+              </p>
+            </div>
+          </footer>
+        )}
 
         {/* Guide Modal */}
         {showGuide && (

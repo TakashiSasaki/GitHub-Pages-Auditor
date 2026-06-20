@@ -1,0 +1,190 @@
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+
+const red = '\x1b[31m';
+const green = '\x1b[32m';
+const yellow = '\x1b[33m';
+const reset = '\x1b[0m';
+
+let failed = false;
+
+function printSuccess(message) {
+  console.log(`${green}✅ ${message}${reset}`);
+}
+
+function printFail(message) {
+  console.log(`${red}❌ ${message}${reset}`);
+  failed = true;
+}
+
+function printWarn(message) {
+  console.log(`${yellow}⚠️  ${message}${reset}`);
+}
+
+console.log('\n=== RUNNING SECURITY & RELEASE READINESS CHECK ===\n');
+
+// 1. Firebase Config Check
+try {
+  const configFile = 'firebase-applet-config.json';
+  if (!fs.existsSync(configFile)) {
+    printFail(`${configFile} is missing entirely in workspace.`);
+  } else {
+    const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    const apiKey = config.apiKey || '';
+    const projectId = config.projectId || '';
+    
+    // Check if the file has placeholder values
+    const isPlaceholder = apiKey.includes('PLACEHOLDER') || apiKey.includes('YOUR-') || apiKey === '' || apiKey.includes('dummy');
+    
+    if (!isPlaceholder && apiKey.startsWith('AIzaSy')) {
+      printWarn(`${configFile} contains a live-looking Firebase API Key. (Acceptable for active development/live runtime, warning logged).`);
+    } else {
+      printSuccess(`Firebase config is clean of live production API credentials.`);
+    }
+  }
+} catch (e) {
+  printFail(`Failed to parse Firebase Applet Config: ${e.message}`);
+}
+
+// 2. Gitignore Check for firebase-applet-config.json
+try {
+  const gitignore = fs.readFileSync('.gitignore', 'utf8');
+  if (gitignore.includes('firebase-applet-config.json')) {
+    printSuccess(`.gitignore correctly ignores firebase-applet-config.json.`);
+  } else {
+    printFail(`firebase-applet-config.json is NOT ignored in .gitignore.`);
+  }
+} catch (e) {
+  printFail(`Failed to check .gitignore: ${e.message}`);
+}
+
+// 3. Scan codebase for Forbidden Integrations & endpoints
+const filesToScan = [];
+function readDirRecursive(dir) {
+  if (!fs.existsSync(dir)) return;
+  const list = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of list) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== '.git' && entry.name !== 'skills') {
+        readDirRecursive(fullPath);
+      }
+    } else if (entry.isFile()) {
+      if (fullPath.endsWith('.ts') || fullPath.endsWith('.tsx') || fullPath.endsWith('.js')) {
+        filesToScan.push(fullPath);
+      }
+    }
+  }
+}
+
+readDirRecursive('src');
+readDirRecursive('server');
+if (fs.existsSync('server.ts')) filesToScan.push('server.ts');
+
+let forbiddenFound = false;
+for (const file of filesToScan) {
+  const content = fs.readFileSync(file, 'utf8');
+  // Strip block comments and line comments so we don't flag negative/out-of-scope rule texts in comments
+  const cleanContent = content
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*/g, '');
+
+  // A. Check for Gemini imports
+  if (cleanContent.includes('@google/genai') || cleanContent.includes('GoogleGenAI')) {
+    printFail(`Forbidden Gemini / AI dependency found in ${file}.`);
+    forbiddenFound = true;
+  }
+
+  // B. Check for GitHub OAuth routes
+  if (cleanContent.includes('/login/oauth/authorize') || cleanContent.includes('/login/oauth/access_token') || cleanContent.includes('/github/callback')) {
+    printFail(`Forbidden GitHub OAuth reference found in ${file}.`);
+    forbiddenFound = true;
+  }
+
+  // C. Check for GitHub App installation or webhook endpoints
+  if (cleanContent.includes('/github/install') || cleanContent.includes('/github/setup-url') || cleanContent.includes('/webhook')) {
+    printFail(`Forbidden GitHub App/Webhook endpoints found in ${file}.`);
+    forbiddenFound = true;
+  }
+
+  // D. Check for post/write calls targeting api.github.com
+  if (cleanContent.includes('method:') && (cleanContent.includes('POST') || cleanContent.includes('PUT') || cleanContent.includes('DELETE') || cleanContent.includes('PATCH')) && cleanContent.includes('api.github.com')) {
+    printFail(`Forbidden GitHub write API call found in ${file}.`);
+    forbiddenFound = true;
+  }
+
+  // E. Actions workflow endpoints
+  if (cleanContent.includes('/actions/workflows')) {
+    printFail(`Forbidden GitHub Actions Webhook/API endpoint found in ${file}.`);
+    forbiddenFound = true;
+  }
+}
+
+if (!forbiddenFound) {
+  printSuccess(`No forbidden integrations (Gemini, OAuth, Webhooks, Actions, GitHub Write) are found in actual execution code.`);
+}
+
+// 4. Schema Sync Check (Runs the dedicated schema checker)
+try {
+  execSync('node scripts/schemaCheck.js', { stdio: 'pipe' });
+  printSuccess(`Committed export schema matches exportTypesV2.ts definitions.`);
+} catch (e) {
+  printFail(`V2 Schema drift check failed. Run 'npm run schema:generate' to fix. Details: ${e.stdout?.toString() || e.message}`);
+}
+
+// 5. Example Export Data Validity Check
+try {
+  execSync('node scripts/validateExamples.js', { stdio: 'pipe' });
+  printSuccess(`Example export files (sample JSON/CSV) are fully compliant and valid.`);
+} catch (e) {
+  printFail(`Export examples validation failed. Details: ${e.message}`);
+}
+
+// 6. Launcher Routing and Safe Attribution Checks
+try {
+  const srcApp = fs.readFileSync('src/App.tsx', 'utf8');
+  if (srcApp.includes('/launcher') && srcApp.includes('/results/:auditId/launcher')) {
+    printSuccess(`Launcher routes are present in App routing configuration.`);
+  } else {
+    printFail(`Missing required launcher routes in src/App.tsx.`);
+  }
+
+  const gridFile = 'src/components/LauncherGrid.tsx';
+  if (fs.existsSync(gridFile)) {
+    const gridContent = fs.readFileSync(gridFile, 'utf8');
+    if (gridContent.includes('rel="noopener noreferrer"') && gridContent.includes('target="_blank"')) {
+      printSuccess(`LauncherGrid utilizes safe external link targets and proper rel attributes.`);
+    } else {
+      printFail(`LauncherGrid has unsafe external-facing link configurations.`);
+    }
+  } else {
+    printFail(`${gridFile} is missing in workspace.`);
+  }
+} catch (e) {
+  printFail(`Failed to audit Launcher configs: ${e.message}`);
+}
+
+// 7. Security Rules Firestore Check
+try {
+  const rules = fs.readFileSync('firestore.rules', 'utf8');
+  const hasUsersSettings = rules.includes('/users/{uid}/settings/{settingId}');
+  const hasAnonSettings = rules.includes('/anonymousSessions/{uid}/settings/{settingId}');
+  
+  if (hasUsersSettings && hasAnonSettings) {
+    printSuccess(`Firestore rules correctly declare tenant-isolated settings scopes for launcher/navigation settings.`);
+  } else {
+    printFail(`Firestore rules do not fully cover isolated settings paths.`);
+  }
+} catch (e) {
+  printFail(`Failed to audit firestore rules: ${e.message}`);
+}
+
+console.log('\n=== RESULT ===');
+if (failed) {
+  console.log(`${red}❌ Release readiness verification FAILED. Please solve the errors above before baseline release.${reset}\n`);
+  process.exit(1);
+} else {
+  console.log(`${green}✅ All Public Release Readiness checks passed successfully.${reset}\n`);
+  process.exit(0);
+}

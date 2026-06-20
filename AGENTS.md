@@ -156,7 +156,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Created `scripts/validateExamples.js` to continuously assert compliance for V2 and V2 exported samples alongside `npm run examples:validate`.
 - Defined `docs/external-consumer-guide.md` with strict interoperability requirements, ensuring registries and runtime retrievals remain out-of-scope.
 - Completely verified coverage of V2 deeply-nested `findings` taxonomy reflecting GitHub Pages DNS/SSL statuses.
-- Advanced primary build threshold to `1.2.0 (External Consumer Trial Readiness Baseline)`.
+- Advanced primary build threshold to `1.3.0 (Public Release Readiness Gate Baseline)`.
+- Implemented soft Firebase initialization and placeholder-aware config validators.
+- Established local, deterministic validation gate checks via `scripts/releaseReadinessCheck.js`.
+- Expanded unit test coverage in `tests/launcher.test.ts`.
 - Completed dynamic PORT environment variable integration in `server.ts` to allow fully decoupled container deployments.
 - Exposed unauthenticated `/healthz` on the Express backend for secure liveness/readiness probes in orchestrations like Cloud Run or GKE.
 - Shipped professional, compact dual-stage `Dockerfile` and a comprehensive `.dockerignore` mapping modern containerization practices.

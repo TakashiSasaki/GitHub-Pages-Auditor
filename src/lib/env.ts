@@ -8,16 +8,19 @@ export interface FrontendEnvValidation {
 /**
  * Validates the loaded Firebase Configuration from the environment's applet config.
  */
-export function validateFrontendFirebaseConfig(): FrontendEnvValidation {
+export function validateFirebaseConfigObject(config: any): FrontendEnvValidation {
   const required = ['apiKey', 'authDomain', 'projectId', 'appId'];
   const missingFields: string[] = [];
 
-  if (!firebaseConfig || typeof firebaseConfig !== 'object') {
-    return { valid: false, missingFields: ['firebase-applet-config.json is missing or not a valid JSON object'] };
+  if (!config || typeof config !== 'object') {
+    return { valid: false, missingFields: ['Config is missing or not a valid object'] };
   }
 
+  const hasVal = (val: any) => typeof val === 'string' && val.trim() !== '' && !val.includes('PLACEHOLDER') && !val.includes('YOUR-');
+
   for (const field of required) {
-    if (!firebaseConfig[field as keyof typeof firebaseConfig]) {
+    const value = config[field as keyof typeof config];
+    if (!hasVal(value)) {
       missingFields.push(field);
     }
   }
@@ -26,4 +29,8 @@ export function validateFrontendFirebaseConfig(): FrontendEnvValidation {
     valid: missingFields.length === 0,
     missingFields
   };
+}
+
+export function validateFrontendFirebaseConfig(): FrontendEnvValidation {
+  return validateFirebaseConfigObject(firebaseConfig);
 }

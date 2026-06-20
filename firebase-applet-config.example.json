@@ -1,0 +1,10 @@
+{
+  "projectId": "YOUR-PROJECT-ID-PLACEHOLDER",
+  "appId": "YOUR-APP-ID-PLACEHOLDER",
+  "apiKey": "YOUR-API-KEY-PLACEHOLDER",
+  "authDomain": "YOUR-PROJECT-ID-PLACEHOLDER.firebaseapp.com",
+  "firestoreDatabaseId": "YOUR-DATABASE-ID-PLACEHOLDER",
+  "storageBucket": "YOUR-PROJECT-ID-PLACEHOLDER.firebasestorage.app",
+  "messagingSenderId": "YOUR-SENDER-ID-PLACEHOLDER",
+  "measurementId": ""
+}
