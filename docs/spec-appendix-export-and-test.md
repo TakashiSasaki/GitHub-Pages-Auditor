@@ -40,7 +40,7 @@ JSON export should include:
 
 ## Schema Maintenance Rules
 
-- TypeScript types in `src/schema/exportTypes.ts` are the source of truth for the export schema.
+- TypeScript types in `src/schema/exportTypesV2.ts` are the source of truth for the export schema.
 - The file `schemas/github-pages-auditor-export-v2.schema.json` is a generated artifact.
 - Manual edits to the generated schema file are strongly discouraged.
 - Any schema-affecting changes (modifying export interfaces) must trigger regeneration and validation via:

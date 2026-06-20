@@ -37,6 +37,13 @@ describe('Documentation Consistency Diagnostics', () => {
     }
   });
 
+  it('README.md should contain launcher documentation', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'README.md'), 'utf-8');
+    assert.ok(content.includes('/launcher'), 'README.md does not contain /launcher');
+    assert.ok(content.includes('settings/launcherLayout'), 'README.md does not contain settings/launcherLayout');
+    assert.ok(content.includes('external favicon'), 'README.md does not contain external favicon mention');
+  });
+
   it('No stale V1 or draft V2 wording remains in code, docs, tests, and scripts', () => {
     const checkDir = (dirPath) => {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -62,6 +69,9 @@ describe('Documentation Consistency Diagnostics', () => {
             assert.ok(!content.includes('V1 default'), `Forbidden wording V1 default found in ${fullPath}`);
             assert.ok(!content.includes('v1 JSON export'), `Forbidden wording v1 JSON export found in ${fullPath}`);
             assert.ok(!content.includes('v1 CSV export'), `Forbidden wording v1 CSV export found in ${fullPath}`);
+            assert.ok(!content.includes('src/schema/exportTypes.ts'), `Forbidden identifier src/schema/exportTypes.ts found in ${fullPath}`);
+            assert.ok(!content.includes('docs/export-schema-v2-draft.md'), `Forbidden identifier docs/export-schema-v2-draft.md found in ${fullPath}`);
+            assert.ok(!content.includes('V2/interchange candidate'), `Forbidden identifier V2/interchange candidate found in ${fullPath}`);
           }
         }
       }

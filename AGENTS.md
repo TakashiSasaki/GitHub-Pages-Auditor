@@ -89,14 +89,14 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ## Documentation Consistency Rules
 - Implementation is the source of truth for PAT handling.
 - `AGENTS.md` is the operational source of truth for agents.
-- `src/schema/exportTypes.ts` is the schema source of truth.
+- `src/schema/exportTypesV2.ts` is the schema source of truth.
 - Generated JSON Schema must not be manually edited.
 - Any change to auth, PAT storage, Firestore paths, or GitHub API allowlist must update `AGENTS.md`, README, and relevant docs in the same commit.
 
 ## JSON Export Schema Contract
 - JSON export schema version: `github-pages-auditor.export.v2`
 - Schema lives in `schemas/github-pages-auditor-export-v2.schema.json` (Full schema implemented).
-- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypes.ts` (and V2 schemas live in `src/schema/exportTypesV2.ts`).
+- **TypeScript is the Source of Truth**: The schema types reside in `src/schema/exportTypesV2.ts`.
 - **Generated Artifact**: Schema JSON files are fully generated artifacts. Manual edits to generated schema files are strictly discouraged.
 - Any schema-affecting types change must trigger schema regeneration via `npx ts-json-schema-generator` and validation check via `npm run schema:check`.
 - **Vocabulary & Future V2 Specs**: Full property lists, categories, and raw vs normalized mappings are documented in `docs/export-schema-vocabulary.md`. The nested V2 layout lives in `docs/export-schema-v2.md`.
