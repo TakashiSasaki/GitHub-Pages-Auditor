@@ -63,24 +63,21 @@ export default function LauncherGrid({
   }
 
   return (
-    <div className="flex flex-col min-h-0 bg-slate-50 p-6 md:p-10 font-sans h-full overflow-y-auto">
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Launcher</h1>
-            <p className="text-sm text-slate-500">Launch detected GitHub Pages sites</p>
-          </div>
-          {showReset && !readOnly && onReset && (
+    <div className="flex flex-col min-h-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 p-6 md:p-10 font-sans h-full overflow-y-auto relative">
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply opacity-20 animate-[pulse_10s_ease-in-out_infinite]"></div>
+      <div className="max-w-7xl mx-auto w-full relative z-10">
+        {showReset && !readOnly && onReset && (
+          <div className="flex justify-end mb-4">
             <button
               onClick={onReset}
               disabled={saving}
-              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors disabled:opacity-50"
+              className="group flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-all duration-300 disabled:opacity-50 hover:bg-slate-100 px-3 py-1.5 rounded-full bg-white/50 backdrop-blur-sm"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4 group-hover:-rotate-[360deg] transition-transform duration-700 ease-out" />
               <span className="hidden sm:inline">Reset Order</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {saveWarning && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">
@@ -91,9 +88,10 @@ export default function LauncherGrid({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {sites.map((site, index) => (
-            <div key={site.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col group relative">
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 font-bold text-xl uppercase tracking-wider select-none shrink-0 border border-slate-200">
+            <div key={site.id} className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:scale-[1.02] hover:border-indigo-300 transition-all duration-300 p-5 flex flex-col group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/0 via-transparent to-purple-50/0 group-hover:from-indigo-100/50 group-hover:to-purple-100/50 transition-colors duration-500 pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className="w-12 h-12 bg-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 rounded-xl flex items-center justify-center text-slate-600 font-bold text-xl uppercase tracking-wider select-none shrink-0 border border-slate-200 group-hover:border-indigo-200 transition-colors duration-300 group-hover:rotate-3">
                   {site.name.charAt(0)}
                 </div>
                 {!readOnly && onMove && (

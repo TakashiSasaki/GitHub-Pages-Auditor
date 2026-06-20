@@ -321,7 +321,7 @@ function AppContent() {
             )}
           </div>
         ) : (
-          <nav className={`bg-white border-b border-gray-200 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
+          <nav className={`bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 bg-[length:200%_200%] animate-gradient-x border-b border-indigo-100/50 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
             <div className="px-3 py-2 sm:px-4 sm:py-3">
               <div className="max-w-7xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -343,14 +343,6 @@ function AppContent() {
                   <HelpCircle className="w-4 h-4" />
                   What's this app?
                 </button>
-                {user && !user.isAnonymous && (
-                  <Link
-                    to="/launcher"
-                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Launcher
-                  </Link>
-                )}
                 <div id="navbar-center-slot"></div>
               </div>
               <div className="flex items-center gap-4">
@@ -495,7 +487,7 @@ function AppContent() {
           </Routes>
         </main>
         {!isLauncherPath && (
-          <footer className="shrink-0 w-full bg-white border-t border-slate-200 py-3 mt-auto">
+          <footer className="shrink-0 w-full bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 bg-[length:200%_200%] animate-gradient-x border-t border-indigo-100/50 py-3 mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-0 md:gap-4 text-xs sm:text-sm text-slate-500">
               <p>
                 &copy; {new Date().getFullYear()} GitHub Pages Auditor v{__APP_VERSION__}
