@@ -100,18 +100,15 @@ function LauncherCardItem({
             <LauncherSiteIcon site={site} />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-slate-800 text-sm truncate" title={site.name}>
-              {site.name}
-            </h3>
             <a
               href={site.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-blue-500 hover:text-blue-700 font-medium hover:underline truncate mt-0.5 flex items-center gap-1 group/link max-w-full"
+              className="font-semibold text-slate-800 text-sm hover:text-indigo-600 hover:underline truncate flex items-center gap-1 group/link max-w-full"
               title={site.url}
             >
               <span className="truncate">{site.hostname}</span>
-              <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-slate-400" />
             </a>
           </div>
         </div>
