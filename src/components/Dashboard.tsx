@@ -1623,6 +1623,7 @@ export default function Dashboard() {
                 emptyMessage="Your currently loaded audit has no valid Pages sites. Adjust your scope or run a new audit."
                 showEmptyAction={false}
                 onMove={handleLauncherMove}
+                onOrderChange={saveOrder}
                 onReset={handleLauncherReset}
                 showReset={true}
                 readOnly={isAnonymous}

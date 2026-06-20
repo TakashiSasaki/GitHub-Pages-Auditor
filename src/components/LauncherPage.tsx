@@ -56,6 +56,7 @@ export default function LauncherPage() {
       emptyActionTo="/"
       showEmptyAction={true}
       onMove={handleMove}
+      onOrderChange={saveOrder}
       onReset={handleReset}
       showReset={true}
       readOnly={false}

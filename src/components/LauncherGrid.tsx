@@ -74,14 +74,18 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
   const pathId = `circle-path-${site.id}`;
   const rawText = site.hostname || '';
   
-  // Pad/repeat the domain text to look great on a circular path (adjusted for 1.5x larger font size to prevent overlapping)
-  let displayText = rawText;
+  // Split the domain to find the lowest domain fragment (left-most part, e.g. "pages" in "pages.moukaeritai.work")
+  const parts = rawText.split('.');
+  const lowestFragment = parts[0] || '';
+  const restOfDomain = parts.slice(1).join('.');
+  const restSuffix = restOfDomain ? `.${restOfDomain}` : '';
+
+  // Determine repeat count to pad/repeat domain text on the circular path
+  let count = 1;
   if (rawText.length < 8) {
-    displayText = `${rawText} • ${rawText} • ${rawText} •`;
+    count = 3;
   } else if (rawText.length < 16) {
-    displayText = `${rawText} • ${rawText} •`;
-  } else {
-    displayText = `${rawText} •`;
+    count = 2;
   }
 
   return (
@@ -115,7 +119,16 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
         </defs>
         <text className="font-mono text-[16px] font-bold tracking-[0.08em] uppercase">
           <textPath href={`#${pathId}`} startOffset="0%">
-            {displayText}
+            {Array.from({ length: count }).map((_, index) => (
+              <React.Fragment key={index}>
+                <tspan className="text-blue-600 fill-blue-600 transition-colors duration-300" fill="#2563eb">
+                  {lowestFragment}
+                </tspan>
+                <tspan>
+                  {restSuffix} •{" "}
+                </tspan>
+              </React.Fragment>
+            ))}
           </textPath>
         </text>
       </svg>
@@ -125,31 +138,41 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
 
 interface LauncherCardItemProps {
   site: LauncherSite;
-  index: number;
-  sitesLength: number;
-  saving: boolean;
+  x: number;
+  y: number;
+  isDragged: boolean;
   readOnly: boolean;
-  onMove?: (index: number, direction: -1 | 1) => void | Promise<void>;
+  onDragStart: (e: React.PointerEvent, id: string) => void;
+  onDragEnd: () => void;
 }
 
 function LauncherCardItem({
   site,
-  index,
-  sitesLength,
-  saving,
+  x,
+  y,
+  isDragged,
   readOnly,
-  onMove
- }: LauncherCardItemProps) {
+  onDragStart,
+  onDragEnd,
+}: LauncherCardItemProps) {
   const [isPressed, setIsPressed] = React.useState(false);
   const [bubblePlacement, setBubblePlacement] = React.useState<'top' | 'left' | 'right'>('top');
   const containerRef = React.useRef<HTMLDivElement>(null);
   const pressTimer = React.useRef<any>(null);
   const wasHeld = React.useRef(false);
 
+  const startX = React.useRef(0);
+  const startY = React.useRef(0);
+  const hasMoved = React.useRef(false);
+
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    
+    if (e.button !== 0) return; // Only main left click
+
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    hasMoved.current = false;
     wasHeld.current = false;
+
     if (pressTimer.current) clearTimeout(pressTimer.current);
 
     if (containerRef.current) {
@@ -158,54 +181,64 @@ function LauncherCardItem({
       const spaceRight = window.innerWidth - rect.right;
       const spaceLeft = rect.left;
 
-      // Select layout dynamically based on available screen bounds (above, right, or left)
-      if (spaceTop > 240) {
+      if (spaceTop > 245) {
         setBubblePlacement('top');
       } else if (spaceRight > 320) {
         setBubblePlacement('right');
       } else if (spaceLeft > 320) {
         setBubblePlacement('left');
       } else {
-        // Fallback placement (choose side with more screen real-estate)
-        if (spaceRight >= spaceLeft) {
-          setBubblePlacement('right');
-        } else {
-          setBubblePlacement('left');
-        }
+        setBubblePlacement(spaceRight >= spaceLeft ? 'right' : 'left');
       }
     }
 
-    // Active holding-mode after 150ms to verify user is active pressing to inspect details
+    // Active long-press threshold at 200ms
     pressTimer.current = setTimeout(() => {
       setIsPressed(true);
       wasHeld.current = true;
-    }, 150);
+    }, 200);
+
+    onDragStart(e, site.id);
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-
-    if (isPressed) {
+  const handleGlobalPointerMove = (e: PointerEvent) => {
+    if (!isDragged) return;
+    const dx = e.clientX - startX.current;
+    const dy = e.clientY - startY.current;
+    if (Math.hypot(dx, dy) > 5) {
+      hasMoved.current = true;
+      if (pressTimer.current) {
+        clearTimeout(pressTimer.current);
+        pressTimer.current = null;
+      }
       setIsPressed(false);
     }
   };
 
-  const handlePointerLeave = () => {
+  const handlePointerUp = () => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
     }
     setIsPressed(false);
+    onDragEnd();
   };
+
+  React.useEffect(() => {
+    if (isDragged) {
+      window.addEventListener('pointermove', handleGlobalPointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    }
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDragged]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
   };
 
-  // Define speech bubble positioning classes and arrow vectors depending on calculated placement
   let placementClasses = '';
   let arrowBorderClasses = '';
   let arrowBodyClasses = '';
@@ -227,21 +260,27 @@ function LauncherCardItem({
   return (
     <div 
       ref={containerRef}
-      className="relative flex flex-col items-center justify-center p-4"
+      className="absolute flex flex-col items-center justify-center p-4 touch-none select-none"
       onContextMenu={handleContextMenu}
+      style={{
+        left: 0,
+        top: 0,
+        width: 112,
+        height: 112,
+        transform: `translate3d(${x - 56}px, ${y - 56}px, 0)`,
+        zIndex: isDragged ? 40 : 20,
+        cursor: isDragged ? 'grabbing' : 'grab',
+        transition: isDragged ? 'none' : 'transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1)',
+      }}
     >
-      {/* Bare SVG Icon & Rotating domain text - No surround borders/cards layout ("露出したままでいいです") */}
       <a
         href={site.url}
         target="_blank"
         rel="noopener noreferrer"
         className="cursor-pointer active:scale-95 transition-all duration-200 select-none touch-none"
         onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        onPointerCancel={handlePointerLeave}
         onClick={(e) => {
-          if (wasHeld.current) {
+          if (hasMoved.current || wasHeld.current) {
             e.preventDefault();
           }
         }}
@@ -250,32 +289,8 @@ function LauncherCardItem({
         <CircularDomainBadge site={site} />
       </a>
 
-      {/* Elegant Move Order controls sitting directly below the circular SVG item */}
-      {!readOnly && onMove && (
-        <div className="flex gap-1 bg-white/70 hover:bg-white border border-slate-200 shadow-xs rounded-full p-1 mt-2 z-20 transition-all duration-300">
-          <button
-            onClick={() => onMove(index, -1)}
-            disabled={index === 0 || saving}
-            className="p-1 text-slate-400 hover:text-slate-800 rounded-full disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
-            title="Move left"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onMove(index, 1)}
-            disabled={index === sitesLength - 1 || saving}
-            className="p-1 text-slate-400 hover:text-slate-800 rounded-full disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
-            title="Move right"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Floating Rich Detailed Overlay Panel (Displays exactly while held/long-pressed, dismissed instantly when input is released) */}
       {isPressed && (
         <div className={`absolute ${placementClasses} min-w-[280px] sm:min-w-[320px] bg-white border-2 border-indigo-600 rounded-2xl shadow-xl p-5 z-50 pointer-events-none animate-in fade-in zoom-in-95 duration-100 ease-out`}>
-          {/* Arrow vectors styled for the specific speech bubble direction */}
           <div className={arrowBodyClasses}></div>
           <div className={arrowBorderClasses}></div>
 
@@ -327,6 +342,33 @@ function LauncherCardItem({
   );
 }
 
+export interface LauncherGridProps {
+  sites: LauncherSite[];
+  saving?: boolean;
+  saveWarning?: string | null;
+  loading?: boolean;
+  emptyTitle?: string;
+  emptyMessage?: string;
+  emptyActionLabel?: string;
+  emptyActionTo?: string;
+  showEmptyAction?: boolean;
+  onMove?: (index: number, direction: -1 | 1) => void | Promise<void>;
+  onOrderChange?: (newIds: string[]) => void | Promise<void>;
+  onReset?: () => void | Promise<void>;
+  showReset?: boolean;
+  readOnly?: boolean;
+}
+
+interface PhysicsNode {
+  id: string;
+  site: LauncherSite;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+}
+
 export default function LauncherGrid({
   sites,
   saving = false,
@@ -337,11 +379,231 @@ export default function LauncherGrid({
   emptyActionLabel = "Go to Dashboard",
   emptyActionTo = "/",
   showEmptyAction = true,
-  onMove,
   onReset,
   showReset = true,
-  readOnly = false
+  readOnly = false,
+  onOrderChange
 }: LauncherGridProps) {
+  const arenaRef = React.useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = React.useState({ width: 800, height: 500 });
+  
+  const [physicsNodes, setPhysicsNodes] = React.useState<PhysicsNode[]>([]);
+  const nodesRef = React.useRef<PhysicsNode[]>([]);
+  const activeDragIdRef = React.useRef<string | null>(null);
+  const [activeDragId, setActiveDragId] = React.useState<string | null>(null);
+
+  // Measure and trace accurate container bounds
+  React.useEffect(() => {
+    if (!arenaRef.current) return;
+    const updateSize = () => {
+      const rect = arenaRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDimensions({
+          width: rect.width || 800,
+          height: rect.height || 500
+        });
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Sync sites with internal physics nodes ref representation
+  React.useEffect(() => {
+    const cx = dimensions.width / 2;
+    const cy = dimensions.height / 2;
+    
+    const prev = nodesRef.current;
+    const synced = sites.map((site, index) => {
+      const existing = prev.find(n => n.id === site.id);
+      if (existing) {
+        return { ...existing, site };
+      }
+      
+      // Compute deterministic outward spiral from center
+      const angle = index * 1.6;
+      const distance = 70 + index * 42;
+      return {
+        id: site.id,
+        site,
+        x: cx + Math.cos(angle) * distance,
+        y: cy + Math.sin(angle) * distance,
+        vx: 0,
+        vy: 0,
+        radius: 56
+      };
+    });
+    
+    nodesRef.current = synced;
+    setPhysicsNodes(synced);
+  }, [sites, dimensions.width, dimensions.height]);
+
+  // Regular periodic updates inside a standard requestAnimationFrame loops
+  React.useEffect(() => {
+    let animationFrameId: number;
+
+    const tick = () => {
+      const dragId = activeDragIdRef.current;
+      const currentNodes = [...nodesRef.current];
+      if (currentNodes.length === 0) {
+        animationFrameId = requestAnimationFrame(tick);
+        return;
+      }
+
+      const cx = dimensions.width / 2;
+      const cy = dimensions.height / 2;
+      
+      // Packing physical parameters
+      const kCenter = 0.045; // Attraction force scaling towards center
+      const radiusSum = 126; // Double radii (56x2) + spacing buffer (14px)
+      const damping = 0.84; // Soft deceleration factor
+
+      // 1. Core Attraction towards Center
+      currentNodes.forEach(node => {
+        if (node.id === dragId) return;
+        const dx = cx - node.x;
+        const dy = cy - node.y;
+        node.vx += dx * kCenter;
+        node.vy += dy * kCenter;
+      });
+
+      // 2. Pairwise Mutual Collision Resolution
+      for (let i = 0; i < currentNodes.length; i++) {
+        for (let j = i + 1; j < currentNodes.length; j++) {
+          const u = currentNodes[i];
+          const v = currentNodes[j];
+          const dx = v.x - u.x;
+          const dy = v.y - u.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < radiusSum && dist > 0.1) {
+            const overlap = radiusSum - dist;
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const force = overlap * 0.42;
+
+            if (u.id !== dragId) {
+              u.vx -= nx * force * 0.5;
+              u.vy -= ny * force * 0.5;
+              u.x -= nx * overlap * 0.25;
+              u.y -= ny * overlap * 0.25;
+            }
+            if (v.id !== dragId) {
+              v.vx += nx * force * 0.5;
+              v.vy += ny * force * 0.5;
+              v.x += nx * overlap * 0.25;
+              v.y += ny * overlap * 0.25;
+            }
+          }
+        }
+      }
+
+      // 3. Keep within physical container limits
+      const margin = 56;
+      currentNodes.forEach(node => {
+        if (node.id === dragId) return;
+
+        if (node.x < margin) {
+          node.x = margin;
+          node.vx = Math.abs(node.vx) * 0.4;
+        }
+        if (node.x > dimensions.width - margin) {
+          node.x = dimensions.width - margin;
+          node.vx = -Math.abs(node.vx) * 0.4;
+        }
+        if (node.y < margin) {
+          node.y = margin;
+          node.vy = Math.abs(node.vy) * 0.4;
+        }
+        if (node.y > dimensions.height - margin) {
+          node.y = dimensions.height - margin;
+          node.vy = -Math.abs(node.vy) * 0.4;
+        }
+      });
+
+      // 4. Position accumulation and dynamic velocity decay
+      currentNodes.forEach(node => {
+        if (node.id === dragId) return;
+        node.x += node.vx * 0.16;
+        node.y += node.vy * 0.16;
+        node.vx *= damping;
+        node.vy *= damping;
+      });
+
+      nodesRef.current = currentNodes;
+      setPhysicsNodes([...currentNodes]);
+
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    animationFrameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [dimensions]);
+
+  const handleDragStart = (e: React.PointerEvent, id: string) => {
+    if (readOnly) return;
+    activeDragIdRef.current = id;
+    setActiveDragId(id);
+  };
+
+  const handleDragEnd = () => {
+    const dragId = activeDragIdRef.current;
+    if (!dragId) return;
+
+    // Calculate final layout positions to resolve new ordered list representation
+    const finalNodes = [...nodesRef.current];
+    // Sort primarily by row Y coordinates (bucketed to 150px rows), then by X coordinate
+    const sorted = [...finalNodes].sort((a, b) => {
+      const rowA = Math.floor(a.y / 150);
+      const rowB = Math.floor(b.y / 150);
+      if (rowA !== rowB) {
+        return rowA - rowB;
+      }
+      return a.x - b.x;
+    });
+
+    const newIds = sorted.map(n => n.id);
+    const oldIds = sites.map(s => s.id);
+
+    const hasOrderChanged = newIds.some((id, index) => id !== oldIds[index]);
+
+    if (hasOrderChanged && onOrderChange) {
+      onOrderChange(newIds);
+    }
+
+    activeDragIdRef.current = null;
+    setActiveDragId(null);
+  };
+
+  const handleArenaPointerMove = (e: React.PointerEvent) => {
+    const dragId = activeDragIdRef.current;
+    if (!dragId || !arenaRef.current) return;
+
+    const rect = arenaRef.current.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const margin = 56;
+    const cx = Math.max(margin, Math.min(dimensions.width - margin, px));
+    const cy = Math.max(margin, Math.min(dimensions.height - margin, py));
+
+    nodesRef.current = nodesRef.current.map(node => {
+      if (node.id === dragId) {
+        return {
+          ...node,
+          x: cx,
+          y: cy,
+          vx: 0,
+          vy: 0
+        };
+      }
+      return node;
+    });
+    setPhysicsNodes([...nodesRef.current]);
+  };
 
   if (loading) {
     return (
@@ -373,19 +635,23 @@ export default function LauncherGrid({
   return (
     <div className="flex flex-col min-h-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 p-6 md:p-10 font-sans h-full overflow-y-auto relative">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply opacity-20 animate-[pulse_10s_ease-in-out_infinite]"></div>
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        {showReset && !readOnly && onReset && (
-          <div className="flex justify-end mb-4">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
+        
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-200/50 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-200">
+            {readOnly ? "ReadOnly Interactive Canvas" : "Drag Balls to Arrange Order"}
+          </div>
+          {showReset && !readOnly && onReset && (
             <button
               onClick={onReset}
               disabled={saving}
               className="group flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-all duration-300 disabled:opacity-50 hover:bg-slate-100 px-3 py-1.5 rounded-full bg-white/50 backdrop-blur-sm"
             >
               <RotateCcw className="w-4 h-4 group-hover:-rotate-[360deg] transition-transform duration-700 ease-out" />
-              <span className="hidden sm:inline">Reset Order</span>
+              <span>Reset Order</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {saveWarning && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">
@@ -394,16 +660,28 @@ export default function LauncherGrid({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
-          {sites.map((site, index) => (
+        {/* 2D Physics Arena Playground */}
+        <div 
+          ref={arenaRef}
+          className="relative w-full h-[520px] bg-white/40 backdrop-blur-xs border-2 border-slate-200/60 rounded-[32px] shadow-sm overflow-hidden select-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)',
+            backgroundSize: '24px 24px',
+          }}
+          onPointerMove={handleArenaPointerMove}
+          onPointerUp={handleDragEnd}
+          onPointerCancel={handleDragEnd}
+        >
+          {physicsNodes.map((node) => (
             <LauncherCardItem
-              key={site.id}
-              site={site}
-              index={index}
-              sitesLength={sites.length}
-              saving={saving}
+              key={node.id}
+              site={node.site}
+              x={node.x}
+              y={node.y}
+              isDragged={node.id === activeDragId}
               readOnly={readOnly}
-              onMove={onMove}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             />
           ))}
         </div>

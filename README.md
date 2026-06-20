@@ -1,5 +1,5 @@
 # GitHub Pages Auditor
-Version: `1.5.0` (Operational Stability & Anonymous Session Lifecycle Baseline)
+Version: `1.5.1` (Public No-Auth E2E & Patch Version Governance Baseline)
 
 GitHub Pages Auditor is a multi-user web application that audits GitHub Pages settings across repositories accessible to fine-grained or classic Personal Access Tokens (PATs). It displays custom domain configuration status, HTTPS certificate state, and Pages deployment methods securely without modifying any settings.
 
@@ -100,7 +100,7 @@ firebase deploy --only firestore:rules
 *   **Active Production Region**: `asia-east1`
 *   **Deployment Status**: Google Cloud Run is our active, live runtime.
 *   **Custom Domain Status**: Active and canonical custom domain integration (`pages.moukaeritai.work`).
-*   **Current Milestone**: Milestone 1.5.0 (Operational Stability & Anonymous Session Lifecycle Baseline)
+*   **Current Milestone**: Milestone 1.5.2 (Operational Stability & Anonymous Session Lifecycle Baseline)
 *   **Export Schema Status**: V2 is the only current JSON export schema; CSV is a separate flat export format.
 
 ---
@@ -135,3 +135,22 @@ The **Launcher** surface displays a user's detected GitHub Pages sites, sharing 
 - The app stores only layout metadata (IDs and order), not duplicated audit payloads.
 - No third-party external favicon proxy services are used; the application relies on direct best-effort metadata collection from the audited site and falls back to locally generated displays based on the app's initial.
 - Layout stores the ordered array of IDs rather than absolute x/y coordinates.
+
+---
+
+## Patch Version Governance Policy
+To guarantee stability, alignment, and release consistency across development cycles:
+- **Mandatory Version Bumps**: Every file-changing task performed by an agent must bump the patch version inside `package.json`.
+- **Sourced Authority**: The single source of truth for the application version is exclusively the `package.json` `"version"` field. All documentation (README, AGENTS, manuals) and dynamic runtime dependencies (User-Agent strings, API responses, client headers) must align dynamically with this package.json configuration.
+- **Commit Format**: All changes must culminate in a descriptive English commit message outlining the milestone and patch alignment (e.g., `chore(release): establish 1.5.2 public no-auth E2E baseline`).
+
+---
+
+## Public No-Auth E2E & Smoke Hardening
+Automated testing of real user functionality (Google login, Firebase writes, real PAT execution, Firestore-based Launcher validation) is strictly **out of scope** to prevent storing any persistent API keys or CI secrets in the repository. Instead, we enforce non-destructive, strictly read-only public smoke checking:
+1.  **Scope**: Verifies that the canonical URL (`https://pages.moukaeritai.work`) and the fallback Cloud Run endpoint resolve successfully, returning structural landing markers (`id="root"`, `<title>`) and active liveness signals (`/healthz` responding with `{ ok: true }`).
+2.  **No Credentials Policy**: Automated smoke runs do not send PATs, Firebase ID tokens, cookies, or authorization headers.
+3.  **Modes of Operation**:
+    -   **Informational Mode** (Default): Run via `npm run smoke:public`. Exits with code `0` even if network probes warn or fail. This prevents local/offline test container environments from crashing builds.
+    -   **Strict Mode**: Triggered via `SMOKE_STRICT=true npm run smoke:public` or `npm run smoke:public -- --strict`. Exit code is non-zero (`1`) if any endpoint fails to resolve or returns unhealthy payloads. This is intended for deployment probes and pipeline sanity checks.
+

@@ -215,10 +215,14 @@ try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
   
-  if (version !== '1.5.0') {
-    printFail(`Package version must be exactly '1.5.0'. Found: ${version}`);
+  // Validate SemVer format
+  const semverRegex = /^\d+\.\d+\.\d+$/;
+  if (!semverRegex.test(version)) {
+    printFail(`Package version is not a valid SemVer string. Found: ${version}`);
+  } else if (version !== '1.5.1') {
+    printFail(`Package version must be exactly '1.5.1'. Found: ${version}`);
   } else {
-    printSuccess(`Package version is exactly '1.5.0'.`);
+    printSuccess(`Package version is exactly '1.5.1'.`);
   }
   
   const readme = fs.readFileSync('README.md', 'utf8');
@@ -277,6 +281,7 @@ try {
   const hasLifecycleTests = fs.existsSync('tests/anonymous-lifecycle.test.ts');
   const deferredContent = fs.readFileSync('docs/deferred-work.md', 'utf8');
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  const readme = fs.readFileSync('README.md', 'utf8');
   
   // Verify that the actual Firebase cloud functions / automated cleanup jobs remain a deferred non-goal
   const isFunctionsDeferred = deferredContent.includes('automation') || deferredContent.includes('policy') || deferredContent.includes('operator');
@@ -287,10 +292,13 @@ try {
   // smoke:public script exists in package.json
   const hasSmokeScript = packageJson.scripts && packageJson.scripts['smoke:public'];
 
-  if (hasLifecycleDocs && hasLifecycleTests && isFunctionsDeferred && hasExplicitNonGoals && hasSmokeScript) {
+  // public smoke strict mode and no-auth E2E scope is documented
+  const hasSmokeDocs = readme.includes('smoke:public') && (readme.includes('strict') || readme.includes('STRICT')) && (readme.includes('no-auth') || readme.includes('unauthenticated'));
+
+  if (hasLifecycleDocs && hasLifecycleTests && isFunctionsDeferred && hasExplicitNonGoals && hasSmokeScript && hasSmokeDocs) {
     printSuccess(`Anonymous Session Lifecycle modules, smoke scripts, and non-goals are completely verified in documentation and config.`);
   } else {
-    printFail(`Missing anonymous lifecycle helper, test suite, public smoke script definition, or explicit non-goals schema.`);
+    printFail(`Missing anonymous lifecycle helper, test suite, public smoke script definition, public smoke strict mode details, or explicit non-goals schema.`);
   }
 } catch (e) {
   printFail(`Failed to audit anonymous session lifecycle status: ${e.message}`);
@@ -320,7 +328,8 @@ try {
     'Gemini/AI' + ' can be added later',
     'future work: ' + 'GitHub OAuth',
     'future work: ' + 'GitHub App',
-    'future work: ' + 'Gemini/AI'
+    'future work: ' + 'Gemini/AI',
+    '1.5.0'
   ];
 
   for (const f of filesToScanForStale) {

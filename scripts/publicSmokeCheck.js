@@ -8,6 +8,12 @@
  *   exiting with code 1 on failed endpoints. This is suited for deployment pipelines or automated active telemetry.
  */
 
+import fs from 'fs';
+import path from 'path';
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
+const version = packageJson.version;
+
 const CANONICAL_URL = 'https://pages.moukaeritai.work';
 const FALLBACK_URL = 'https://github-pages-auditor-1042140630327.asia-east1.run.app';
 
@@ -23,7 +29,7 @@ async function verifyEndpoint(url) {
   console.log(`Checking public endpoint: ${url}...`);
   try {
     // Strictly unauthenticated request - no PATs, Firebase tokens, or credentials sent
-    const fetchPromise = fetch(url, { headers: { 'User-Agent': 'GitHub-Pages-Auditor-Smoke-Check/1.5.0' } });
+    const fetchPromise = fetch(url, { headers: { 'User-Agent': `GitHub-Pages-Auditor-Smoke-Check/${version}` } });
     const response = await Promise.race([fetchPromise, timeoutPromise]);
     
     if (!response.ok) {
@@ -49,11 +55,12 @@ async function verifyEndpoint(url) {
     }
 
     if (url === CANONICAL_URL || url === FALLBACK_URL) {
-      const hasTitle = text.includes('GitHub Pages Auditor') || text.includes('title');
+      const hasTitle = text.includes('<title>') || text.includes('<title') || text.includes('GitHub Pages Auditor');
       const hasRoot = text.includes('id="root"');
-      const hasScript = text.includes('src="/src/main.tsx"');
+      const hasModuleScript = text.includes('type="module"') || text.includes('<script') || text.includes('.js');
+      const hasObviousError = text.includes('502 Bad Gateway') || text.includes('500 Internal Server Error') || text.includes('Cannot GET') || text.includes('404 Not Found');
       
-      if (hasTitle && hasRoot && hasScript) {
+      if (hasTitle && hasRoot && hasModuleScript && !hasObviousError) {
         console.log(`✅ ${url} contains correct landing page structure and unauthenticated UI placeholders.`);
         return true;
       } else {
