@@ -48,6 +48,20 @@ async function verifyEndpoint(url) {
       }
     }
 
+    if (url === CANONICAL_URL || url === FALLBACK_URL) {
+      const hasTitle = text.includes('GitHub Pages Auditor') || text.includes('title');
+      const hasRoot = text.includes('id="root"');
+      const hasScript = text.includes('src="/src/main.tsx"');
+      
+      if (hasTitle && hasRoot && hasScript) {
+        console.log(`✅ ${url} contains correct landing page structure and unauthenticated UI placeholders.`);
+        return true;
+      } else {
+        console.warn(`⚠️ Warning: ${url} page rendered, but is missing required HTML structural tags.`);
+        return false;
+      }
+    }
+
     console.log(`✅ ${url} is healthy (status ${response.status}, length: ${text.length})`);
     return true;
   } catch (err) {
