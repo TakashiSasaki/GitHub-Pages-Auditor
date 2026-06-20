@@ -4,22 +4,22 @@ import path from 'path';
 import { describe, it } from 'node:test';
 
 describe('Documentation Consistency Diagnostics', () => {
-  it('README.md should contain the planned custom domain', () => {
+  it('README.md should contain the active custom domain', () => {
     const content = fs.readFileSync(path.join(process.cwd(), 'README.md'), 'utf-8');
     assert.ok(content.includes('pages.moukaeritai.work'), 'README.md does not contain pages.moukaeritai.work');
   });
 
-  it('AGENTS.md should contain the planned custom domain', () => {
+  it('AGENTS.md should contain the active custom domain', () => {
     const content = fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf-8');
     assert.ok(content.includes('pages.moukaeritai.work'), 'AGENTS.md does not contain pages.moukaeritai.work');
   });
 
-  it('docs/custom-domain-readiness.md should contain the planned custom domain', () => {
+  it('docs/custom-domain-readiness.md should contain the active custom domain', () => {
     const content = fs.readFileSync(path.join(process.cwd(), 'docs', 'custom-domain-readiness.md'), 'utf-8');
     assert.ok(content.includes('pages.moukaeritai.work'), 'docs/custom-domain-readiness.md does not contain pages.moukaeritai.work');
   });
 
-  it('docs/cloud-run-operations.md should contain the planned custom domain', () => {
+  it('docs/cloud-run-operations.md should contain the active custom domain', () => {
     const content = fs.readFileSync(path.join(process.cwd(), 'docs', 'cloud-run-operations.md'), 'utf-8');
     assert.ok(content.includes('pages.moukaeritai.work'), 'docs/cloud-run-operations.md does not contain pages.moukaeritai.work');
   });
@@ -112,5 +112,52 @@ describe('Documentation Consistency Diagnostics', () => {
       assert.strictEqual(schemas[0].schemaVersion, 'github-pages-auditor.export.v2', 'Should be V2');
       assert.strictEqual(schemas[0].status, 'current', 'Should be current status');
     }
+  });
+
+  it('should enforce active custom domain "https://pages.moukaeritai.work" and no stale planned-domain phrases', () => {
+    const readme = fs.readFileSync(path.join(process.cwd(), 'README.md'), 'utf-8');
+    const agents = fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf-8');
+
+    // Assert "https://pages.moukaeritai.work" is active/canonical
+    assert.ok(readme.includes('https://pages.moukaeritai.work'), 'README should contain active URL');
+    assert.ok(agents.includes('pages.moukaeritai.work'), 'AGENTS should contain active URL');
+
+    // Assert stale planned-domain phrases are absent from crucial docs
+    const filesToCheck = ['README.md', 'AGENTS.md', 'docs/deployment-readiness.md', 'docs/custom-domain-readiness.md'];
+    for (const f of filesToCheck) {
+      const content = fs.readFileSync(path.join(process.cwd(), f), 'utf-8');
+      assert.ok(!content.includes('Planned Custom Domain') || f === 'docs/deployment-readiness.md', `Pending custom domain wording "Planned Custom Domain" found in ${f}`);
+      assert.ok(!content.includes('planned, not yet assigned'), `Pending custom domain wording "planned, not yet assigned" found in ${f}`);
+      assert.ok(!content.includes('Custom Domain Assignment Readiness'), `Pending custom domain wording "Custom Domain Assignment Readiness" found in ${f}`);
+    }
+  });
+
+  it('should verify document version consistency with 1.4.0', () => {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
+    assert.strictEqual(packageJson.version, '1.4.0', 'package.json version must be 1.4.0');
+
+    const agents = fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf-8');
+    assert.ok(agents.includes('1.4.0'), 'AGENTS.md must refer to 1.4.0');
+
+    const deploymentReadiness = fs.readFileSync(path.join(process.cwd(), 'docs/deployment-readiness.md'), 'utf-8');
+    assert.ok(deploymentReadiness.includes('1.4.0'), 'deployment-readiness.md must refer to 1.4.0');
+  });
+
+  it('should verify icon/site metadata scanning features are documented', () => {
+    const specWeb = fs.readFileSync(path.join(process.cwd(), 'docs/spec-appendix-github-api.md'), 'utf-8');
+    assert.ok(specWeb.includes('faviconUrl'), 'spec-appendix-github-api.md must mention faviconUrl');
+    assert.ok(specWeb.includes('manifestUrl'), 'spec-appendix-github-api.md must mention manifestUrl');
+    assert.ok(specWeb.includes('isPwa'), 'spec-appendix-github-api.md must mention isPwa');
+    assert.ok(specWeb.includes('pwaIconUrl'), 'spec-appendix-github-api.md must mention pwaIconUrl');
+    assert.ok(specWeb.includes('pwaName'), 'spec-appendix-github-api.md must mention pwaName');
+    assert.ok(specWeb.includes('pwaDisplayMode'), 'spec-appendix-github-api.md must mention pwaDisplayMode');
+    assert.ok(specWeb.includes('best-effort'), 'spec-appendix-github-api.md must detail best-effort nature of site metadata');
+    assert.ok(specWeb.includes('No PAT leakage'), 'spec-appendix-github-api.md must document PAT security boundaries');
+  });
+
+  it('enforces exclusion flags and out-of-scope constraints', () => {
+    const readme = fs.readFileSync(path.join(process.cwd(), 'README.md'), 'utf-8');
+    assert.ok(readme.includes('Exclusion of GitHub OAuth'), 'Out-of-scope guidelines must exclude GitHub OAuth');
+    assert.ok(readme.includes('Exclusion of GitHub App Authentication'), 'Out-of-scope guidelines must exclude GitHub App authentication');
   });
 });

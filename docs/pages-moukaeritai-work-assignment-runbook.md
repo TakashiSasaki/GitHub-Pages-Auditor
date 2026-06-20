@@ -1,17 +1,18 @@
-# GitHub Pages Auditor - Custom Domain Assignment Runbook (pages.moukaeritai.work)
+# GitHub Pages Auditor - Custom Domain Assignment Runbook Summary (pages.moukaeritai.work)
+Version: `1.4.0` (Completed & Active)
 
-This runbook outlines the operational steps to assign the planned custom domain `pages.moukaeritai.work` to the existing Cloud Run service.
+This runbook outlines the operational steps that have been successfully executed to assign the production custom domain `pages.moukaeritai.work` to the existing Cloud Run service.
 
 ---
 
-## 1. Current State
-*   Cloud Run URL (`https://github-pages-auditor-1042140630327.asia-east1.run.app`) is active and serves the app.
-*   Custom domain (`pages.moukaeritai.work`) is planned but not assigned.
-*   Existing default URL must remain usable as a fallback.
+## 1. Current State (Active & Canonical)
+*   Custom domain (`pages.moukaeritai.work`) is fully active and serves as the primary canonical URL.
+*   Cloud Run URL (`https://github-pages-auditor-1042140630327.asia-east1.run.app`) remains active and serves as a reliable fallback.
+*   The system has achieved Milestone 1.4.0.
 
-## 2. Target State
-*   `https://pages.moukaeritai.work` serves the same app.
-*   Firebase Auth works from `pages.moukaeritai.work`.
+## 2. Target State achieved
+*   `https://pages.moukaeritai.work` successfully serves the React SPA and Express API.
+*   Firebase Auth fully allowlists and authorizes `pages.moukaeritai.work`.
 *   API routes work from the custom domain.
 *   CSV and JSON exports work.
 *   Default Cloud Run URL remains available as fallback unless explicitly disabled later.

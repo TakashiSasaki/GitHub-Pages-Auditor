@@ -589,3 +589,26 @@ POST /repos/{owner}/{repo}/pages/builds cannot be called.
 GitHub Actions workflow API cannot be called.
 Arbitrary user-supplied GitHub API URL cannot be called.
 Frontend cannot pass Authorization header through to GitHub.
+
+14. Best-Effort Site Metadata and Icon Fetching
+
+During an audit session, when a repository has GitHub Pages enabled and provides a public "html_url", the backend performs a bounded, timeout-guarded site metadata collection to enrich visual displays:
+
+### A. Collected Metadata Fields
+- **faviconUrl**: The path/URL to the site's favicon, scanned from link tags (`rel="icon"`, `apple-touch-icon"`, or `shortcut icon"`).
+- **manifestUrl**: The absolute URL to the site's web app manifest, defined in a `<link rel="manifest">` tag.
+- **isPwa**: A boolean flag indicating whether the site qualifies as a Progressive Web App (PWA), determined by presence of icons and a standalone/fullscreen/minimal-ui display mode in its manifest.
+- **pwaIconUrl**: Path to the preferred PWA icon (checks for 512x512, then 192x192, falling back to the first available) resolved relative to the manifest.
+- **pwaName**: Standardized visual name retrieved from the manifest's name or short_name property.
+- **pwaDisplayMode**: Display mode defined in the manifest (e.g., standalone, fullscreen, minimal-ui).
+
+### B. Fallback & Best-Effort Resiliency
+- If the HTTP fetch targeting the site HTML fails, or no custom icon is parsed, the backend falls back to resolving `"/favicon.ico"` against the page base URL.
+- Manifest fetch or parse failures are handled silently, ensuring that manifest failures **never** fail the audit or repository classification.
+- Metadata collection is treated as an optional, non-blocking visual enhancement.
+
+### C. Security and Privacy Boundaries
+- **No PAT leakage**: No personal access tokens or custom credentials are sent to the target GitHub Pages sites during these best-effort fetches.
+- **Strictly Read-Only**: fetches utilize standard GET operations with a custom `User-Agent` (`GitHubPagesAuditor/1.4.0`) and have short timeouts (3.5s for HTML, 2.0s for Manifest).
+- **Export Schema Isolation**: These fields are runtime/audit result presentation elements in the UI and are **not** present in the V2 JSON export schema or flat CSV export files.
+

@@ -92,11 +92,12 @@ firebase deploy --only firestore:rules
 
 ## Production & Infrastructure Status
 
-*   **Active Live Production URL**: [https://github-pages-auditor-1042140630327.asia-east1.run.app](https://github-pages-auditor-1042140630327.asia-east1.run.app)
+*   **Primary Canonical Production URL**: [https://pages.moukaeritai.work](https://pages.moukaeritai.work)
+*   **Active Fallback Runtime URL**: [https://github-pages-auditor-1042140630327.asia-east1.run.app](https://github-pages-auditor-1042140630327.asia-east1.run.app)
 *   **Active Production Region**: `asia-east1`
 *   **Deployment Status**: Google Cloud Run is our active, live runtime.
-*   **Planned Custom Domain**: `pages.moukaeritai.work`
-*   **Custom Domain Status**: planned, not yet assigned (Current milestone: Custom Domain Assignment Readiness for pages.moukaeritai.work)
+*   **Custom Domain Status**: Active and canonical custom domain integration (`pages.moukaeritai.work`).
+*   **Current Milestone**: Milestone 1.4.0 (Documentation Consistency & Active Domain Baseline)
 *   **Export Schema Status**: V2 is the only current JSON export schema; CSV is a separate flat export format.
 
 ---

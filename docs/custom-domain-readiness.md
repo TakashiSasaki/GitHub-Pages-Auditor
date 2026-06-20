@@ -1,16 +1,17 @@
-# GitHub Pages Auditor - Custom Domain Readiness Guide
+# GitHub Pages Auditor - Custom Domain Integration and Verification Guide
+Version: `1.4.0` (Documentation Consistency & Active Domain Baseline)
 
-This document outlines the operational and architectural requirements for preparing the **GitHub Pages Auditor** deployment for custom domain mapping of our Google Cloud Run service.
+This document maps out the operational verification and history for mapping the **GitHub Pages Auditor** Cloud Run service to its production canonical custom domain.
 
 ---
 
 ## 1. Domain Status Overview
 
-*   **Current State**: Deployed and serving from the default Google Cloud Run URL:
-    `https://github-pages-auditor-1042140630327.asia-east1.run.app` (within `asia-east1` region).
-*   **Custom Domain State**: planned, not yet assigned.
-*   **Custom Domain Target**: `pages.moukaeritai.work` (This is a subdomain of `moukaeritai.work`)
-*   **Current Milestone**: Custom Domain Assignment Readiness for pages.moukaeritai.work
+*   **Custom Domain State**: Fully mapped, active, and verified.
+*   **Primary Canonical URL**: `https://pages.moukaeritai.work`
+*   **Active Fallback Runtime URL**: `https://github-pages-auditor-1042140630327.asia-east1.run.app` (within `asia-east1` region).
+*   **Custom Domain Target**: `pages.moukaeritai.work` (subdomain of `moukaeritai.work`)
+*   **Current Milestone**: Milestone 1.4.0 (Documentation Consistency & Active Domain Baseline)
 
 ---
 
@@ -28,9 +29,8 @@ Google Cloud Run allows mapping custom domains to services using Google-managed 
 
 After triggering the custom domain mapping, the following DNS adjustments must be performed on your domain registrar/DNS provider:
 
-*   **DNS and Cloud Run mapping are not yet applied.**
-*   Exact DNS target values must be confirmed from the Cloud Run mapping operation at the time of assignment.
-*   Do not hardcode unverifiable DNS target assumptions as mandatory truth unless confirmed by Cloud Run.
+*   **DNS and Cloud Run mapping are fully applied and verified.**
+*   The CNAME record dynamically maps `pages.moukaeritai.work` to the Google Cloud Run infrastructure endpoint.
 
 ### DNS Record Setup (Example)
 *   **For Subdomain (`pages.moukaeritai.work`)**: Set up a **CNAME** record (Note: Exact DNS values must be confirmed by Cloud Run at the time of assignment):

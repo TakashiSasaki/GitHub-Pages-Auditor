@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - Deployment Readiness Baseline
-Version: `1.2.0` (Release Candidate Milestone)
+Version: `1.4.0` (Documentation Consistency & Active Domain Baseline)
 
 This document formalizes the production deployment status, custom domain readiness, and infrastructure requirements for the **GitHub Pages Auditor** application.
 
@@ -24,9 +24,9 @@ The application is already running on **Google Cloud Run** in containerized prod
 *   **Current Live Production URL**: [https://github-pages-auditor-1042140630327.asia-east1.run.app](https://github-pages-auditor-1042140630327.asia-east1.run.app)
 *   **Region**: `asia-east1`
 *   **Status**: Active & Live
-*   **Planned Custom Domain**: `pages.moukaeritai.work`
-*   **Custom Domain Status**: planned, not yet assigned.
-*   **Current Milestone**: Custom Domain Assignment Readiness for pages.moukaeritai.work
+*   **Active Custom Domain**: `pages.moukaeritai.work`
+*   **Custom Domain Status**: Active and canonical.
+*   **Current Milestone**: Milestone 1.4.0 (Documentation Consistency & Active Domain Baseline)
 
 ### Deployment Runtime Details:
 *   **Container Image**: Dual-stage light Alpine build with Node.js 20.

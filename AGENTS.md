@@ -138,10 +138,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - **Primary deployment target**: **Cloud Run** (Active, Live).
   - Current Live Production URL: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
   - Region: `asia-east1`
-  - Planned Custom Domain: `pages.moukaeritai.work`
-  - Current Major Milestone: Custom Domain Assignment Readiness for pages.moukaeritai.work
+  - Active Custom Domain: `pages.moukaeritai.work` (Active, Canonical URL)
+  - Current Major Milestone: Documentation Consistency & Active Domain Baseline
   - Infrastructure Mutation Rule: Do not mutate DNS, Cloud Run, or Firebase Auth externally in coding-agent tasks. Only provide operator checklists.
-  - Post-Assignment: Document required post-assignment docs updates after activation happens.
+  - Post-Assignment: Document required post-activation history.
 - **Crucial Warning**: Standard Firebase Hosting alone *cannot* run the Express backend. Firebase Hosting alone cannot run the Express backend. It must be paired with Cloud Run via proxy rewrites matching `/api/*` if edge CDN is desired.
 
 ## Known Constraints and Open Questions
@@ -155,7 +155,10 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Created `scripts/validateExamples.js` to continuously assert compliance for V2 and V2 exported samples alongside `npm run examples:validate`.
 - Defined `docs/external-consumer-guide.md` with strict interoperability requirements, ensuring registries and runtime retrievals remain out-of-scope.
 - Completely verified coverage of V2 deeply-nested `findings` taxonomy reflecting GitHub Pages DNS/SSL statuses.
-- Advanced primary build threshold to `1.3.0 (Public Release Readiness Gate Baseline)`.
+- Advanced primary build threshold to `1.4.0 (Documentation Consistency & Active Domain Baseline)`.
+- Documented active Custom Domain `pages.moukaeritai.work`.
+- Documented icon/site metadata fetching feature representing best-effort non-blocking metadata audit findings.
+- Hardened release checks and documentation consistency checks.
 - Implemented soft Firebase initialization and placeholder-aware config validators.
 - Established local, deterministic validation gate checks via `scripts/releaseReadinessCheck.js`.
 - Expanded unit test coverage in `tests/launcher.test.ts`.

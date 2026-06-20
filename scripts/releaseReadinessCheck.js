@@ -180,6 +180,74 @@ try {
   printFail(`Failed to audit firestore rules: ${e.message}`);
 }
 
+// 8. Active Custom Domain Check
+try {
+  const readme = fs.readFileSync('README.md', 'utf8');
+  const agents = fs.readFileSync('AGENTS.md', 'utf8');
+  
+  if (readme.includes('https://pages.moukaeritai.work') && agents.includes('pages.moukaeritai.work')) {
+    printSuccess(`Active custom domain 'pages.moukaeritai.work' is properly set in documentation.`);
+  } else {
+    printFail(`Active custom domain settings are missing in README.md or AGENTS.md.`);
+  }
+  
+  // Regressions of planned / pending statuses
+  const filesToCheck = ['README.md', 'AGENTS.md', 'docs/deployment-readiness.md', 'docs/custom-domain-readiness.md'];
+  let foundPlanned = false;
+  for (const f of filesToCheck) {
+    if (fs.existsSync(f)) {
+      const content = fs.readFileSync(f, 'utf8');
+      if (content.includes('planned, not yet assigned') || content.includes('Custom Domain Assignment Readiness')) {
+        printFail(`Regressing planned-domain phrase found in ${f}. All custom domains must be active.`);
+        foundPlanned = true;
+      }
+    }
+  }
+  if (!foundPlanned) {
+    printSuccess(`No planned-domain regression phrases found in critical documentation.`);
+  }
+} catch (e) {
+  printFail(`Failed to audit active custom domain: ${e.message}`);
+}
+
+// 9. Document to Package Version Check
+try {
+  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  const version = packageJson.version;
+  
+  const agents = fs.readFileSync('AGENTS.md', 'utf8');
+  const deploymentReadiness = fs.readFileSync('docs/deployment-readiness.md', 'utf8');
+  
+  if (agents.includes(version) && deploymentReadiness.includes(version)) {
+    printSuccess(`Document version strings are perfectly aligned with package.json (${version}).`);
+  } else {
+    printFail(`Inconsistent version references found between AGENTS.md, deployment-readiness.md, or package.json (${version}).`);
+  }
+} catch (e) {
+  printFail(`Failed to audit version strings: ${e.message}`);
+}
+
+// 10. Icon/Site Metadata Documentation Check
+try {
+  const specWeb = fs.readFileSync('docs/spec-appendix-github-api.md', 'utf8');
+  const hasFavicon = specWeb.includes('faviconUrl');
+  const hasManifest = specWeb.includes('manifestUrl');
+  const hasIsPwa = specWeb.includes('isPwa');
+  const hasPwaIcon = specWeb.includes('pwaIconUrl');
+  const hasPwaName = specWeb.includes('pwaName');
+  const hasPwaDisplay = specWeb.includes('pwaDisplayMode');
+  const hasBestEffort = specWeb.includes('best-effort');
+  const hasSecurity = specWeb.includes('No PAT leakage');
+  
+  if (hasFavicon && hasManifest && hasIsPwa && hasPwaIcon && hasPwaName && hasPwaDisplay && hasBestEffort && hasSecurity) {
+    printSuccess(`Site and icon metadata capabilities are accurately and securely documented.`);
+  } else {
+    printFail(`Site metadata features documentation in spec-appendix-github-api.md is incomplete.`);
+  }
+} catch (e) {
+  printFail(`Failed to audit site metadata documentation: ${e.message}`);
+}
+
 console.log('\n=== RESULT ===');
 if (failed) {
   console.log(`${red}❌ Release readiness verification FAILED. Please solve the errors above before baseline release.${reset}\n`);
