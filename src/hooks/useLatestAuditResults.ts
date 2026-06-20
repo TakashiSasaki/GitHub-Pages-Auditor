@@ -44,6 +44,7 @@ export function useLatestAuditResults(uid: string | undefined, isAnonymous: bool
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load launcher sites.');
+        setResults(null);
       } finally {
         setLoading(false);
       }

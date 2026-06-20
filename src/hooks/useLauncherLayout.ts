@@ -9,6 +9,9 @@ export function useLauncherLayout(uid: string | undefined, isAnonymous: boolean,
 
   useEffect(() => {
     async function load() {
+      setOrderedSiteIds(null);
+      setLayoutLoading(true);
+
       if (!uid) {
         setOrderedSiteIds(null);
         setLayoutLoading(false);

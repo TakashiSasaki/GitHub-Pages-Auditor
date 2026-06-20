@@ -39,17 +39,6 @@ export default function LauncherPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full p-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
   let emptyMessage = 'Run an audit from the dashboard to populate the launcher.';
   if (!user) {
     emptyMessage = 'You must be logged in to view the launcher.';
