@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - Cloud Run Operations Manual
-Version: `1.4.0` (Completed & Active)
+Version: `1.5.0` (Operational Stability & Anonymous Session Lifecycle Baseline)
 
 This document outlines standard operating procedures, architectural summaries, and verification guides for the production container runtime deployed on Google Cloud Run.
 

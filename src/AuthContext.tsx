@@ -3,6 +3,7 @@ import { User, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, 
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { getGithubTokenDocPath, getEnvironmentName, getUserSettingDocPath } from './lib/firestorePaths';
+import { createAnonymousSessionExpiration } from './lib/anonymousSessionLifecycle';
 
 interface AuthContextType {
   user: User | null;
@@ -83,21 +84,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Since validation succeeded, save directly to Firestore
     try {
+      const now = new Date();
       const docRef = getDocRef(user.uid, user.isAnonymous);
-      await setDoc(docRef, {
+      const tokenPayload: any = {
         token: pat,
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (user.isAnonymous) {
+        tokenPayload.createdAt = now.toISOString();
+        tokenPayload.expiresAt = createAnonymousSessionExpiration(now).toISOString();
+        tokenPayload.lastSeenAt = now.toISOString();
+      }
+
+      await setDoc(docRef, tokenPayload);
 
       // Save token metadata as a separate non-secret document under user settings
       const env = getEnvironmentName(import.meta.env.MODE);
       const metadataPath = getUserSettingDocPath(env, user.uid, user.isAnonymous, 'tokenMetadata');
       const metadataDocRef = doc(db, metadataPath);
       const derivedType = pat.startsWith('github_pat_') ? 'fine_grained' : (pat.startsWith('ghp_') ? 'classic' : 'unknown');
-      await setDoc(metadataDocRef, {
+      const metadataPayload: any = {
         tokenType: derivedType,
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (user.isAnonymous) {
+        metadataPayload.createdAt = now.toISOString();
+        metadataPayload.expiresAt = createAnonymousSessionExpiration(now).toISOString();
+        metadataPayload.lastSeenAt = now.toISOString();
+      }
+
+      await setDoc(metadataDocRef, metadataPayload);
 
       setHasStoredPat(true);
     } catch (e: any) {

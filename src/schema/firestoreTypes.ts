@@ -5,6 +5,11 @@ export interface GitHubTokenDocument {
 
   // Note: 'id' is conventionally the doc name (e.g. 'default') and not inside the body.
   // Note: metadata like maskedToken, addedAt are not currently generated or required by the React form.
+
+  // Anonymous Lifecycle fields (optional)
+  createdAt?: string; // ISO-8601 creation timestamp
+  expiresAt?: string; // ISO-8601 expiration timestamp
+  lastSeenAt?: string; // ISO-8601 last activity timestamp
 }
 
 export interface AuditRunDocument {
@@ -35,4 +40,7 @@ export interface AnonymousSessionDocument {
   // We may store tokens under `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/githubTokens/default`
   // But a dedicated active session document is not yet automatically created.
   [key: string]: any;
+  createdAt?: string; // ISO-8601 creation timestamp
+  expiresAt?: string; // ISO-8601 expiration timestamp
+  lastSeenAt?: string; // ISO-8601 last activity timestamp
 }

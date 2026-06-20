@@ -1,13 +1,17 @@
 # GitHub Pages Auditor - Deferred Work, Future Roadmap, and Non-Goals
-Version: `1.4.0` (Completed & Active)
+Version: `1.5.0` (TTL-Ready Foundation & Operational Stability)
 
-This document maps out completed items in Milestone 1.4.0, deferred future work planned for later strides, and permanent architectural non-goals of the GitHub Pages Auditor.
+This document maps out completed items, deferred future work planned for later strides, and permanent architectural non-goals of the GitHub Pages Auditor.
 
 ---
 
-## 1. Implemented in Milestone 1.4.0 (Recent Additions)
+## 1. Recent Accomplishments
 
-The following capabilities have been fully implemented, integrated, and verified:
+### Implemented in Milestone 1.5.0
+- **Anonymous Session TTL-Ready Lifecycle Foundation**: Implemented a pure, robust lifecycle utility `src/lib/anonymousSessionLifecycle.ts` with complete unit testing. Extended the Firestore `GitHubTokenDocument` and `AnonymousSessionDocument` data models to record `createdAt`, `expiresAt` (default 7-day TTL), and `lastSeenAt`. Integrated active injections during guest token saves.
+- **Lightweight Operational Public Smoke Verification**: Shipped a lightweight public smoke checker (`scripts/publicSmokeCheck.js` and `npm run smoke:public`) to quickly assert the liveness of canonical vs fallback endpoint routes without requiring credentials.
+
+### Implemented in Milestone 1.4.0 (Recent Baseline)
 - **Active Custom Domain Mapping**: Mapped `https://pages.moukaeritai.work` as the primary canonical production URL, keeping the original Cloud Run container address as a fallback endpoint.
 - **Tenant Isolation**: Cleanly transitioned to and hardened the `githubPagesAuditorV2` Firestore namespace to isolate user settings, layout metadata, and audit records.
 - **Site Metadata & Icon Scraper**: Added a bounded, timeout-guarded site parser to collect `faviconUrl`, `manifestUrl`, `isPwa`, `pwaIconUrl`, `pwaName`, and `pwaDisplayMode`.
@@ -15,13 +19,14 @@ The following capabilities have been fully implemented, integrated, and verified
 
 ---
 
-## 2. Deferred Future Work (Post-1.4.0 Scope)
+## 2. Deferred Future Work (Post-1.5.0 Scope)
 
 The following items are deferred from the current milestone and are planned for future baseline iterations:
 
-### A. Automatic Anonymous Session Document Expiration & Cleanup
-- **Goal**: Automatically clean up aged guest records under `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}`.
-- **Planned Implementation**: Utilize a scheduled Firebase Cloud Function (e.g. daily cron) or Firestore Time-to-Live (TTL) policies targeting an `expiresAt` timestamp field.
+### A. Automatic Firestore TTL Policy or Scheduled Cleanup Deployment
+- **Goal**: Automatically clean up aged guest records under `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}` on a database level.
+- **Current Status**: Data models and client-side lifecycle calculations are fully implemented and verified in 1.5.0 (with complete unit testing).
+- **Planned Implementation**: Deploying the actual Time-to-Live (TTL) field policy on the Firestore collections or establishing a scheduled daily cron serverless Cloud Function remains a deferred operator task to be executed directly in the Google Cloud Console or via Firebase CLI.
 
 ### B. Full Browser E2E Automation Regression Suite
 - **Goal**: Establish automated visual and behavior regression testing under authentic browser contexts.

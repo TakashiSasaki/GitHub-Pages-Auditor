@@ -1,12 +1,12 @@
 # GitHub Pages Auditor
-Version: `1.4.0` (Documentation Consistency & Active Domain Baseline)
+Version: `1.5.0` (Operational Stability & Anonymous Session Lifecycle Baseline)
 
 GitHub Pages Auditor is a multi-user web application that audits GitHub Pages settings across repositories accessible to fine-grained or classic Personal Access Tokens (PATs). It displays custom domain configuration status, HTTPS certificate state, and Pages deployment methods securely without modifying any settings.
 
 ---
 
 ## Core Features & Milestone Status
-- **Release Candidate & Pre-Production Baseline**: All core backend models, shared classification algorithms, and Firestore security layers are fully hardened and integrated under the latest Node.js test runner.
+- **Production Baseline**: All core backend models, shared classification algorithms, and Firestore security layers are fully hardened and integrated under the latest Node.js test runner.
 - **Secure Backend API Auditing**: Directly proxies standard GitHub API endpoints from the Express backend via safe GET methods. The browser manages its own copy of the PAT and persists it in Firestore under authenticated user isolation using the Firebase Client SDK. The backend only ever holds the PAT temporarily inside the `x-temp-pat` header for the lifetime of the request.
 - **Classification Engine**: Pure shared classification models mapping GitHub Pages metadata into standardized custom domain and SSL status models.
 - **Defense in Depth**: Escape patterns defend spreadsheet exports from formula injections; strict regex allowlists protect the proxy layers.
@@ -63,7 +63,10 @@ Maintain absolute coverage using these verification commands:
 | `npm run test:rules` | Firestore Rules | Runs independent local simulation test cases verifying `firestore.rules` paths (does not require full Firebase Local Emulator). |
 | `npm run schema:generate` | Schema Sync | Compiles TypeScript interface `src/schema/exportTypesV2.ts` to output standard Export JSON Schema. |
 | `npm run schema:check` | Schema Drift | Guarantees that built JSON schema matches types exactly. |
+| `npm run examples:validate` | Example Compliance | Validates generated mockup export samples under the `examples/` directory against schemas. |
 | `npm run build` | Production Compilation | Bundles Vite static assets and compiles the ES Express backend into self-contained `dist/server.cjs` via esbuild. |
+| `npm run release:check` | Release Validation | Sequentially executes all build gates, checking schema drift, gitignores, environment validators, and version strings locally. |
+| `npm run smoke:public` | Public Smoke Test | Lightweight, non-mutating validation of public endpoints without requiring credentials. |
 
 For detailed metadata, properties, classification mappings, future nested schema developments, and database architecture, consult:
 * **docs/firestore-architecture.md** — Conceptual documentation on Phantom documents and environment segregations in Firestore.
@@ -97,7 +100,7 @@ firebase deploy --only firestore:rules
 *   **Active Production Region**: `asia-east1`
 *   **Deployment Status**: Google Cloud Run is our active, live runtime.
 *   **Custom Domain Status**: Active and canonical custom domain integration (`pages.moukaeritai.work`).
-*   **Current Milestone**: Milestone 1.4.0 (Documentation Consistency & Active Domain Baseline)
+*   **Current Milestone**: Milestone 1.5.0 (Operational Stability & Anonymous Session Lifecycle Baseline)
 *   **Export Schema Status**: V2 is the only current JSON export schema; CSV is a separate flat export format.
 
 ---
@@ -130,5 +133,5 @@ The **Launcher** surface displays a user's detected GitHub Pages sites, sharing 
 - Tile ordering can be customized from either surface and is persisted in Firestore under `settings/launcherLayout`. Layout persistence is optimistic: UI updates immediately upon moving a tile; a save failure will produce a non-blocking warning without reverting the display.
 - See `docs/launcher-smoke-checklist.md` for manual testing instructions.
 - The app stores only layout metadata (IDs and order), not duplicated audit payloads.
-- No third-party favicon proxy services are used; the application relies on direct best-effort metadata collection from the audited site and falls back to locally generated displays based on the app's initial.
+- No third-party external favicon proxy services are used; the application relies on direct best-effort metadata collection from the audited site and falls back to locally generated displays based on the app's initial.
 - Layout stores the ordered array of IDs rather than absolute x/y coordinates.
