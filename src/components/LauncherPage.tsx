@@ -17,6 +17,7 @@ export default function LauncherPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveWarning, setSaveWarning] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -70,6 +71,7 @@ export default function LauncherPage() {
     newSites[index] = newSites[index + direction];
     newSites[index + direction] = temp;
     setSites(newSites);
+    setSaveWarning(false);
     
     // Save
     setSaving(true);
@@ -77,6 +79,7 @@ export default function LauncherPage() {
       await saveLauncherLayout(user!.uid, isAnonymous, newSites.map(s => s.id), env);
     } catch (e) {
       console.warn("Failed to save layout order", e);
+      setSaveWarning(true);
     }
     setSaving(false);
   };
@@ -84,18 +87,23 @@ export default function LauncherPage() {
   const handleReset = async () => {
     if (!user || isAnonymous) return;
     setSaving(true);
+    setSaveWarning(false);
     try {
       const path = getAuditCollectionPath(env, user.uid);
       const q = query(collection(db, path), orderBy('createdAt', 'desc'), limit(1));
       const snap = await getDocs(q);
       
       if (!snap.empty) {
-        const rawSites = extractLauncherSites(snap.docs[0].data().results || []);
-        setSites(rawSites);
-        await saveLauncherLayout(user.uid, isAnonymous, rawSites.map(s => s.id), env);
+        const data = snap.docs[0].data();
+        if (data.results && Array.isArray(data.results)) {
+          const rawSites = extractLauncherSites(data.results);
+          setSites(rawSites);
+          await saveLauncherLayout(user.uid, isAnonymous, rawSites.map(s => s.id), env);
+        }
       }
     } catch (e) {
       console.error(e);
+      setSaveWarning(true);
     }
     setSaving(false);
   };
@@ -160,6 +168,13 @@ export default function LauncherPage() {
             <span className="hidden sm:inline">Reset Order</span>
           </button>
         </div>
+
+        {saveWarning && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">
+            <AlertCircle className="w-4 h-4 shrink-0 text-yellow-600" />
+            <p>Could not save your layout to the server. Your changes are visible locally but will not persist.</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {sites.map((site, index) => (

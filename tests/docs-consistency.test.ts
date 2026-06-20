@@ -44,6 +44,13 @@ describe('Documentation Consistency Diagnostics', () => {
     assert.ok(content.includes('external favicon'), 'README.md does not contain external favicon mention');
   });
 
+  it('LauncherPage.tsx should be safely loading from data.results', () => {
+    const content = fs.readFileSync(path.join(process.cwd(), 'src/components/LauncherPage.tsx'), 'utf-8');
+    assert.ok(!content.includes("getAuditCollectionPath('production'"), 'LauncherPage must not hardcode production environment');
+    assert.ok(!content.includes("data.repositories"), 'LauncherPage must read from results, not data.repositories');
+    assert.ok(content.includes("data.results"), 'LauncherPage must read from data.results');
+  });
+
   it('No stale V1 or draft V2 wording remains in code, docs, tests, and scripts', () => {
     const checkDir = (dirPath) => {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });
