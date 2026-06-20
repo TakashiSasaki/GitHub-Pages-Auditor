@@ -10,18 +10,24 @@ export function useLatestAuditResults(uid: string | undefined, isAnonymous: bool
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     async function loadData() {
+      setLoading(true);
+      setResults(null);
+      setError(null);
+
       if (!uid) {
-        setLoading(false);
-        setResults(null);
-        setError(null);
+        if (active) {
+          setLoading(false);
+        }
         return;
       }
 
       if (isAnonymous) {
-        setLoading(false);
-        setResults(null);
-        setError(null);
+        if (active) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -30,26 +36,35 @@ export function useLatestAuditResults(uid: string | undefined, isAnonymous: bool
         const q = query(collection(db, path), orderBy('createdAt', 'desc'), limit(1));
         const snap = await getDocs(q);
 
-        if (snap.empty) {
-          setResults(null);
-          setLoading(false);
-          return;
-        }
-
-        const data = snap.docs[0].data();
-        if (data.results && Array.isArray(data.results)) {
-          setResults(data.results as RepositoryResult[]);
-        } else {
-          setResults(null);
+        if (active) {
+          if (snap.empty) {
+            setResults(null);
+          } else {
+            const data = snap.docs[0].data();
+            if (data.results && Array.isArray(data.results)) {
+              setResults(data.results as RepositoryResult[]);
+            } else {
+              setResults(null);
+            }
+          }
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load launcher sites.');
+        if (active) {
+          setError(err.message || 'Failed to load launcher sites.');
+          setResults(null);
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     loadData();
+
+    return () => {
+      active = false;
+    };
   }, [uid, isAnonymous, env]);
 
   return { results, loading, error };
