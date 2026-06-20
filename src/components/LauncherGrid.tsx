@@ -124,7 +124,7 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
                 <tspan className="text-blue-600 fill-blue-600 transition-colors duration-300" fill="#2563eb">
                   {lowestFragment}
                 </tspan>
-                <tspan>
+                <tspan className="text-slate-300 fill-slate-300 transition-colors duration-300" fill="currentColor">
                   {restSuffix} •{" "}
                 </tspan>
               </React.Fragment>
@@ -633,11 +633,11 @@ export default function LauncherGrid({
   }
 
   return (
-    <div className="flex flex-col min-h-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 p-6 md:p-10 font-sans h-full overflow-y-auto relative">
+    <div className="flex flex-col min-h-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 p-0 sm:p-6 md:p-10 font-sans h-full overflow-hidden relative">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply opacity-20 animate-[pulse_10s_ease-in-out_infinite]"></div>
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 px-4 sm:px-0 pt-4 sm:pt-0">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-200/50 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-200">
             {readOnly ? "ReadOnly Interactive Canvas" : "Drag Balls to Arrange Order"}
           </div>
@@ -663,7 +663,7 @@ export default function LauncherGrid({
         {/* 2D Physics Arena Playground */}
         <div 
           ref={arenaRef}
-          className="relative w-full h-[520px] bg-white/40 backdrop-blur-xs border-2 border-slate-200/60 rounded-[32px] shadow-sm overflow-hidden select-none"
+          className="relative w-full flex-1 bg-white/40 backdrop-blur-xs border-y sm:border-2 border-slate-200/60 rounded-none sm:rounded-[32px] shadow-sm overflow-hidden select-none"
           style={{
             backgroundImage: 'radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)',
             backgroundSize: '24px 24px',
