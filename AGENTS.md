@@ -138,7 +138,12 @@ This project has transitioned into an active **maintenance mode** state followin
 - Established a complete, isolated, and secure security ruleset in `firestore.rules` (pointed by `firebase.json`), fully verified using rule simulation tests (`tests/rules.test.ts`).
 - Centralized organization name validation into `src/lib/validation.ts`.
 - Removed all obsolete legacy references and schemas.
-- **Development Policy**: Version `1.7.3` initiates the Launcher Icon Cache Baseline. All edits require incrementing the patch version in `package.json`, keeping documentation and scripts in sync, and maintaining perfect compatibility with all existing read-only and no-AI security constraints.
+- **Development Policy & v1.7.x Operational Contract**: 
+  - **Patch Version Governance**: Version `1.7.3` initiates the Launcher Icon Cache Baseline. Every file-changing or documentation-changing coding-agent task targeting the `v1.7.x` line **MUST** bump the patch version in `package.json`, keeping all related documentation files (`README.md`, `AGENTS.md`, `docs/*.md`) and scripts (`scripts/releaseReadinessCheck.js` check version constant) perfectly synchronized.
+  - **Strict Verification Gates**: All coding agents must run and verify that `npm test` and `npx node scripts/releaseReadinessCheck.js` succeed with zero errors. No task is complete without passing all offline, deterministic release check criteria.
+  - **No-AI & Security Integrity**: Do not integrate external APIs, AI models (such as Gemini), or secondary backend service layers simply because credentials exist. The Express-side icon resolver retains strict protocol restrictions (only http/https), SSRF/localhost prevention, and SVG formatting exclusions to prevent script injection.
+  - **Best-Effort & Non-blocking Design**: The launcher caching backend is safe, best-effort, and non-blocking. If a network lookup or cache query fails, the frontend must transition silently down the fallback hierarchy to direct PWA/Favicon URLs or generated initials without crashing the UI or raising alerts.
+  - **No Unrequested Theme/UI Churn**: Build strictly what is requested. Prevent UI visual noise or tiny badges like `"CACHED"`. Rely on subtle circular background or border treatment to indicate states.
 
 ## Deployment readiness and Rules Contract
 - **Existence Audit**:
@@ -150,8 +155,8 @@ This project has transitioned into an active **maintenance mode** state followin
   - `vite.config.ts`: Present
   - `src/lib/firebase.ts`: Present
 - **Rules Path Tenanting**:
-  - Google authenticated users: `githubPagesAuditorV2/{environment}/users/{uid}/githubTokens/default`, `githubPagesAuditorV2/{environment}/users/{uid}/audits/{auditId}`, and `githubPagesAuditorV2/{environment}/users/{uid}/settings/{settingId}`
-  - Anonymous guest users: `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/githubTokens/default` and `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/settings/{settingId}`
+  - Google authenticated users: `githubPagesAuditorV2/{environment}/users/{uid}/githubTokens/default`, `githubPagesAuditorV2/{environment}/users/{uid}/audits/{auditId}`, `githubPagesAuditorV2/{environment}/users/{uid}/settings/{settingId}`, and `githubPagesAuditorV2/{environment}/users/{uid}/launcherIconCache/{cacheId}`
+  - Anonymous guest users: `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/githubTokens/default`, `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/settings/{settingId}`, and `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/launcherIconCache/{cacheId}`
   - Restricts access strictly to matching `request.auth.uid == uid` and blocks all other paths, denying generic top-level collections (e.g. `/users`, `/tokens`).
 - **Deploy Command**: `firebase deploy --only firestore:rules` after choosing your active Firebase project.
 - **Rule Verification**: Done via `npx tsx --test tests/rules.test.ts` (runs pre-compiled local sandbox simulations matching rules logic under the standard Node unit runner; does not use or require a full Firebase Local Emulator integration).
