@@ -83,10 +83,10 @@ const CircularDomainBadge = React.memo(function CircularDomainBadge({ site }: { 
     const el = containerRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
+      (entries) => {
+        entries.forEach(entry => setIsVisible(entry.isIntersecting));
       },
-      { rootMargin: '200px' }
+      { rootMargin: '50px', threshold: 0 }
     );
     observer.observe(el);
     return () => observer.disconnect();
