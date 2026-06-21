@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.14';
+  const EXPECTED_VERSION = '1.6.15';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -419,6 +419,12 @@ try {
   } else {
     printFail(`README.md fails to declare development-complete / maintenance-mode status.`);
   }
+  
+  if (readmeMd.includes('animation speed') && readmeMd.includes('visible icons range') && readmeMd.includes('persisted in Firestore')) {
+    printSuccess(`README.md correctly documents launcher presentation settings persistence.`);
+  } else {
+    printFail(`README.md is missing documentation for launcher presentation settings (speed/range) persistence.`);
+  }
 
   const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
   if (agentsMd.includes('Maintenance Policy') && agentsMd.includes('maintenance mode')) {
@@ -426,12 +432,31 @@ try {
   } else {
     printFail(`AGENTS.md fails to declare maintenance-mode rules.`);
   }
+  
+  if (agentsMd.includes('animation speed') && agentsMd.includes('visible icons range') && agentsMd.includes('setting document')) {
+    printSuccess(`AGENTS.md correctly documents launcher settings persistence boundaries.`);
+  } else {
+    printWarn(`AGENTS.md might be missing detailed launcher settings metadata boundaries.`);
+  }
 
   const uiRegression = fs.readFileSync('docs/ui-regression-plan.md', 'utf8');
   if (uiRegression.includes('zIndex') && uiRegression.includes('NaN')) {
     printSuccess(`UI regression plan mentions LauncherGrid zIndex/render-order regression coverage.`);
   } else {
     printFail(`UI regression plan is missing LauncherGrid zIndex/render-order coverage.`);
+  }
+  
+  if (uiRegression.includes('LAU-04') && uiRegression.includes('Persistence')) {
+    printSuccess(`UI regression plan includes Launcher settings persistence checks.`);
+  } else {
+    printFail(`UI regression plan is missing launcher settings persistence test ID.`);
+  }
+  
+  const deferred = fs.readFileSync('docs/deferred-work.md', 'utf8');
+  if (deferred.includes('deferred indefinitely') && deferred.includes('Maintenance Decision')) {
+    printSuccess(`docs/deferred-work.md explicitly records maintenance decisions for anonymous cleanup.`);
+  } else {
+    printFail(`docs/deferred-work.md is missing explicit maintenance decisions recording.`);
   }
 } catch (e) {
   printFail(`Could not verify maintenance baseline and regression docs: ${e.message}`);
@@ -470,6 +495,12 @@ try {
       printSuccess(`${implicitDoc} includes Self-Contained UI Asset Policy.`);
     } else {
       printFail(`${implicitDoc} is missing Self-Contained UI Asset Policy.`);
+    }
+
+    if (content.includes('1-Dimensional Layout & Settings Persistence')) {
+      printSuccess(`${implicitDoc} distinguishes persisted launcher preferences from ephemeral zIndex.`);
+    } else {
+      printFail(`${implicitDoc} fails to accurately distinguish layout persistence from ephemeral zIndex.`);
     }
   }
 

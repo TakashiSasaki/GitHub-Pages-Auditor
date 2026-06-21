@@ -124,13 +124,13 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - `schemas/` - Export JSON schemas.
 
 ## Current Implementation Status
-- Milestone 1.6.14 (Maintenance Documentation & Launcher Regression Closure) is fully completed. All core backend, shared, export, anonymous lifecycles, and path modules are hardened and verified via automated test suites.
+- Milestone 1.6.15 (Maintenance Documentation & Launcher Regression Closure) is fully completed. All core backend, shared, export, anonymous lifecycles, and path modules are hardened and verified via automated test suites.
 - Added explicit environment validation modules for frontend (`src/lib/env.ts`) and backend (`server/env.ts`) checking configuration completeness without crashing runtime operations.
 - Extracted and formalized firestore paths into a decoupled module `src/lib/firestorePaths.ts`, fully tested in the suite.
 - Established a complete, isolated, and secure security ruleset in `firestore.rules` (pointed by `firebase.json`), fully verified using rule simulation tests (`tests/rules.test.ts`).
 - Centralized organization name validation into `src/lib/validation.ts`.
 - Removed all obsolete legacy references and schemas.
-- **Maintenance Policy**: 1.6.14 acts as the fixed development-complete baseline; the project is in maintenance mode. Coding agents must not initiate broad new feature work unless the user explicitly opens a new milestone. File-changing tasks still require a patch version bump and English commit message output.
+- **Maintenance Policy**: 1.6.15 acts as the fixed development-complete baseline; the project is in maintenance mode. Coding agents must not initiate broad new feature work unless the user explicitly opens a new milestone. File-changing tasks still require a patch version bump and English commit message output.
 
 ## Deployment readiness and Rules Contract
 - **Existence Audit**:
@@ -153,7 +153,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
   - Current Live Production URL: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
   - Region: `asia-east1`
   - Active Custom Domain: `pages.moukaeritai.work` (Active, Canonical URL)
-  - Current Major Milestone: Organization Scan Contract & Baseline Hardening (1.6.14)
+  - Current Major Milestone: Organization Scan Contract & Baseline Hardening (1.6.15)
   - Infrastructure Mutation Rule: Do not mutate DNS, Cloud Run, or Firebase Auth externally in coding-agent tasks. Only provide operator checklists.
   - Post-Assignment: Document required post-activation history.
 - **Crucial Warning**: Standard Firebase Hosting alone *cannot* run the Express backend. Firebase Hosting alone cannot run the Express backend. It must be paired with Cloud Run via proxy rewrites matching `/api/*` if edge CDN is desired.
@@ -170,7 +170,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Created `scripts/validateExamples.js` to continuously assert compliance for V2 and V2 exported samples alongside `npm run examples:validate`.
 - Defined `docs/external-consumer-guide.md` with strict interoperability requirements, ensuring registries and runtime retrievals remain out-of-scope.
 - Completely verified coverage of V2 deeply-nested `findings` taxonomy reflecting GitHub Pages DNS/SSL statuses.
-- Advanced primary build threshold to `1.6.14 (Organization Scan Contract & Baseline Hardening)` with patch version governance and public no-auth E2E validation controls.
+- Advanced primary build threshold to `1.6.15 (Organization Scan Contract & Baseline Hardening)` with patch version governance and public no-auth E2E validation controls.
 - Documented active Custom Domain `pages.moukaeritai.work`.
 - Documented icon/site metadata fetching feature representing best-effort non-blocking metadata audit findings.
 - Hardened release checks and documentation consistency checks.
@@ -198,7 +198,7 @@ The **Launcher** surface displays a user's detected GitHub Pages sites, sharing 
 - **Dashboard Preview Tab (`/results/:auditId/launcher`)**: Previews sites using the currently loaded Dashboard audit result.
 - Tiles open target URLs safely in new windows using `noopener noreferrer`.
 - Only Pages-enabled sites with safe `http:` or `https:` URLs are included.
-- Tile ordering can be customized from either surface and is persisted in Firestore under `settings/launcherLayout`. Layout persistence is optimistic: UI updates immediately upon moving a tile; a save failure will produce a non-blocking warning without reverting the display.
-- The app stores only layout metadata (IDs and order), not duplicated audit payloads.
+- Tile ordering and presentation preferences (animation speed, visible icons range) can be customized from either surface and is persisted in the Firestore `settings/launcherLayout` setting document (schema version `v3`). Layout persistence is optimistic: UI updates immediately; a save failure will produce a non-blocking warning without reverting the display.
+- The app stores only layout and preference metadata (IDs, order, speed, range), not duplicated audit payloads, PATs, or GitHub API responses.
 - No third-party favicon proxy services are used; the application relies on direct best-effort metadata collection from the audited site and falls back to locally generated displays based on the app's initial.
-- Layout stores the ordered array of IDs rather than absolute x/y coordinates.
+- Layout stores the ordered array of IDs, numeric animation speed, and visibility range rather than absolute x/y coordinates or ephemeral elements like zIndex.

@@ -1,10 +1,10 @@
-# Manual Smoke Testing Results Template (Milestone 1.6.14)
+# Manual Smoke Testing Results Template (Milestone 1.6.15)
 
 Use this document to log manual smoke testing results prior to marking a production candidate ready for the **https://pages.moukaeritai.work** environment.
 
 - **Target Public URL**: `https://pages.moukaeritai.work`
 - **Fallback Infrastructure URL**: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
-- **App Version**: `1.6.14`
+- **App Version**: `1.6.15`
 
 ---
 
@@ -20,7 +20,7 @@ Use this document to log manual smoke testing results prior to marking a product
 ## Verification Checklist
 
 ### 1. Host Health and Liveness
-- [ ] **Homepage Load:** Navigate directly to `https://pages.moukaeritai.work`. Verify the landing page loads successfully, displaying appropriate styling, typography, and version badge reading `1.6.14`.
+- [ ] **Homepage Load:** Navigate directly to `https://pages.moukaeritai.work`. Verify the landing page loads successfully, displaying appropriate styling, typography, and version badge reading `1.6.15`.
 - [ ] **Liveness Probe Endpoint:** Query the unauthenticated health endpoint `https://pages.moukaeritai.work/healthz`. Confirm it returns JSON `{ "ok": true }` with status 200 without exposing secrets.
 
 ### 2. Authentication Flow
@@ -44,10 +44,12 @@ Use this document to log manual smoke testing results prior to marking a product
 ### 5. Persistent Launcher Layouts & Visual Stability
 - [ ] **Standalone Page Load:** Direct browser navigation to `https://pages.moukaeritai.work/launcher`. Confirm Pages-enabled sites load from the latest saved audit.
 - [ ] **Custom Ordering:** Drag and reposition launcher grid tiles.
-- [ ] **Session Persistence:** Refresh the launcher page. Verify that tile orders remain persisted within Firestore (`settings/launcherLayout` document).
-- [ ] **Dashboard Result Preview:** Navigate to a specific audit result `/results/:auditId/launcher`. Ensure the correct audit is safely loaded from `data.results` and tiles can be viewed in order.
+- [ ] **Settings Persistence (v3):** Adjust the "Animation Speed" slider and "Visible Icons Range" toggle.
+- [ ] **Session Persistence:** Refresh the launcher page. Verify that tile orders, animation speed, and visibility range remain persisted within Firestore (`settings/launcherLayout` v3 document).
+- [ ] **Dashboard Result Preview:** Navigate to a specific audit result `/results/:auditId/launcher`. Ensure the correct audit is safely loaded from cache and user settings (speed/range) are applied correctly.
 - [ ] **Visual Stacking (Regression Check):** Confirm launcher tiles do not produce NaN zIndex values. Long-press or expand a tile and verify it securely elevates above adjacent cards without visual occlusion.
 - [ ] **Safe External Navigation:** Verify clicking a tile safely delegates target Pages URLs using `target="_blank"` and `rel="noopener noreferrer"`.
+- [ ] **Self-Contained Assets Check:** Verify no external network calls are made to `transparenttextures.com` for grid backgrounds.
 
 ### 6. Export Schema Compliance
 - [ ] **Validate JSON V2 Export:** Click the export JSON action. Confirm the generated payload:
