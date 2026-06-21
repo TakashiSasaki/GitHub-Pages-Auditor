@@ -1,6 +1,6 @@
-# Launcher Manual Smoke Verification Checklist (v1.7.5)
+# Launcher Manual Smoke Verification Checklist (v1.7.6)
 
-This helper document guides repository operators and QA engineers through manual visual validation steps for the **v1.7.5: Launcher Icon Cache** system on active staging/dev environments.
+This helper document guides repository operators and QA engineers through manual visual validation steps for the **v1.7.6: Launcher Icon Cache** system on active staging/dev environments.
 
 ---
 
@@ -22,6 +22,7 @@ Verify core tenancy setups and data capture before entering Launcher preview int
 2.  [ ] Select **Continue as Guest (In-Memory)** in the sign-in modal.
 3.  [ ] Provide a valid temporary PAT, choose a target organization, and execute a fresh pages audit successfully.
 4.  [ ] Confirm session persistence is flagged under the safe guest partition in memory.
+5.  [ ] **Note**: Firestore cache persistence verifying icon resolution is primarily validated via the persistent Google path. The in-memory guest path should verify graceful fallback behaviors; do not demand permanent Firestore artifact retention for anonymous user cache lookups unless specifically supported in the environment.
 
 ---
 

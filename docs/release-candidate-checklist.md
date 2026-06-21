@@ -1,12 +1,12 @@
-# Release-Candidate Readiness Checklist (v1.7.5)
+# Release-Candidate Readiness Checklist (v1.7.6)
 
-This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.5: Release Candidate Smoke & Manual Verification**.
+This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.6: Release Candidate Reality Alignment & Operator Handoff**.
 
 ---
 
-## 1. Automated Verification Commands
+## 1. Local Automated Verification Gates
 
-Before declaring readiness, the local verification suite must be fully executed and verified green:
+Before declaring readiness, the local verification suite must be fully executed and verified green. No release candidate is considered validated solely by automated tests because authenticated browser and real PAT workflows remain manual-only.
 
 ```bash
 # 1. Validation for TypeScript compilation and ESLint syntax compliance
@@ -24,11 +24,13 @@ npm run release:check
 
 ---
 
-## 2. Manual Launcher Icon Cache Smoke Steps
+## 3. Manual Launcher Icon Cache Smoke Steps (Operator-Only)
 
-Detailed, visual step-by-step auditing instructions are maintained in `/docs/launcher-smoke-checklist.md`. The core operations verify:
+Detailed, visual step-by-step auditing instructions are maintained in `/docs/launcher-smoke-checklist.md`. Real Google login, real PAT audit, and Firestore visual/cache inspection are strictly manual operator checks. 
 
-- **Sign-in Flow Access**: Complete authentication through a Google account or as an Anonymous Session guest.
+The core operations verify:
+
+- **Sign-in Flow Access**: Complete authentication through a Google account.
 - **Audit Implementation**: Run a read-only audit using a valid temporary GitHub PAT.
 - **Immediate Fallback Render**: Confirm first-load rendering matches appropriate fallback outlines (Favicon, PWA direct URL, or warm amber typography initials) instantly before cache-writing completes.
 - **Background Resolution**: Verify that the backend `/api/icon/resolve` endpoint fetches, validates, and stores raw base64 fragments without blocking UI rendering.
@@ -36,9 +38,14 @@ Detailed, visual step-by-step auditing instructions are maintained in `/docs/lau
 
 ---
 
-## 3. Public No-Auth Smoke Verification
+## 2. Public No-Auth Smoke Verification (Automated)
 
 Operators can evaluate active container deployments without authenticating or providing credentials:
+
+```bash
+# Verify the canonical URL and fallback Cloud Run endpoint resolve successfully
+npm run smoke:public
+```
 
 - **Backend Liveness Probe**: Fetch GET `/healthz` from the primary address to confirm Express-side readiness. Returns `{"ok":true}` securely without disclosing variables.
 - **Static Ingress Router**: Visit the base route `/` in a standard browser container to assert that initial React HTML templates load safely with dynamic compilation mappings operational.
