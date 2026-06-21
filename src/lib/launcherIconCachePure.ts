@@ -56,3 +56,11 @@ export function isCacheExpired(docData: LauncherIconCacheDoc): boolean {
     return true;
   }
 }
+
+/**
+ * Constructs a safe data URL string for local raster rendering.
+ */
+export function toIconDataUrl(contentType: string, dataBase64: string): string {
+  if (!contentType || !dataBase64) return '';
+  return `data:${contentType};base64,${dataBase64}`;
+}

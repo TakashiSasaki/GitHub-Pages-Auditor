@@ -74,3 +74,26 @@ Dashboard の表示における HTTPS 状態の表現について：
   - ドラッグ終了時または構造的変化時にのみ、最終的な順序が React に同期されます。
 - **仕様 (IntersectionObserver)**: 円形テキスト（Spinning Badge）のアニメーションは、画面外（オフスクリーン）の場合には IntersectionObserver を用いて一時停止される実装となっています。現在の仕様では厳密に `rootMargin: '0px'`, `threshold: 0` を使用してビューポートの可視境界を判定し、早期のプリロードマージンを利用しません。
 - **目的**: 状態更新による無駄な React 再レンダリングとレイアウト・スラッシングを完全に排除し、滑らかで高いフレームレートでの物理シミュレーションを可能にすると同時に、描画不可視領域のCPU消費を削減する純粋なパフォーマンス最適化です。これらの情報は UI ステートとして揮発性であり、Firestoreの設定（`settings/launcherLayout`）には書き込まれません。ビューポート外に出たタイミングで厳密に一時停止されます。
+
+## 12. サーバーサイド画像キャッシュと永続化ポリシー (Server-side Image Caching & Persistence Policy)
+ランチャータイルに表示するカスタムアイコン（ファビコン、PWAアイコン等）のキャッシュ機構について：
+- **仕様**: 
+  - **サーバーサイドでの画像解決理由**: ブラウザ側での直接の画像取得はCORS（Cross-Origin Resource Sharing）制約によってブロックされるため、バックエンド (`/api/icon/resolve`) が代理で画像バイナリをフェッチし、Base64文字列に解決してレスポンスします。
+  - **Firestore キャッシュパス**: 
+    - ログインユーザー: `githubPagesAuditorV2/{environment}/users/{uid}/launcherIconCache/{cacheId}`
+    - 匿名（ゲスト）ユーザー: `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}/launcherIconCache/{cacheId}`
+  - **キャッシュドキュメント構造**:
+    - `siteId`: 対象の監査サイトID
+    - `sourceIconUrl`: 取得元のアイコンURL
+    - `sourceKind`: キャッシュ元のアセット種別 (`pwa_icon` または `favicon`)
+    - `contentType`: `image/png` / `image/jpeg` などのMIMEタイプ
+    - `dataBase64`: Base64エンコードされた画像のペイロード
+    - `byteLength`: 画像のバイトサイズ
+    - `sha256`: ペイロードのSHA256ハッシュ値
+    - `fetchedAt`: 取得日時（ISO文字列）
+    - `expiresAt`: キャッシュ有効期限（ISO文字列、取得時から30日後）
+  - **30日更新ポリシー (Stale-While-Refresh)**: キャッシュの有効期限は30日間です。有効期限 (`expiresAt`) を過ぎたキャッシュへのアクセスが発生した際、または有効期限内であっても30日が経過している場合、stale-while-refreshポリシーに基づき、既存をそのまま表示しつつ非同期（バックグラウンド）で再取得を行い、最新情報に更新します。SVG画像のバイナリキャッシュは、サイズコントロールやスクリプトインジェクション耐性の観点から「v1.7.2」では意図的に対象外（Raster画像のみ）としています。
+  - **限定的なリゾルバー**: `POST /api/icon/resolve` は汎用的な外部Webプロキシではなく、ランチャーアイコンの取得に特化した安全なリゾルバーです。
+  - **フォールバック設計（ベストエフォート）**: キャッシュの読み込みエラーやバックエンドのリゾルバー接続失敗が発生した場合でも、ランチャーの描画がクラッシュしたり、ユーザーへのエラー画面を表示することは一切ありません。既存の Launcher 表示は完全に機能し続け、ベストエフォートで元の外部URL（SSL経由等）またはローカルで生成されたイニシャルバッジへと段階的にフォールバックします。
+- **目的**: サイトの描画負荷および外部への余計なアクセスを削減しつつ、CORS制約に干渉されない安定した表示と堅牢なセキュリティ境界（SSRF防止・容量制限・SVGの安全な排除等）を両立させるためです。
+

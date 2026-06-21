@@ -1,9 +1,9 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { getLauncherIconCacheDocPath } from './firestorePaths';
-import { getCacheId, isCacheExpired } from './launcherIconCachePure';
+import { getCacheId, isCacheExpired, toIconDataUrl } from './launcherIconCachePure';
 import type { LauncherIconCacheDoc } from './launcherIconCachePure';
-export { getCacheId, isCacheExpired };
+export { getCacheId, isCacheExpired, toIconDataUrl };
 export type { LauncherIconCacheDoc };
 
 /**

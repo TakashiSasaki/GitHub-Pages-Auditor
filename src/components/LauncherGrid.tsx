@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuth } from '../AuthContext';
 import { getEnvironmentName } from '../lib/firestorePaths';
-import { getCachedIcon, saveCachedIcon, isCacheExpired } from '../lib/launcherIconCache';
+import { getCachedIcon, saveCachedIcon, isCacheExpired, toIconDataUrl } from '../lib/launcherIconCache';
 
 export interface LauncherGridProps {
   sites: LauncherSite[];
@@ -66,7 +66,7 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
         const cachedDoc = await getCachedIcon(uid, isAnonymous, site.id, candidateUrl!, env);
         if (cachedDoc && cachedDoc.dataBase64) {
           if (active) {
-            setCachedDataUrl(`data:${cachedDoc.contentType};base64,${cachedDoc.dataBase64}`);
+            setCachedDataUrl(toIconDataUrl(cachedDoc.contentType, cachedDoc.dataBase64));
           }
 
           // If expired, trigger an async resolve in the background
@@ -133,7 +133,7 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
         });
 
         if (active) {
-          setCachedDataUrl(`data:${result.contentType};base64,${result.dataBase64}`);
+          setCachedDataUrl(toIconDataUrl(result.contentType, result.dataBase64));
         }
       } catch (err) {
         failedResolutions.add(resolutionKey);
@@ -176,9 +176,11 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
             onError={() => setCachedDataUrl(null)}
             referrerPolicy="no-referrer"
           />
-          <span className="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[8px] font-extrabold px-1 rounded-sm border border-white shadow-2xs select-none">
-            CACHED
-          </span>
+          {import.meta.env.MODE !== 'production' && (
+            <span className="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[8px] font-extrabold px-1 rounded-sm border border-white shadow-2xs select-none">
+              CACHED
+            </span>
+          )}
         </div>
       )}
       {showPwa && (

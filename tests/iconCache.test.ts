@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'assert';
 import { isUrlSafe } from '../server/iconResolver.js';
-import { getCacheId, isCacheExpired } from '../src/lib/launcherIconCachePure.js';
+import { getCacheId, isCacheExpired, toIconDataUrl } from '../src/lib/launcherIconCachePure.js';
 import { getLauncherIconCacheCollectionPath, getLauncherIconCacheDocPath } from '../src/lib/firestorePaths.js';
 
 describe('Launcher Icon Cache Unit and Path Diagnostics', () => {
@@ -102,6 +102,18 @@ describe('Launcher Icon Cache Unit and Path Diagnostics', () => {
       const docPath = getLauncherIconCacheDocPath('development', 'anonY', true, 'cacheKey2');
       assert.strictEqual(colPath, 'githubPagesAuditorV2/development/anonymousSessions/anonY/launcherIconCache');
       assert.strictEqual(docPath, 'githubPagesAuditorV2/development/anonymousSessions/anonY/launcherIconCache/cacheKey2');
+    });
+  });
+
+  describe('toIconDataUrl Data URL Construction', () => {
+    it('constructs correct base64 data URLs', () => {
+      const dataUrl = toIconDataUrl('image/png', 'abcdef');
+      assert.strictEqual(dataUrl, 'data:image/png;base64,abcdef');
+    });
+
+    it('returns empty string if content type or base64 data is empty or missing', () => {
+      assert.strictEqual(toIconDataUrl('', 'abcdef'), '');
+      assert.strictEqual(toIconDataUrl('image/png', ''), '');
     });
   });
 });
