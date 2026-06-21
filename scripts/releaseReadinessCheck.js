@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.12';
+  const EXPECTED_VERSION = '1.6.13';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -459,9 +459,31 @@ try {
     } else if (content.includes('Auditorバックエンド')) {
       printSuccess(`${implicitDoc} accurately describes backend-side site metadata fetching.`);
     }
+
+    if (content.includes('監査結果（Audit Blob）には永続化されず')) {
+      printFail(`${implicitDoc} contains inaccurate statement about PWA metadata persistence.`);
+    } else if (content.includes('監査結果の一部として Firestore の監査キャッシュに保存されます')) {
+      printSuccess(`${implicitDoc} accurately describes PWA metadata persistence.`);
+    }
+
+    if (content.includes('自己完結型 UI アセット・ポリシー')) {
+      printSuccess(`${implicitDoc} includes Self-Contained UI Asset Policy.`);
+    } else {
+      printFail(`${implicitDoc} is missing Self-Contained UI Asset Policy.`);
+    }
+  }
+
+  const gridFile = 'src/components/LauncherGrid.tsx';
+  if (fs.existsSync(gridFile)) {
+    const content = fs.readFileSync(gridFile, 'utf8');
+    if (content.includes('transparenttextures.com')) {
+      printFail(`${gridFile} contains forbidden external asset dependency (transparenttextures.com).`);
+    } else {
+      printSuccess(`${gridFile} is clean of unapproved external asset dependencies.`);
+    }
   }
 } catch (e) {
-  printFail(`Could not verify metadata fetch documentation and UA alignment: ${e.message}`);
+  printFail(`Could not verify metadata fetch documentation, PWA persistence, and UI asset alignment: ${e.message}`);
 }
 
 console.log('\n=== RESULT ===');

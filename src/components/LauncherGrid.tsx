@@ -716,7 +716,17 @@ export default function LauncherGrid({
         />
       </div>
 
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply animate-[pulse_10s_ease-in-out_infinite]"></div>
+      <div 
+        className="absolute inset-0 opacity-[0.2] pointer-events-none mix-blend-multiply transition-opacity duration-1000"
+        style={{
+          backgroundImage: `
+            linear-gradient(45deg, #e2e8f0 12.5%, transparent 12.5%, transparent 37.5%, #e2e8f0 37.5%, #e2e8f0 62.5%, transparent 62.5%, transparent 87.5%, #e2e8f0 87.5%),
+            linear-gradient(135deg, #e2e8f0 12.5%, transparent 12.5%, transparent 37.5%, #e2e8f0 37.5%, #e2e8f0 62.5%, transparent 62.5%, transparent 87.5%, #e2e8f0 87.5%)
+          `,
+          backgroundSize: '32px 32px',
+          backgroundPosition: '0 0, 16px 16px',
+        }}
+      ></div>
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         
         {/* Mobile Controls Toggle (Fixed floating at corner) */}
