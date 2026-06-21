@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.21';
+  const EXPECTED_VERSION = '1.6.22';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -645,6 +645,35 @@ try {
       printFail(`${uiRegression} is missing Precise Observer Boundary checks.`);
     }
   }
+
+  const contractIndexFile = 'docs/maintenance-contract-index.md';
+  if (fs.existsSync(contractIndexFile)) {
+    printSuccess(`${contractIndexFile} exists.`);
+    const content = fs.readFileSync(contractIndexFile, 'utf8');
+    const requiredContracts = [
+      'PAT-only', 'read-only', 'GitHub OAuth', 'GitHub App',
+      'Gemini', 'workflow', 'generic GitHub API proxy', 
+      'anonymous cleanup', 'public no-auth smoke',
+      'settings/launcherLayout', 'Repository-Name Default Pages Badge',
+      'Compact Metadata Bubble', 'Direct-DOM', "rootMargin: '0px'",
+      'threshold: 0', 'zIndex', 'transparenttextures.com'
+    ];
+    
+    let allContractsFound = true;
+    for (const contract of requiredContracts) {
+      if (!content.includes(contract)) {
+        printFail(`${contractIndexFile} is missing required contract terminology: ${contract}`);
+        allContractsFound = false;
+      }
+    }
+    
+    if (allContractsFound) {
+      printSuccess(`${contractIndexFile} contains all major current maintenance contracts.`);
+    }
+  } else {
+    printFail(`${contractIndexFile} does not exist.`);
+  }
+
 } catch (e) {
   printFail(`Could not verify metadata fetch documentation, PWA persistence, and UI asset alignment: ${e.message}`);
 }

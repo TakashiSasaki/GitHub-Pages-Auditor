@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - UI Regression Test Plan
-Version: `1.6.21` (Organization Scan Contract & Baseline Hardening)
+Version: `1.6.22` (Organization Scan Contract & Baseline Hardening)
 
 This document contains the requirements and test matrix for the **frontend user interface regression testing**. Since deploying heavier testing frameworks (such as Playwright, Cypress, or Puppeteer) inside sandboxed containerized workspaces introduces runtime execution risks, this plan outlines the exact manual validation and future E2E automation matrix.
 
@@ -49,6 +49,11 @@ This document contains the requirements and test matrix for the **frontend user 
 | **LAU-08** | Repository-Name Default Pages Badge | View circular text for default GitHub Pages project URLs. | Circular text correctly displays the repository name in green. Branch names are not used. Custom-domain sites still use domain text. Repository name does not overflow badly. |
 | **LAU-09** | Direct-DOM Physics Rendering | User actively drags a launcher tile. | Dragging remains visually smooth. Cards settle accurately. Direct transform updates do not break click/drag behavior. Final order persistence still works after drag end. No NaN zIndex. |
 | **LAU-10** | Precise Observer Boundary | User scrolls launcher cards in and out of the viewport. | Circular badge animation runs when visible, and pauses exactly when exiting the viewport outside of the absolute bounds (no preload margin). Resumes on exact re-entry. Dragging does not get stuck. |
+
+### F. Release Gate Integrity
+| Test ID | Scenario | Expected Interaction | Successful Outcome |
+| :--- | :--- | :--- | :--- |
+| **REL-01** | Maintenance Contract Index Alignment | Run `npm run release:check`. | Contract index exists; release gate validates key contracts; docs do not drift from package version; Launcher contracts remain covered. |
 
 ---
 
