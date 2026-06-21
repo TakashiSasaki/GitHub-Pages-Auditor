@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - UI Regression Test Plan
-Version: `1.6.15` (Organization Scan Contract & Baseline Hardening)
+Version: `1.6.16` (Organization Scan Contract & Baseline Hardening)
 
 This document contains the requirements and test matrix for the **frontend user interface regression testing**. Since deploying heavier testing frameworks (such as Playwright, Cypress, or Puppeteer) inside sandboxed containerized workspaces introduces runtime execution risks, this plan outlines the exact manual validation and future E2E automation matrix.
 
@@ -48,34 +48,8 @@ This document contains the requirements and test matrix for the **frontend user 
 
 ---
 
-## 2. Standard E2E Playwright Configuration Sketch
+## 2. Automated Testing Scope
 
-For future automation, we recommend configuring Playwright within a dedicated subdirectory. Below is the blueprint configuration:
+Full authenticated browser E2E (e.g. Playwright, Cypress) is **deselected from the current maintenance roadmap** and must **not** be added by coding agents.
 
-```typescript
-// e2e/playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-  ],
-});
-```
+The accepted automated public check is **public no-auth smoke** (`npm run smoke:public`). This script asserts that the application starts, binds to the expected port, and serves the core unauthenticated UI routes correctly without injecting API tokens or attempting browser automation.

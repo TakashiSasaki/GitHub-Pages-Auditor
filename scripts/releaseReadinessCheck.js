@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.15';
+  const EXPECTED_VERSION = '1.6.16';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -426,6 +426,12 @@ try {
     printFail(`README.md is missing documentation for launcher presentation settings (speed/range) persistence.`);
   }
 
+  if (readmeMd.includes('settings/launcherLayout') && readmeMd.includes('orderedSiteIds') && readmeMd.includes('animationSpeed') && readmeMd.includes('visibleIconsRange') && readmeMd.includes('zIndex')) {
+    printSuccess(`README.md correctly documents settings/launcherLayout fields and exclusion of ephemeral state.`);
+  } else {
+    printFail(`README.md is missing detailed documentation for settings/launcherLayout fields or exclusion of ephemeral state.`);
+  }
+
   const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
   if (agentsMd.includes('Maintenance Policy') && agentsMd.includes('maintenance mode')) {
     printSuccess(`AGENTS.md correctly declares maintenance-mode rules.`);
@@ -437,6 +443,12 @@ try {
     printSuccess(`AGENTS.md correctly documents launcher settings persistence boundaries.`);
   } else {
     printWarn(`AGENTS.md might be missing detailed launcher settings metadata boundaries.`);
+  }
+
+  if (!agentsMd.includes('future serverless/scheduler capability') && !agentsMd.includes('future roadmap milestone')) {
+    printSuccess(`AGENTS.md does not contain stale roadmap wording.`);
+  } else {
+    printFail(`AGENTS.md still contains stale roadmap wording for E2E or anonymous cleanup.`);
   }
 
   const uiRegression = fs.readFileSync('docs/ui-regression-plan.md', 'utf8');
@@ -453,10 +465,17 @@ try {
   }
   
   const deferred = fs.readFileSync('docs/deferred-work.md', 'utf8');
-  if (deferred.includes('deferred indefinitely') && deferred.includes('Maintenance Decision')) {
-    printSuccess(`docs/deferred-work.md explicitly records maintenance decisions for anonymous cleanup.`);
+  if (deferred.includes('deferred indefinitely') && deferred.includes('Maintenance Decision') && deferred.includes('from the current maintenance roadmap')) {
+    printSuccess(`docs/deferred-work.md explicitly records maintenance decisions for anonymous cleanup and full authenticated browser E2E.`);
   } else {
-    printFail(`docs/deferred-work.md is missing explicit maintenance decisions recording.`);
+    printFail(`docs/deferred-work.md is missing explicit maintenance decisions recording for cleanup or E2E.`);
+  }
+
+  const rulesTest = fs.readFileSync('tests/rules.test.ts', 'utf8');
+  if (rulesTest.includes('settings/launcherLayout')) {
+    printSuccess(`tests/rules.test.ts explicitly references settings/launcherLayout.`);
+  } else {
+    printFail(`tests/rules.test.ts is missing settings/launcherLayout rule checks.`);
   }
 } catch (e) {
   printFail(`Could not verify maintenance baseline and regression docs: ${e.message}`);

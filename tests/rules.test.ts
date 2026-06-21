@@ -135,16 +135,34 @@ describe('Firestore Rules Simulation Diagnostics', () => {
     assert.strictEqual(allowed, true, 'User A should read/write their own settings');
   });
 
+  it('allows authenticated users to read/write their own launcher settings', () => {
+    const auth = { uid: 'userA' };
+    const allowed = simulator.checkAccess('githubPagesAuditorV2/development/users/userA/settings/launcherLayout', auth);
+    assert.strictEqual(allowed, true, 'User A should read/write their own launcher layout setting');
+  });
+
   it('allows anonymous guests to read/write their own session settings', () => {
     const auth = { uid: 'anon123' };
     const allowed = simulator.checkAccess('githubPagesAuditorV2/development/anonymousSessions/anon123/settings/navigation', auth);
     assert.strictEqual(allowed, true, 'Anonymous User should read/write their own settings');
   });
 
+  it('allows anonymous users to read/write their own launcher settings', () => {
+    const auth = { uid: 'anon123' };
+    const allowed = simulator.checkAccess('githubPagesAuditorV2/development/anonymousSessions/anon123/settings/launcherLayout', auth);
+    assert.strictEqual(allowed, true, 'Anonymous User should read/write their own launcher layout setting');
+  });
+
   it('denies User A from reading or writing User B settings (cross-tenant isolation)', () => {
     const auth = { uid: 'userA' };
     const allowed = simulator.checkAccess('githubPagesAuditorV2/development/users/userB/settings/navigation', auth);
     assert.strictEqual(allowed, false, 'User A must not access user B settings');
+  });
+
+  it('denies cross-user access to launcher settings', () => {
+    const auth = { uid: 'userA' };
+    const allowed = simulator.checkAccess('githubPagesAuditorV2/development/users/userB/settings/launcherLayout', auth);
+    assert.strictEqual(allowed, false, 'User A must not access user B launcher layout setting');
   });
 
   it('denies access when user is unauthenticated', () => {
