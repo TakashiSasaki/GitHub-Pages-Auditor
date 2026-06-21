@@ -5,6 +5,9 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 
 **Important Note for Agents:** The authoritative index of what is and is not supported in this maintenance phase is `docs/maintenance-contract-index.md`. Please review it before attempting any modifications.
 
+## Maintenance Policy
+This project has transitioned into an active **maintenance mode** state following its standard development cycle. All core features are functional, and the configuration represents a completed, **development-complete** system. Coding agents must respect current constraints, avoid implementing out-of-scope/unrequested features, and conform strictly to localized validation checks.
+
 ## Current Architecture
 - Full-stack web application.
 - Frontend: React + TypeScript + Vite + Tailwind CSS.
@@ -127,13 +130,13 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 
 ## Current Implementation Status
 - **Stable Baseline ($v1.6.22$)**: Milestone `v1.6.22` was the stable release baseline representing the completed maintenance phase. All core backend, shared, export, anonymous lifecycles, and path modules were hardened and verified via automated test suites.
-- **Renewed Development Line ($v1.7.x$)**: The `v1.7.x` development run (commencing with `1.7.0`) introduces the server-side icon resolver, the Firestore-cached Launcher site icon cache system, client-side caching with optimistic fallback rendering, and expanded automated testing.
+- **Renewed Development Line ($v1.7.x$)**: The `v1.7.x` development run (commencing with `1.7.1`) introduces the server-side icon resolver, the Firestore-cached Launcher site icon cache system, client-side caching with optimistic fallback rendering, and expanded automated testing.
 - Added explicit environment validation modules for frontend (`src/lib/env.ts`) and backend (`server/env.ts`) checking configuration completeness without crashing runtime operations.
 - Extracted and formalized firestore paths into a decoupled module `src/lib/firestorePaths.ts`, fully tested in the suite.
 - Established a complete, isolated, and secure security ruleset in `firestore.rules` (pointed by `firebase.json`), fully verified using rule simulation tests (`tests/rules.test.ts`).
 - Centralized organization name validation into `src/lib/validation.ts`.
 - Removed all obsolete legacy references and schemas.
-- **Development Policy**: Version `1.7.0` initiates the Launcher Icon Cache Baseline. All edits require incrementing the patch version in `package.json`, keeping documentation and scripts in sync, and maintaining perfect compatibility with all existing read-only and no-AI security constraints.
+- **Development Policy**: Version `1.7.1` initiates the Launcher Icon Cache Baseline. All edits require incrementing the patch version in `package.json`, keeping documentation and scripts in sync, and maintaining perfect compatibility with all existing read-only and no-AI security constraints.
 
 ## Deployment readiness and Rules Contract
 - **Existence Audit**:
@@ -156,7 +159,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
   - Current Live Production URL: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
   - Region: `asia-east1`
   - Active Custom Domain: `pages.moukaeritai.work` (Active, Canonical URL)
-  - Current Major Milestone: Organization Scan Contract & Baseline Hardening (1.7.0)
+  - Current Major Milestone: Organization Scan Contract & Baseline Hardening (1.7.1)
   - Infrastructure Mutation Rule: Do not mutate DNS, Cloud Run, or Firebase Auth externally in coding-agent tasks. Only provide operator checklists.
   - Post-Assignment: Document required post-activation history.
 - **Crucial Warning**: Standard Firebase Hosting alone *cannot* run the Express backend. Firebase Hosting alone cannot run the Express backend. It must be paired with Cloud Run via proxy rewrites matching `/api/*` if edge CDN is desired.
@@ -173,7 +176,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - Created `scripts/validateExamples.js` to continuously assert compliance for V2 and V2 exported samples alongside `npm run examples:validate`.
 - Defined `docs/external-consumer-guide.md` with strict interoperability requirements, ensuring registries and runtime retrievals remain out-of-scope.
 - Completely verified coverage of V2 deeply-nested `findings` taxonomy reflecting GitHub Pages DNS/SSL statuses.
-- Advanced primary build threshold to `1.7.0 (Organization Scan Contract & Baseline Hardening)` with patch version governance and public no-auth E2E validation controls.
+- Advanced primary build threshold to `1.7.1 (Organization Scan Contract & Baseline Hardening)` with patch version governance and public no-auth E2E validation controls.
 - Documented active Custom Domain `pages.moukaeritai.work`.
 - Documented icon/site metadata fetching feature representing best-effort non-blocking metadata audit findings.
 - Hardened release checks and documentation consistency checks.
