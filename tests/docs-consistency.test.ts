@@ -133,15 +133,15 @@ describe('Documentation Consistency Diagnostics', () => {
     }
   });
 
-  it('should verify document version consistency with 1.6.2', () => {
+  it('should verify document version consistency with current package.json', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
-    assert.strictEqual(packageJson.version, '1.6.2', 'package.json version must be 1.6.2');
+    const expected = packageJson.version;
 
     const agents = fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf-8');
-    assert.ok(agents.includes('1.6.2'), 'AGENTS.md must refer to 1.6.2');
+    assert.ok(agents.includes(expected), `AGENTS.md must refer to ${expected}`);
 
     const deploymentReadiness = fs.readFileSync(path.join(process.cwd(), 'docs/deployment-readiness.md'), 'utf-8');
-    assert.ok(deploymentReadiness.includes('1.6.2'), 'deployment-readiness.md must refer to 1.6.2');
+    assert.ok(deploymentReadiness.includes(expected), `deployment-readiness.md must refer to ${expected}`);
   });
 
   it('should verify icon/site metadata scanning features are documented', () => {

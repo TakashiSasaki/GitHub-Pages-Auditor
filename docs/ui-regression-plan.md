@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - UI Regression Test Plan
-Version: `1.6.9` (Organization Scan Contract & Baseline Hardening)
+Version: `1.6.10` (Organization Scan Contract & Baseline Hardening)
 
 This document contains the requirements and test matrix for the **frontend user interface regression testing**. Since deploying heavier testing frameworks (such as Playwright, Cypress, or Puppeteer) inside sandboxed containerized workspaces introduces runtime execution risks, this plan outlines the exact manual validation and future E2E automation matrix.
 
@@ -35,6 +35,14 @@ This document contains the requirements and test matrix for the **frontend user 
 | :--- | :--- | :--- | :--- |
 | **EXP-01** | JSON Schema Match | User clicks "Export JSON". | Downloader triggers presenting conforming file output without leaking Firestore user paths or authorization tokens. |
 | **EXP-02** | CSV Injection Defense | Repo with name containing `=SUM(1,2)` is audited. | Exported file cell is sanitarily pre-fixed with double-quotes `"` or escapes to prevent remote formula triggers. |
+
+### E. Launcher & Visual Presentation
+| Test ID | Scenario | Expected Interaction | Successful Outcome |
+| :--- | :--- | :--- | :--- |
+| **LAU-01** | Launcher Rendering Stability | Launcher cards render with custom sorting and spacing. | No NaN zIndex values produced during calculation. |
+| **LAU-02** | Card Z-Index Ordering | User long-presses or expands a specific card detail state. | The active card is securely elevated in z-index; it must not be visually occluded by adjacent cards. |
+| **LAU-03** | Launcher Persisted Order | Order changes are applied to the active arena layout. | Card ordering must remain stable after actions such as toggling visible bounds or adjusting filtering limits. |
+| **LAU-04** | External Link Safety | User clicks launching links for target GitHub Pages. | External links must open gracefully with `target="_blank"` and `rel="noopener noreferrer"` attributes. |
 
 ---
 

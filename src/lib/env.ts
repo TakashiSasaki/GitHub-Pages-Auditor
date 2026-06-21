@@ -1,5 +1,10 @@
 // Use import.meta.glob to optionally import the config without breaking the build if missing
-const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+let configs: Record<string, any> = {};
+try {
+  configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+} catch (e) {
+  // Ignored for raw Node test environments (like tsx) where vite macro is unavailable
+}
 const firebaseConfig = (configs['../../firebase-applet-config.json'] as any)?.default;
 
 export interface FrontendEnvValidation {

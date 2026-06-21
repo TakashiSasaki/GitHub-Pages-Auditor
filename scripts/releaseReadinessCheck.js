@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.9';
+  const EXPECTED_VERSION = '1.6.10';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -362,9 +362,18 @@ try {
     if (fs.existsSync(f)) {
       const content = fs.readFileSync(f, 'utf8');
       for (const phrase of stalePhrases) {
-        if (content.includes(phrase)) {
-          printFail(`Stale or forbidden phrase "${phrase}" found in ${f}.`);
-          staleFound = true;
+        if (/^\d+\.\d+\.\d+$/.test(phrase)) {
+           // It's a semver, use regex to ensure it doesn't match a substring of a larger version
+           const regex = new RegExp(`\\b${phrase.replace(/\./g, '\\.')}\\b`);
+           if (regex.test(content)) {
+              printFail(`Stale or forbidden phrase "${phrase}" found in ${f}.`);
+              staleFound = true;
+           }
+        } else {
+           if (content.includes(phrase)) {
+             printFail(`Stale or forbidden phrase "${phrase}" found in ${f}.`);
+             staleFound = true;
+           }
         }
       }
     }
@@ -391,8 +400,41 @@ try {
   } else {
     printFail(`AGENTS.md does not correctly describe the /orgs/{org}/repos status.`);
   }
+
+  const appendix = fs.readFileSync('docs/spec-appendix-github-api.md', 'utf8');
+  if (appendix.includes('GET /orgs/{org}/repos') && !appendix.includes('GET /orgs/{org}/repos\n\nGET /orgs/{org}/repos')) {
+    printSuccess(`GitHub API appendix correctly includes organization scan and no duplicates exist.`);
+  } else {
+    printFail(`GitHub API appendix duplicates or misrepresents the organization scan endpoint.`);
+  }
 } catch (e) {
   printFail(`Could not verify org scan feature compliance: ${e.message}`);
+}
+
+// 14. Maintenance Baseline and Launcher Regression Check
+try {
+  const readmeMd = fs.readFileSync('README.md', 'utf8');
+  if (readmeMd.includes('maintenance mode') && readmeMd.includes('development-complete')) {
+    printSuccess(`README.md correctly declares development-complete / maintenance-mode status.`);
+  } else {
+    printFail(`README.md fails to declare development-complete / maintenance-mode status.`);
+  }
+
+  const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
+  if (agentsMd.includes('Maintenance Policy') && agentsMd.includes('maintenance mode')) {
+    printSuccess(`AGENTS.md correctly declares maintenance-mode rules.`);
+  } else {
+    printFail(`AGENTS.md fails to declare maintenance-mode rules.`);
+  }
+
+  const uiRegression = fs.readFileSync('docs/ui-regression-plan.md', 'utf8');
+  if (uiRegression.includes('zIndex') && uiRegression.includes('NaN')) {
+    printSuccess(`UI regression plan mentions LauncherGrid zIndex/render-order regression coverage.`);
+  } else {
+    printFail(`UI regression plan is missing LauncherGrid zIndex/render-order coverage.`);
+  }
+} catch (e) {
+  printFail(`Could not verify maintenance baseline and regression docs: ${e.message}`);
 }
 
 console.log('\n=== RESULT ===');
