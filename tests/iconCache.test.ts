@@ -16,6 +16,12 @@ describe('Launcher Icon Cache Unit and Path Diagnostics', () => {
       assert.strictEqual(isUrlSafe('http://127.0.0.1/icon.png'), false);
       assert.strictEqual(isUrlSafe('http://127.255.0.1/icon.png'), false);
       assert.strictEqual(isUrlSafe('http://[::1]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('http://[0:0:0:0:0:0:0:1]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('http://[fe80::1]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('http://[fd00::100]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('http://[fc00::ab]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('http://[fec0::3]/icon.png'), false);
+      assert.strictEqual(isUrlSafe('https://[2001:db8::1]/icon.png'), true);
     });
 
     it('rejects known cloud metadata servers', () => {
