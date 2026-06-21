@@ -36,7 +36,8 @@ import {
   Clock,
   Save,
   ArrowLeft,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 
 const COLUMN_HELP: Record<string, { title: string; description: string; values: { label: string; desc: string; }[] }> = {
@@ -49,9 +50,10 @@ const COLUMN_HELP: Record<string, { title: string; description: string; values: 
     title: "Pages Status",
     description: "Indicates whether GitHub Pages is configured and active for the repository.",
     values: [
-      { label: "enabled", desc: "Pages is active and currently published." },
-      { label: "not_found", desc: "Pages is not configured or disabled currently." },
-      { label: "error", desc: "Could not fetch Pages status due to an API error." }
+      { label: "built", desc: "The site has been built successfully and is active." },
+      { label: "building", desc: "The site is currently in the process of building." },
+      { label: "errored", desc: "The last build failed and the site might not be up-to-date." },
+      { label: "Disabled", desc: "Pages is not configured or disabled currently." }
     ]
   },
   deploySource: {
@@ -293,7 +295,8 @@ export default function Dashboard() {
 
   // Filtering & Search states
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'built' | 'building' | 'errored'>('all');
   const [domainFilter, setDomainFilter] = useState<'all' | 'custom' | 'none' | 'unverified' | 'pending'>('all');
   const [httpsFilter, setHttpsFilter] = useState<'all' | 'ok' | 'not_enforced' | 'problem'>('all');
 
@@ -694,7 +697,10 @@ export default function Dashboard() {
       // 2. Status Filter
       const matchesStatus = statusFilter === 'all' || 
                             (statusFilter === 'enabled' && r.hasPages) || 
-                            (statusFilter === 'disabled' && !r.hasPages);
+                            (statusFilter === 'disabled' && !r.hasPages) ||
+                            (statusFilter === 'built' && r.hasPages && r.pagesStatus === 'built') ||
+                            (statusFilter === 'building' && r.hasPages && r.pagesStatus === 'building') ||
+                            (statusFilter === 'errored' && r.hasPages && r.pagesStatus === 'errored');
 
       // 3. Domain Filter
       const matchesDomain = domainFilter === 'all' ||
@@ -1293,13 +1299,13 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-              <table className="min-w-[960px] w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0">
+              <table className="min-w-[800px] w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
                 <thead className="bg-slate-50 font-mono">
                   <tr>
-                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-2 py-2 text-center font-bold text-slate-400 uppercase text-[10px] w-10 border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-1 py-2 text-center font-bold text-slate-400 uppercase text-[10px] w-10 border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       #
                     </th>
-                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[28%]">
                       <div className="flex items-center gap-1">
                         Repository
                         <button onClick={() => setColumnGuideModal('repository')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1307,7 +1313,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[18%]">
                       <div className="flex items-center gap-1">
                         Pages Status
                         <button onClick={() => setColumnGuideModal('pagesStatus')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1315,7 +1321,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[17%]">
                       <div className="flex items-center gap-1">
                         Deploy Source
                         <button onClick={() => setColumnGuideModal('deploySource')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1323,7 +1329,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[18%]">
                       <div className="flex items-center gap-1">
                         Custom Domain
                         <button onClick={() => setColumnGuideModal('customDomain')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details font-sans">
@@ -1331,7 +1337,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[19%]">
                       <div className="flex items-center gap-1">
                         HTTPS & Security
                         <button onClick={() => setColumnGuideModal('https')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1339,45 +1345,54 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-right font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">Link</th>
                   </tr>
                   {/* カラムヘッダ名の直下に配置するフィルタリングUI行 */}
                   <tr className="bg-slate-100/75">
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-1 py-1 border-r border-b border-slate-200 text-center">
-                      <button 
-                        onClick={() => {
-                          setSearchQuery('');
-                          setStatusFilter('all');
-                          setDomainFilter('all');
-                          setHttpsFilter('all');
-                        }}
-                        className="text-[9px] px-1 py-0.5 bg-white border border-slate-300 rounded text-slate-500 hover:text-slate-800 hover:border-slate-400 transition-colors cursor-pointer w-full"
-                        title="Clear all filters"
-                        disabled={!searchQuery && statusFilter === 'all' && domainFilter === 'all' && httpsFilter === 'all'}
-                      >
-                        Reset
-                      </button>
+                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center w-10">
                     </th>
                     <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-r border-b border-slate-200 text-left">
-                      <div className="relative">
+                      {/* Mobile: Icon Button */}
+                      <div className="md:hidden flex px-0.5">
+                        <button
+                          onClick={() => setIsSearchModalOpen(true)}
+                          className={`w-full py-0.5 rounded flex items-center justify-center transition-colors ${searchQuery ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:text-slate-800 hover:bg-slate-50'}`}
+                          title="Search repositories"
+                        >
+                          <Search className="w-3 h-3" />
+                        </button>
+                      </div>
+                      {/* Desktop: Input Field */}
+                      <div className="hidden md:block relative">
                         <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1.5" />
                         <input 
                           type="text" 
                           placeholder="Search repo/domain..."
-                          className="w-full pl-6 pr-2 py-0.5 border border-slate-200 rounded text-[11px] font-sans font-normal bg-white outline-none focus:border-slate-800"
+                          className="w-full min-w-0 pl-6 pr-6 py-0.5 border border-slate-200 rounded text-[11px] font-sans font-normal bg-white outline-none focus:border-slate-800"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-0.5 top-1 transition-colors cursor-pointer"
+                            title="Clear search"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
                       </div>
                     </th>
                     <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
-                        className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
+                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
                       >
                         <option value="all">All Pages</option>
-                        <option value="enabled">Enabled</option>
+                        <option value="enabled">Enabled (Any)</option>
+                        <option value="built">Active (Built)</option>
+                        <option value="building">Building</option>
+                        <option value="errored">Errored</option>
                         <option value="disabled">Disabled</option>
                       </select>
                     </th>
@@ -1386,7 +1401,7 @@ export default function Dashboard() {
                     </th>
                     <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
-                        className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
+                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={domainFilter}
                         onChange={(e) => setDomainFilter(e.target.value as any)}
                       >
@@ -1399,7 +1414,7 @@ export default function Dashboard() {
                     </th>
                     <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
-                        className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
+                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={httpsFilter}
                         onChange={(e) => setHttpsFilter(e.target.value as any)}
                       >
@@ -1409,14 +1424,12 @@ export default function Dashboard() {
                         <option value="problem">Problem/Unknown</option>
                       </select>
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-right font-normal">
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100 font-mono text-xs">
                   {filteredResults.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
+                      <td colSpan={6} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
                         <div className="max-w-md mx-auto space-y-3.5 text-center flex flex-col items-center">
                           <AlertCircle className="w-6 h-6 text-gray-300 mx-auto" />
                           <div className="space-y-1">
@@ -1669,7 +1682,7 @@ export default function Dashboard() {
 
       {/* Column Guide Modal */}
       {columnGuideModal && COLUMN_HELP[columnGuideModal] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="text-lg font-semibold tracking-tight text-slate-900 font-sans">
@@ -1716,6 +1729,53 @@ export default function Dashboard() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Modal */}
+      {isSearchModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setIsSearchModalOpen(false)}>
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden border border-slate-200 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 flex items-center gap-3">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Search repository name or custom domain..."
+                className="flex-1 bg-transparent border-none outline-none text-base text-slate-800 font-sans font-medium placeholder-slate-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsSearchModalOpen(false)}
+                className="px-3 py-1.5 ml-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+            {searchQuery && (
+              <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-sans">
+                  Showing matches for "<span className="font-medium text-slate-700">{searchQuery}</span>"
+                </span>
+                <span className="text-xs font-medium text-indigo-600 font-sans">
+                  {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} found
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1779,18 +1839,17 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
     <tr style={style} className="hover:bg-slate-50 border-b border-slate-100 transition-colors group">
       
       {/* Serial Number */}
-      <td className="w-10 text-center text-[10px] text-slate-400 font-mono p-2 border-r border-slate-100 align-middle">
+      <td className="w-8 text-center text-[10px] text-slate-400 font-mono px-1 py-2 border-r border-slate-100 align-middle">
         {serialNumber}
       </td>
 
       {/* Repository name with fork badge */}
       <td className="px-3 py-2 border-r border-slate-100 align-middle">
-        <div className="flex flex-col whitespace-normal font-sans">
-          <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-start gap-1 text-xs" title={repo.fullName}>
-            <span className="leading-tight block truncate max-w-[200px] sm:max-w-xs">{repo.repoName}</span>
-            <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 opacity-70 mt-0.5" />
+        <div className="flex flex-col whitespace-normal font-sans min-w-0">
+          <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-xs break-words" title={repo.fullName}>
+            {repo.repoName}
           </a>
-          <div className="flex items-center space-x-1.5 mt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-amber-50 text-amber-700 border border-amber-150'}`}>
               {repo.visibility}
             </span>
@@ -1804,46 +1863,55 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
                 Archived
               </span>
             )}
+            <a 
+              href={repo.pagesSettingsUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center text-slate-400 hover:text-slate-600 transition-colors shrink-0 outline-none focus:ring-2 focus:ring-slate-300 rounded-sm"
+              title="Pages Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
       </td>
 
       {/* Pages Status badge */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50">
-        <div className="flex flex-col">
-          <div>
+      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+        <div className="flex flex-col min-w-0">
+          <div className="whitespace-normal break-words">
             {repo.hasPages ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-150 font-sans">
-                <span className="w-1 h-1 bg-emerald-500 rounded-full mr-1 animate-pulse"></span>
-                Active ({repo.pagesStatus || 'configured'})
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-150 font-sans break-words whitespace-normal leading-normal">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1 animate-pulse shrink-0"></span>
+                <span className="break-all">Active ({repo.pagesStatus || 'configured'})</span>
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-50 text-gray-550 border border-gray-200 font-sans">
-                <span className="w-1 h-1 bg-gray-300 rounded-full mr-1"></span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-50 text-gray-550 border border-gray-200 font-sans select-none shrink-0 animate-none">
+                <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-1 shrink-0"></span>
                 Disabled
               </span>
             )}
           </div>
           {repo.errorClassification && (
-            <div className="text-[9px] text-red-500 mt-0.5 flex items-center gap-1 font-sans truncate max-w-full">
-              <AlertCircle className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
-              <span className="truncate">{repo.errorClassification}</span>
+            <div className="text-[9px] text-red-500 mt-0.5 flex items-start gap-1 font-sans break-all whitespace-normal max-w-full">
+              <AlertCircle className="w-2.5 h-2.5 text-red-400 flex-shrink-0 mt-0.5" />
+              <span>{repo.errorClassification}</span>
             </div>
           )}
         </div>
       </td>
 
       {/* Deployment method & publishing branch */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50">
-        <div className="flex flex-col">
+      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+        <div className="flex flex-col min-w-0">
           {repo.hasPages ? (
-            <div className="space-y-0.5">
-              <div className="flex items-center text-gray-750 text-xs gap-1">
-                <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                <span className="font-sans font-medium">{repo.deploymentMethod}</span>
+            <div className="space-y-0.5 break-words whitespace-normal">
+              <div className="flex items-start text-gray-750 text-xs gap-1">
+                <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
+                <span className="font-sans font-medium break-all whitespace-normal">{repo.deploymentMethod}</span>
               </div>
               {repo.publishingSourceSummary && (
-                <div className="text-[9px] text-gray-400 select-all font-mono truncate">
+                <div className="text-[9px] text-gray-400 select-all font-mono whitespace-normal break-all">
                   {repo.publishingSourceSummary}
                 </div>
               )}
@@ -1855,26 +1923,26 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
       </td>
 
       {/* Custom Domain and Verification Status */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50">
-        <div className="flex flex-col">
+      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+        <div className="flex flex-col min-w-0">
           {repo.cname ? (
-            <div className="space-y-0.5 max-w-full overflow-hidden">
-              <div className="flex items-center gap-1.5 text-gray-800 font-sans leading-none min-w-0">
-                <Globe className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                <span className="font-semibold text-xs truncate max-w-[150px]">{repo.cname}</span>
+            <div className="space-y-0.5 max-w-full break-words whitespace-normal">
+              <div className="flex items-start gap-1.5 text-gray-800 font-sans leading-tight min-w-0">
+                <Globe className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
+                <span className="font-semibold text-xs break-all whitespace-normal">{repo.cname}</span>
               </div>
               
               {repo.customDomainStatus === 'custom_domain_verified' ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150 font-sans">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150 font-sans break-words whitespace-normal">
                   Verified
                 </span>
               ) : repo.customDomainStatus === 'custom_domain_pending' ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-amber-50 text-amber-700 border border-amber-150 font-sans">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-normal uppercase bg-amber-50 text-amber-700 border border-amber-150 font-sans break-words whitespace-normal">
                   Pending Verification
                 </span>
               ) : (
                 <span 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide leading-none bg-blue-50 text-blue-700 border border-blue-105 cursor-help font-sans"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide leading-normal bg-blue-50 text-blue-700 border border-blue-105 cursor-help font-sans break-words whitespace-normal"
                   title="カスタムドメイン（CNAME）が設定されています。GitHubの「ドメイン所有権検証」機能が未設定のためAPI上はUnverified/Unknownとなっていますが、HTTPS証明書が承認されていれば安全に動作しています。"
                 >
                   Configured
@@ -1882,7 +1950,7 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
               )}
             </div>
           ) : repo.hasPages ? (
-            <span className="text-[11px] text-gray-400 font-normal font-sans">GitHub standard URL</span>
+            <span className="text-[11px] text-gray-400 font-normal font-sans break-words whitespace-normal">GitHub standard URL</span>
           ) : (
             <span className="text-gray-400">-</span>
           )}
@@ -1890,30 +1958,30 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
       </td>
 
       {/* HTTPS and Enforcement */}
-      <td className="px-3 py-2 align-middle text-gray-500">
-        <div className="flex flex-col">
+      <td className="px-3 py-2 align-middle text-gray-500 break-words whitespace-normal">
+        <div className="flex flex-col min-w-0">
           {repo.hasPages ? (
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 break-words whitespace-normal">
               {repo.httpsCertificateStatus === 'https_certificate_ok' ? (
-                <div className="flex items-center gap-1 text-emerald-700 text-xs font-sans">
-                  <Lock className="w-3 h-3 text-emerald-500" />
-                  <span>HTTPS Enforced & SSL OK</span>
+                <div className="flex items-start gap-1 text-emerald-700 text-xs font-sans">
+                  <Lock className="w-3 h-3 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="break-all whitespace-normal">HTTPS Enforced & SSL OK</span>
                 </div>
               ) : repo.httpsCertificateStatus === 'https_not_enforced' ? (
-                <div className="flex items-center gap-1 text-amber-605 text-xs font-sans">
-                  <UnlockWarningIcon className="w-3 h-3 text-amber-500" />
-                  <span>Approved but Not Enforced</span>
+                <div className="flex items-start gap-1 text-amber-605 text-xs font-sans">
+                  <UnlockWarningIcon className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span className="break-all whitespace-normal">Approved but Not Enforced</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 text-red-650 text-xs font-sans">
-                  <AlertCircle className="w-3 h-3 text-red-500" />
-                  <span>SSL Configuration Issue</span>
+                <div className="flex items-start gap-1 text-red-650 text-xs font-sans">
+                  <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                  <span className="break-all whitespace-normal">SSL Configuration Issue</span>
                 </div>
               )}
               
               {repo.httpsCertificateState && (
-                <div className="text-[9px] text-gray-450 font-sans truncate">
-                  Cert status: <span className="font-mono text-gray-550 select-all truncate max-w-[120px] inline-block align-bottom">{repo.httpsCertificateState}</span>
+                <div className="text-[9px] text-gray-450 font-sans break-words whitespace-normal mt-0.5">
+                  Cert status: <span className="font-mono text-gray-550 select-all break-all whitespace-normal inline">{repo.httpsCertificateState}</span>
                 </div>
               )}
             </div>
@@ -1921,19 +1989,6 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
             <span className="text-gray-400">-</span>
           )}
         </div>
-      </td>
-
-      {/* Link to settings */}
-      <td className="px-3 py-2 text-right font-medium align-middle">
-        <a 
-          href={repo.pagesSettingsUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="inline-flex items-center text-[11px] text-slate-800 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded-md border border-slate-200 font-sans shadow-3xs cursor-pointer transition-colors"
-        >
-          <Settings className="w-2.5 h-2.5 mr-1" />
-          Settings
-        </a>
       </td>
     </tr>
   );

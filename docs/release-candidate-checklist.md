@@ -1,6 +1,6 @@
-# Release-Candidate Readiness Checklist (v1.7.6)
+# Release-Candidate Readiness Checklist (v1.7.20)
 
-This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.6: Release Candidate Reality Alignment & Operator Handoff**.
+This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.20: Release Candidate Documentation Polish & Go/No-Go Gate**.
 
 ---
 
@@ -24,21 +24,7 @@ npm run release:check
 
 ---
 
-## 3. Manual Launcher Icon Cache Smoke Steps (Operator-Only)
-
-Detailed, visual step-by-step auditing instructions are maintained in `/docs/launcher-smoke-checklist.md`. Real Google login, real PAT audit, and Firestore visual/cache inspection are strictly manual operator checks. 
-
-The core operations verify:
-
-- **Sign-in Flow Access**: Complete authentication through a Google account.
-- **Audit Implementation**: Run a read-only audit using a valid temporary GitHub PAT.
-- **Immediate Fallback Render**: Confirm first-load rendering matches appropriate fallback outlines (Favicon, PWA direct URL, or warm amber typography initials) instantly before cache-writing completes.
-- **Background Resolution**: Verify that the backend `/api/icon/resolve` endpoint fetches, validates, and stores raw base64 fragments without blocking UI rendering.
-- **Instant Local Load**: Assert subsequent displays immediately paint circular, indigo-tinted, cached data URL halos safely avoiding network latency or client-side layout shifts.
-
----
-
-## 2. Public No-Auth Smoke Verification (Automated)
+## 2. Public No-Auth Smoke Verification (Automated/Informational)
 
 Operators can evaluate active container deployments without authenticating or providing credentials:
 
@@ -52,14 +38,51 @@ npm run smoke:public
 
 ---
 
-## 4. Operational Boundaries & Rules of Engagement
+## 3. Manual Launcher Icon Cache Smoke Steps
 
-The following guidelines specify the exact distribution of responsibilities between automated systems and operator actions:
+Detailed, visual step-by-step auditing instructions are maintained in `/docs/launcher-smoke-checklist.md`. Real Google login, real PAT audit, and Firestore visual/cache inspection are strictly manual operator checks. 
+
+The core operations verify:
+
+- **Sign-in Flow Access**: Complete authentication through a Google account.
+- **Audit Implementation**: Run a read-only audit using a valid temporary GitHub PAT.
+- **Immediate Fallback Render**: Confirm first-load rendering matches appropriate fallback outlines (Favicon, PWA direct URL, or warm amber typography initials) instantly before cache-writing completes.
+- **Background Resolution**: Verify that the backend `/api/icon/resolve` endpoint fetches and validates external icon bytes; the frontend then receives the base64 payload and writes the cache document to Firestore under the authenticated tenant namespace.
+- **Instant Local Load**: Assert subsequent displays immediately paint circular, indigo-tinted, cached data URL halos safely avoiding network latency or client-side layout shifts.
+
+---
+
+## 4. Operator-Controlled Actions
+
+The following deployment and maintenance tasks are reserved for human operators and are not performed by coding agents:
 
 - **Production Hosting Deployments**: Retained strictly as manual operator-controlled events. Automated pipelines never auto-deploy code or trigger Cloud Run updates.
 - **Firebase Security Rules Updates**: Database permissions are updated manually using `firebase deploy --only firestore:rules` by designated project maintainers.
-- **Authenticated Browser E2E Tests**: Frameworks such as Playwright, Puppeteer or Selenium are explicitly **out of scope** for this repository. Visual regression coverage is managed through localized static template analysis.
-- **Real PAT-Based Audits**: Scanning live repositories requires actual temporary tokens, which must be executed manually by human operators. Automated suites utilize mocked loopbacks strictly.
+- **Real PAT-Based Audits**: Scanning live repositories requires actual temporary tokens, which must be executed manually by human operators.
+
+---
+
+## 5. Go/No-Go Decision Table
+
+| Target | Owner | Pass Condition | Failure Action | Go/No-Go Effect |
+| :--- | :--- | :--- | :--- | :--- |
+| `npm run lint` | Automated | Zero errors | Fix syntax/types | Blocking |
+| `npm test` | Automated | 100% pass | Fix logic/assertions | Blocking |
+| `npm run test:rules` | Automated | 100% pass | Fix `firestore.rules` | Blocking |
+| `npm run release:check` | Automated | 100% pass | Fix version/meta drift | Blocking |
+| `npm run smoke:public` | Operator | Live URL returns 200 | Check Cloud Run ingress | Advisory |
+| Google Auth Smoke | Operator | Successful login | Check Firebase Auth config | Blocking |
+| Real PAT Audit | Operator | Results displayed | Check GitHub API access | Blocking |
+| Launcher Fallback UX | Operator | No broken images | Check CSS/Assets | Blocking |
+| Launcher Cache UX | Operator | Circular indigo rings | Check Firestore persistence | Blocking |
+| Tenant Isolation | Operator | Cross-user 403s | Fix Firestore Rules | Blocking |
+| No Agent-led Deploy | Manual | No unauth mutation | Audit Cloud Run logs | Blocking |
+
+---
+
+## 6. Known Limitations / Explicit Out-of-Scope Items
+
+- **Authenticated Browser E2E Tests**: Frameworks such as Playwright, Puppeteer or Selenium are explicitly **out of scope**. Visual regression coverage is managed through localized static template analysis.
 - **SVG Body/Markup Caching Exclusions**: SVG vector caching is permanently **out of scope** to exclude client injection vulnerabilities.
 - **DNS-Resolution-Level SSRF Protections**: Advanced DNS hijacking controls are **out of scope**. Secure routing relies robustly on IP range text evaluations.
 - **Non-Blocking Best-Effort Failures**: Icon resolvers operate as a safe, best-effort convenience layer. Any network, caching, or payload parse issue must decay silently, rendering direct fallbacks immediately without blocking page loads or modal alerts.
