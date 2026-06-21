@@ -1,5 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
 import { isUrlSafe } from '../server/iconResolver.js';
 import { getCacheId, isCacheExpired, toIconDataUrl } from '../src/lib/launcherIconCachePure.js';
 import { getLauncherIconCacheCollectionPath, getLauncherIconCacheDocPath } from '../src/lib/firestorePaths.js';
@@ -120,6 +122,35 @@ describe('Launcher Icon Cache Unit and Path Diagnostics', () => {
     it('returns empty string if content type or base64 data is empty or missing', () => {
       assert.strictEqual(toIconDataUrl('', 'abcdef'), '');
       assert.strictEqual(toIconDataUrl('image/png', ''), '');
+    });
+  });
+
+  describe('LauncherGrid Design Integrity Static Assertions', () => {
+    it('verifies LauncherGrid does not contain tiny PWA or CACHED text-badge overlays for icon state', () => {
+      const launcherGridPath = path.join(process.cwd(), 'src/components/LauncherGrid.tsx');
+      assert.ok(fs.existsSync(launcherGridPath), 'LauncherGrid.tsx path must exist');
+      
+      const content = fs.readFileSync(launcherGridPath, 'utf8');
+      
+      // The tiny absolute PWA text overlay (usually inside span) should not contain absolute bottom/right text blocks or 'PWA' in icon state context
+      assert.ok(!content.includes('bg-emerald-600 text-white text-[8px]'), 'Tiny absolute PWA text badge overlay should be removed');
+      assert.ok(!content.includes('bg-indigo-600 text-white text-[8px]'), 'Tiny absolute CACHED text badge overlay should be absent');
+    });
+
+    it('verifies Cached/PWA/Favicon/Fallback modes have distinct circular designs and styling treatments', () => {
+      const launcherGridPath = path.join(process.cwd(), 'src/components/LauncherGrid.tsx');
+      assert.ok(fs.existsSync(launcherGridPath), 'LauncherGrid.tsx path must exist');
+      
+      const content = fs.readFileSync(launcherGridPath, 'utf8');
+      
+      // Ensure rounded-full class treatments are applied for circular effects
+      assert.ok(content.includes('rounded-full'), 'All icon wrapper elements must use rounded-full circular layout profile');
+      
+      // Check distinct coloring & background borders
+      assert.ok(content.includes('border-indigo-500/30'), 'Cached mode must contain subtle indigo/blue border cues');
+      assert.ok(content.includes('border-emerald-500/30'), 'PWA mode must contain subtle emerald border cues');
+      assert.ok(content.includes('border-slate-300'), 'Favicon mode must contain subtle neutral slate border cues');
+      assert.ok(content.includes('text-amber-700') || content.includes('border-amber-500/20'), 'Fallback initial mode must have distinctive warm amber styling');
     });
   });
 });

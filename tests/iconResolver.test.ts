@@ -314,6 +314,27 @@ describe('Server Icon Resolver Hardening Tests', () => {
       assert.ok(result.error?.includes('Disallowed content-type'));
     });
 
+    it('rejects image/gif explicitly', async () => {
+      global.fetch = async (url: any, init: any) => {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get: (headerName: string) => {
+              if (headerName.toLowerCase() === 'content-type') return 'image/gif';
+              if (headerName.toLowerCase() === 'content-length') return '100';
+              return null;
+            }
+          },
+          arrayBuffer: async () => new ArrayBuffer(100)
+        } as any;
+      };
+      
+      const result = await resolveExternalIcon('site1', 'https://page.com', 'https://safe.com/icon.gif', 'pwa_icon');
+      assert.strictEqual(result.ok, false);
+      assert.ok(result.error?.includes('Disallowed content-type'));
+    });
+
     it('rejects if required parameters are missing or empty', async () => {
       const res1 = await resolveExternalIcon('', 'https://page.com', 'https://safe.com/icon.png', 'pwa_icon');
       const res2 = await resolveExternalIcon('site1', '', 'https://safe.com/icon.png', 'pwa_icon');

@@ -159,7 +159,7 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
 
   if (!showCached && !showPwa && !showFav) {
     return (
-      <div className={`${sizeClass} bg-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 rounded-xl flex items-center justify-center text-slate-600 font-bold ${textClass} uppercase tracking-wider select-none shrink-0 border border-slate-200 group-hover:border-indigo-200 transition-colors duration-300 group-hover:rotate-3`}>
+      <div className={`${sizeClass} bg-amber-500/10 dark:bg-amber-500/5 text-amber-700 dark:text-amber-400 rounded-full flex items-center justify-center font-bold ${textClass} uppercase tracking-wider select-none shrink-0 border border-amber-500/20 dark:border-amber-500/10 group-hover:border-amber-500/40 transition-all duration-300 group-hover:rotate-3 shadow-xs`}>
         {site.name.charAt(0)}
       </div>
     );
@@ -172,7 +172,7 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
           <img
             src={cachedDataUrl!}
             alt="Cached Site Icon"
-            className={`${sizeClass} object-contain rounded-xl select-none shrink-0 border-2 border-indigo-200/50 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20 p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
+            className={`${sizeClass} object-contain rounded-full select-none shrink-0 border-2 border-indigo-500/30 dark:border-indigo-500/20 bg-indigo-50/40 dark:bg-indigo-950/30 p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
             onError={() => setCachedDataUrl(null)}
             referrerPolicy="no-referrer"
           />
@@ -183,13 +183,10 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
           <img
             src={site.pwaIconUrl!}
             alt="PWA Icon"
-            className={`${sizeClass} object-contain rounded-xl select-none shrink-0 border border-emerald-200 bg-white p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
+            className={`${sizeClass} object-contain rounded-full select-none shrink-0 border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/45 dark:bg-emerald-950/25 p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
             onError={() => setPwaError(true)}
             referrerPolicy="no-referrer"
           />
-          <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white text-[8px] font-extrabold px-1 rounded-sm border border-white shadow-2xs select-none">
-            PWA
-          </span>
         </div>
       )}
       {showFav && (
@@ -197,7 +194,7 @@ const LauncherSiteIcon = React.memo(function LauncherSiteIcon({ site, sizeClass 
           <img
             src={site.faviconUrl!}
             alt="Favicon"
-            className={`${sizeClass} object-contain rounded-xl select-none shrink-0 border border-slate-200 bg-white p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
+            className={`${sizeClass} object-contain rounded-full select-none shrink-0 border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-1 transition-all group-hover:scale-105 duration-300 shadow-xs`}
             onError={() => setFavError(true)}
             referrerPolicy="no-referrer"
           />

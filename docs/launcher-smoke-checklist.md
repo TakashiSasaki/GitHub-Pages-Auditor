@@ -34,10 +34,11 @@ Use this developer-facing checklist to manually verify the shared launcher behav
   1. High: Instantly loads secure Base64 data URLs from the Firestore `launcherIconCache` collection.
   2. Medium: Falls back to direct `pwaIconUrl` if loaded and cached is empty.
   3. Low: Falls back to direct `faviconUrl` if PWA icon is absent/failing.
-  4. Full Fallback: Renders the circular emerald fallback initial badge.
-- [ ] **Verify No Tiny Text Labels**: Confirm that no tiny `"CACHED"` text stickers or badges are overlayed on cached launcher tiles.
-- [ ] **Subtle Visual Cues**: Inspect elements or visually observe the tile wrappers:
-  - **Cached Icons**: Displayed with a subtle indigo/blue-tinted background and border treatment (`border-2 border-indigo-200/50` or similar).
-  - **Non-Cached Icons**: Displayed with standard neutral borders and layouts.
-  - **Generated Fallback**: Green emerald backdrop initials.
-
+  4. Full Fallback: Renders the circular warm amber fallback initial badge.
+- [ ] **Verify No Tiny Text Labels**: Confirm that no tiny `"CACHED"`, `"PWA"`, or any other status text stickers or badges are overlayed on launcher tile images.
+- [ ] **Subtle Visual Cues**: Inspect elements or visually observe the circular tile wrappers:
+  - **Cached Icons**: Displayed in a sleek circular outline with a subtle indigo/blue-tinted circular background and border treatment (`border-2 border-indigo-500/30 bg-indigo-50/40 dark:border-indigo-500/20 dark:bg-indigo-950/30 p-1`).
+  - **Direct PWA Icons**: Displayed in a sleek circular outline with a subtle emerald-tinted circular background and border treatment (`border-2 border-emerald-500/30 bg-emerald-50/45 dark:border-emerald-500/20 dark:bg-emerald-950/25 p-1`).
+  - **Direct Favicon Icons**: Displayed in a sleek circular outline with a neutral slate/white circular background and border treatment (`border border-slate-300 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50 p-1`).
+  - **Generated Fallback Initial**: Displayed with a distinct warm amber backdrop initial (`bg-amber-500/10 dark:bg-amber-500/5 text-amber-700 dark:text-amber-400 border border-amber-500/20 dark:border-amber-500/10`) that never implies cache or PWA statuses.
+- [ ] **Verify Path Isolation**: Confirm that Google user icon cache paths and anonymous session icon cache paths are securely isolated under their respective tenant namespaces.
