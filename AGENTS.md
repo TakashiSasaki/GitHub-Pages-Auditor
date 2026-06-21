@@ -15,6 +15,7 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 - **Backend GitHub API Client:** We use `fetch` targeting `https://api.github.com` strictly wrapped in helper functions to prevent calling forbidden endpoints.
 - **Full-Stack Structure:** The core GitHub API proxy runs on the Express server. The browser owns the PAT and temporarily sends it to the server strictly via an `x-temp-pat` header. The server must never return it to the browser.
 - **PAT Truth:** The current implementation is the absolute source of truth for PAT behavior. Design documents must follow the implementation, not the other way around.
+- **Critical Configuration Protection**: `firebase-applet-config.json` is a critical platform-managed file. Agents MUST NOT delete, move, or rename this file. If authentication errors occur, agents should prioritize re-provisioning via the appropriate tool rather than manual file manipulation.
 - **Port and Health Configuration:** The backend binds dynamically using `process.env.PORT ? parseInt(process.env.PORT, 10) : 3000` to support container runtimes. It implements an unauthenticated GET `/healthz` endpoint returning `{ ok: true }` without revealing secrets or credentials.
 - **Firestore Schema:** Firestore document types defined in `src/schema/firestoreTypes.ts` reflect the actual currently-stored shapes, not future ideals.
 
@@ -61,7 +62,11 @@ GitHub Pages Auditor is a multi-user web application that audits GitHub Pages se
 ## Version Management
 - Versioning is strictly managed via the standard `package.json` `"version"` field, which acts as the absolute source of truth.
 - Every file-changing coding-agent task MUST bump the patch version.
-- Docs and runtime version references must align with `package.json`.
+- **Documentation Consistency Requirement**: When bumping the version in `package.json`, the agent MUST also perform a global search-and-replace for the old version string across the following files to ensure release gate compliance:
+  - `README.md`
+  - `AGENTS.md`
+  - `docs/*.md` (all documentation files)
+  - `scripts/releaseReadinessCheck.js` (EXPECTED_VERSION constant)
 - The coding agent must output an English commit message at the end of any file-changing task.
 - Generated schema files must not be edited manually.
 - The release gate (`npm run release:check`) must remain no-network and deterministic.
