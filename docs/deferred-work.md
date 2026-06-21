@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - Deferred Work, Future Roadmap, and Non-Goals
-Version: `1.6.1` (Organization-Specific Scan Mode Baseline)
+Version: `1.6.2` (Organization Scan Contract & V1 Erasure Baseline)
 
 This document maps out completed items, deferred future work planned for later strides, and permanent architectural non-goals of the GitHub Pages Auditor.
 
@@ -7,28 +7,20 @@ This document maps out completed items, deferred future work planned for later s
 
 ## 1. Recent Accomplishments
 
-### Implemented in Milestone 1.6.1
+### Implemented in Milestone 1.6.2
+- **Unified Organization Scan Mode**: The `GET /orgs/{org}/repos` endpoint has been finalized and validated via a centralized validation helper, enabling secure organization audit scopes.
+- **V1 Erasure**: All legacy V1 references and schemas have been removed from the operational baseline.
+- **Development-Complete Baseline**: This milestone establishes the final feature-complete state before transitioning to maintenance mode.
 - **Anonymous Session TTL-Ready Lifecycle Foundation**: Implemented a pure, robust lifecycle utility `src/lib/anonymousSessionLifecycle.ts` with complete unit testing. Extended the Firestore `GitHubTokenDocument` and `AnonymousSessionDocument` data models to record `createdAt`, `expiresAt` (default 7-day TTL), and `lastSeenAt`. Integrated active injections during guest token saves.
 - **Lightweight Operational Public Smoke Verification**: Shipped a lightweight public smoke checker (`scripts/publicSmokeCheck.js` and `npm run smoke:public`) to quickly assert the liveness of canonical vs fallback endpoint routes without requiring credentials.
 
-### Implemented in Milestone 1.4.0 (Recent Baseline)
-- **Active Custom Domain Mapping**: Mapped `https://pages.moukaeritai.work` as the primary canonical production URL, keeping the original Cloud Run container address as a fallback endpoint.
-- **Tenant Isolation**: Cleanly transitioned to and hardened the `githubPagesAuditorV2` Firestore namespace to isolate user settings, layout metadata, and audit records.
-- **Site Metadata & Icon Scraper**: Added a bounded, timeout-guarded site parser to collect `faviconUrl`, `manifestUrl`, `isPwa`, `pwaIconUrl`, `pwaName`, and `pwaDisplayMode`.
-- **Release Readiness Auditing**: Built a strict, non-networked script `releaseReadinessCheck.js` to ensure zero drift of versions, configurations, and paths.
-
----
-
-### Implemented in Milestone 1.6.1
-- **Organization-Specific Scan Mode**: The `GET /orgs/{org}/repos` endpoint has been added inside our backend token-validation proxy flow, enabling organization audit scopes only when users explicitly input an organization name and select the scan mode.
-
-## 2. Deferred Future Work (Post-1.6.1 Scope)
+## 2. Deferred Future Work (Post-1.6.2 Scope)
 
 The following items are deferred from the current milestone and are planned for future baseline iterations:
 
 ### A. Automatic Firestore TTL Policy or Scheduled Cleanup Deployment
 - **Goal**: Automatically clean up aged guest records under `githubPagesAuditorV2/{environment}/anonymousSessions/{uid}` on a database level.
-- **Current Status**: Data models and client-side lifecycle calculations are fully implemented and verified in 1.6.1 (with complete unit testing).
+- **Current Status**: Data models and client-side lifecycle calculations are fully implemented and verified in 1.6.2 (with complete unit testing).
 - **Planned Implementation**: Deploying the actual Time-to-Live (TTL) field policy on the Firestore collections or establishing a scheduled daily cron serverless Cloud Function remains a deferred operator task to be executed directly in the Google Cloud Console or via Firebase CLI.
 
 ### B. Full Browser E2E Automation Regression Suite

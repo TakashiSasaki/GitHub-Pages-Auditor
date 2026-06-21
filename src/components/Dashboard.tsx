@@ -13,6 +13,7 @@ import LauncherGrid from './LauncherGrid';
 import { useLauncherLayout } from '../hooks/useLauncherLayout';
 import { useLauncherSitesFromResults } from '../hooks/useLauncherSitesFromResults';
 import { applyLocalOrderChange } from '../lib/launcherSites';
+import { validateGitHubOrgName } from '../lib/validation';
 import { 
   Play, 
   Key, 
@@ -417,11 +418,15 @@ export default function Dashboard() {
       return;
     }
 
+    let finalOrgName = organizationName;
     if (scanMode === 'org') {
-      if (!organizationName || !/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(organizationName)) {
+      const { isValid, normalized } = validateGitHubOrgName(organizationName);
+      if (!isValid) {
         setError('Please enter a valid GitHub organization name.');
         return;
       }
+      finalOrgName = normalized;
+      setOrganizationName(normalized); // Update the state with trimmed name for consistency
     }
 
     setError(null);
@@ -450,7 +455,7 @@ export default function Dashboard() {
       const res = await fetch('/api/audit/run', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ scanMode, organizationName })
+        body: JSON.stringify({ scanMode, organizationName: finalOrgName })
       });
       
       if (!res.ok) {

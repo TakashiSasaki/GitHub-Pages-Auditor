@@ -78,7 +78,7 @@ describe('Documentation Consistency Diagnostics', () => {
         if (file.name === 'node_modules' || file.name === '.git' || file.name === 'dist') continue;
         const fullPath = path.join(dirPath, file.name);
         
-        if (file.name === 'docs-consistency.test.ts') continue;
+        if (file.name === 'docs-consistency.test.ts' || file.name === 'releaseReadinessCheck.js' || file.name === 'update_docs.ts') continue;
         if (file.isDirectory()) {
           checkDir(fullPath);
         } else if (file.name.endsWith('.ts') || file.name.endsWith('.tsx') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.js')) {
@@ -96,6 +96,7 @@ describe('Documentation Consistency Diagnostics', () => {
             assert.ok(!content.includes('V1 default'), `Forbidden wording V1 default found in ${fullPath}`);
             assert.ok(!content.includes('v1 JSON export'), `Forbidden wording v1 JSON export found in ${fullPath}`);
             assert.ok(!content.includes('v1 CSV export'), `Forbidden wording v1 CSV export found in ${fullPath}`);
+            assert.ok(!content.includes('Version 1') || fullPath.includes('spec-initial.md'), `Forbidden wording Version 1 found in ${fullPath}`);
           }
         }
       }
@@ -132,15 +133,15 @@ describe('Documentation Consistency Diagnostics', () => {
     }
   });
 
-  it('should verify document version consistency with 1.6.0', () => {
+  it('should verify document version consistency with 1.6.2', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
-    assert.strictEqual(packageJson.version, '1.6.0', 'package.json version must be 1.6.0');
+    assert.strictEqual(packageJson.version, '1.6.2', 'package.json version must be 1.6.2');
 
     const agents = fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf-8');
-    assert.ok(agents.includes('1.6.0'), 'AGENTS.md must refer to 1.6.0');
+    assert.ok(agents.includes('1.6.2'), 'AGENTS.md must refer to 1.6.2');
 
     const deploymentReadiness = fs.readFileSync(path.join(process.cwd(), 'docs/deployment-readiness.md'), 'utf-8');
-    assert.ok(deploymentReadiness.includes('1.6.0'), 'deployment-readiness.md must refer to 1.6.0');
+    assert.ok(deploymentReadiness.includes('1.6.2'), 'deployment-readiness.md must refer to 1.6.2');
   });
 
   it('should verify icon/site metadata scanning features are documented', () => {

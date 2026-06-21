@@ -26,6 +26,7 @@ import {
   classifyHttpsCertificateStatus 
 } from './src/audit/classification';
 
+import { validateGitHubOrgName } from './src/lib/validation';
 import { fetchSiteMetadata } from './server/siteMetadata';
 
 // Initialize Firebase Admin using validated settings
@@ -105,12 +106,14 @@ app.post('/api/audit/run', verifyAuth, async (req, res) => {
   if (!pat || typeof pat !== 'string') return res.status(400).json({ error: 'No GitHub PAT provided' });
 
   const scanMode = req.body.scanMode || 'user';
-  const orgName = req.body.organizationName || '';
+  let orgName = req.body.organizationName || '';
 
   if (scanMode === 'org') {
-    if (!orgName || typeof orgName !== 'string' || !/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(orgName)) {
+    const { isValid, normalized } = validateGitHubOrgName(orgName);
+    if (!isValid) {
       return res.status(400).json({ error: 'Invalid organization name' });
     }
+    orgName = normalized;
   }
 
   // Set headers for NDJSON streaming immediately to enable chunked transfer

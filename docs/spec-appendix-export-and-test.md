@@ -66,7 +66,7 @@ To support high-integrity domain reviews without introducing breaking changes, w
 To guarantee clean mechanical interchange of reports across third-party environments, every schema version has a stable, globally unique machine identifier:
 * **Identification scheme**: Each `$id` is defined as a static `urn:uuid:<uuid-v4>`.
 * **Permanent Identifiers Assigned**:
-  - **Version 1 (Flat)**: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1`
+  - **Legacy V1 (Flat)**: `urn:uuid:ef46fd93-424a-4e2a-8f5b-df97e28b2be1`
   - **Version 2 (Current)**: `urn:uuid:7d0f98be-8cba-49c5-84dc-66914b5da3f2`
 * **Static Generation Contract**: These identities are declared statically within the typescript definitions and applied during build steps. They must **never** be generated or altered dynamically based on run-specific indices (e.g. audit ID, timestamps).
 * **Resolver Behavior is Peerless/Opaque**: External consumers must treat these URNs as opaque stable identifier matchers. There is no active remote resolver database, lookup API, schema registry, or dereferencing server implemented.

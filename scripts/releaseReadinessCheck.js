@@ -214,8 +214,8 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.1';
-  
+  const EXPECTED_VERSION = '1.6.2';
+
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
   if (!semverRegex.test(version)) {
@@ -295,8 +295,8 @@ try {
   // Verify that the actual Firebase cloud functions / automated cleanup jobs remain a deferred non-goal
   const isFunctionsDeferred = deferredContent.includes('automation') || deferredContent.includes('policy') || deferredContent.includes('operator');
   const hasExplicitNonGoals = deferredContent.includes('Exclusion of GitHub OAuth') &&
-                               deferredContent.includes('Exclusion of GitHub App Authentication') &&
-                               deferredContent.includes('Exclusion of Gemini / Generative AI / LLM Integration');
+                                deferredContent.includes('Exclusion of GitHub App Authentication') &&
+                                deferredContent.includes('Exclusion of Gemini / Generative AI / LLM Integration');
   
   // smoke:public script exists in package.json
   const hasSmokeScript = packageJson.scripts && packageJson.scripts['smoke:public'];
@@ -321,23 +321,29 @@ try {
     'docs/deployment-readiness.md',
     'docs/custom-domain-readiness.md',
     'docs/deferred-work.md',
-    'docs/anonymous-session-lifecycle.md'
+    'docs/anonymous-session-lifecycle.md',
+    'docs/spec-appendix-github-api.md'
   ];
   let staleFound = false;
   const stalePhrases = [
     'planned, not yet assigned',
     'Custom Domain Assignment Readiness',
-    'github-pages-auditor.export.' + 'v1',
-    'githubPages' + 'AuditorV1',
-    'GitHub OAuth' + ' as future work',
-    'GitHub App' + ' as future work',
-    'Gemini/AI' + ' as future work',
-    'GitHub OAuth' + ' can be added later',
-    'GitHub App' + ' can be added later',
-    'Gemini/AI' + ' can be added later',
-    'future work: ' + 'GitHub OAuth',
-    'future work: ' + 'GitHub App',
-    'future work: ' + 'Gemini/AI'
+    'github-pages-auditor.export.v1',
+    'githubPagesAuditorV1',
+    'GitHub OAuth as future work',
+    'GitHub App as future work',
+    'Gemini/AI as future work',
+    'GitHub OAuth can be added later',
+    'GitHub App can be added later',
+    'Gemini/AI can be added later',
+    'future work: GitHub OAuth',
+    'future work: GitHub App',
+    'future work: Gemini/AI',
+    'Version 1',
+    'V1 schema',
+    'V1 backend',
+    'old V1 flow',
+    'migration from V1'
   ];
 
   const packageJsonForStale = JSON.parse(fs.readFileSync('package.json', 'utf8'));

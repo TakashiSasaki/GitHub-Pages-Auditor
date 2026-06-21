@@ -23,12 +23,20 @@ describe('GitHub API Allowlist', () => {
     }
   });
 
-  it('blocks unsupported endpoints like /orgs/owner/repos outside version 1 scope', async () => {
+  it('allows organization repository enumeration', async () => {
     try {
       await githubApi('/orgs/owner/repos', 'fake-pat');
+    } catch (e: any) {
+      assert.notEqual(e.message, 'Endpoint /orgs/owner/repos is not allowed');
+    }
+  });
+
+  it('blocks unsupported endpoints like arbitrary org subpaths', async () => {
+    try {
+      await githubApi('/orgs/owner/members', 'fake-pat');
       assert.fail('Should have thrown error');
     } catch (e: any) {
-      assert.equal(e.message, 'Endpoint /orgs/owner/repos is not allowed');
+      assert.equal(e.message, 'Endpoint /orgs/owner/members is not allowed');
     }
   });
 

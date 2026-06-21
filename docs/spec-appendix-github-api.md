@@ -46,14 +46,14 @@ GET /repos/{owner}/{repo}/pages/health
 GET /rate_limit
 GET /orgs/{org}/repos
 
-"GET /orgs/{org}/repos" may be used only if organization-specific scan mode is implemented.
+GET /orgs/{org}/repos
 
 Forbidden endpoint categories:
 
 All GitHub write endpoints
 All GitHub Pages write endpoints
 All repository settings write endpoints
-All GitHub Actions workflow endpoints in Version 1
+All GitHub Actions workflow endpoints
 Any arbitrary user-supplied GitHub API URL
 
 Explicitly forbidden examples:
@@ -213,11 +213,11 @@ Every repository row must include repositoryTopUrl and pagesSettingsUrl.
 
 Do not expose repositories from one Firebase UID to another.
 
-5. Optional Organization Enumeration: GET /orgs/{org}/repos
+5. Organization Enumeration: GET /orgs/{org}/repos
 
 Purpose:
 
-List repositories for a specific Organization when organization-specific scan mode is implemented.
+List repositories for a specific Organization.
 
 Endpoint:
 
@@ -609,6 +609,6 @@ During an audit session, when a repository has GitHub Pages enabled and provides
 
 ### C. Security and Privacy Boundaries
 - **No PAT leakage**: No personal access tokens or custom credentials are sent to the target GitHub Pages sites during these best-effort fetches.
-- **Strictly Read-Only**: fetches utilize standard GET operations with a custom `User-Agent` (`GitHubPagesAuditor/1.4.0`) and have short timeouts (3.5s for HTML, 2.0s for Manifest).
+- **Strictly Read-Only**: fetches utilize standard GET operations with a custom `User-Agent` (`GitHubPagesAuditor/1.6.2`) and have short timeouts (3.5s for HTML, 2.0s for Manifest).
 - **Export Schema Isolation**: These fields are runtime/audit result presentation elements in the UI and are **not** present in the V2 JSON export schema or flat CSV export files.
 

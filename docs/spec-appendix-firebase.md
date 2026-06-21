@@ -108,7 +108,7 @@ expiresAt
 
 Anonymous cleanup strategy must be documented in "AGENTS.md".
 
-Anonymous-to-Google upgrade or credential linking is not required in Version 1. Do not implement automatic migration unless the specification is updated.
+Anonymous-to-Google upgrade or credential linking is not required in the current baseline. Do not implement automatic migration unless the specification is updated.
 
 5. Firestore Persistence (V2 / MVP)
 

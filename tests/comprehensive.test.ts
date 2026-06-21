@@ -311,7 +311,7 @@ describe('GitHub API Security & Proxy Shield', () => {
     assert.ok(capturedReq, 'Fetch should have been called');
 
     const method = capturedReq.method;
-    assert.strictEqual(method, 'GET', 'GitHub API wrapper must force GET in Version 1');
+    assert.strictEqual(method, 'GET', 'GitHub API wrapper must force GET for read-only auditing');
     assert.strictEqual(capturedReq.url, 'https://api.github.com/user');
     assert.strictEqual(capturedReq.headers.get('Authorization'), 'Bearer ghp_secret_test_token');
     assert.strictEqual(capturedReq.headers.get('Accept'), 'application/vnd.github+json');
