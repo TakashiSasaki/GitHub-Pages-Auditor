@@ -13,6 +13,7 @@ export interface LauncherSite {
   manifestUrl?: string | null;
   isPwa?: boolean;
   pwaIconUrl?: string | null;
+  sourceBranch?: string | null;
 }
 
 export function getLauncherSiteId(repo: RepositoryResult): string {
@@ -75,7 +76,8 @@ export function extractLauncherSites(repositories: RepositoryResult[]): Launcher
       faviconUrl: repo.faviconUrl,
       manifestUrl: repo.manifestUrl,
       isPwa: repo.isPwa,
-      pwaIconUrl: repo.pwaIconUrl
+      pwaIconUrl: repo.pwaIconUrl,
+      sourceBranch: repo.sourceBranch || null
     });
   }
 

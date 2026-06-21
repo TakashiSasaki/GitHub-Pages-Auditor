@@ -77,20 +77,48 @@ function LauncherSiteIcon({ site, sizeClass = "w-12 h-12" }: { site: LauncherSit
 function CircularDomainBadge({ site }: { site: LauncherSite }) {
   const [isHovered, setIsHovered] = React.useState(false);
   const pathId = `circle-path-${site.id}`;
-  const rawText = site.hostname || '';
   
-  // Split the domain to find the lowest domain fragment (left-most part, e.g. "pages" in "pages.moukaeritai.work")
-  const parts = rawText.split('.');
-  const lowestFragment = parts[0] || '';
-  const restOfDomain = parts.slice(1).join('.');
-  const restSuffix = restOfDomain ? `.${restOfDomain}` : '';
+  const isBranchMode = !site.customDomain && !!site.sourceBranch;
+  const rawText = isBranchMode ? site.sourceBranch! : (site.hostname || '');
 
-  // Determine repeat count to pad/repeat domain text on the circular path
+  // Determine repeat count to pad/repeat text on the circular path
   let count = 1;
   if (rawText.length < 8) {
     count = 3;
   } else if (rawText.length < 16) {
     count = 2;
+  }
+
+  let contentNodes;
+  
+  if (isBranchMode) {
+    contentNodes = Array.from({ length: count }).map((_, index) => (
+      <React.Fragment key={index}>
+        <tspan className="text-emerald-500 fill-emerald-500 transition-colors duration-300" fill="#10b981">
+          {rawText}
+        </tspan>
+        <tspan className="text-slate-200 fill-slate-200 transition-colors duration-300" fill="currentColor">
+          {" "}•{" "}
+        </tspan>
+      </React.Fragment>
+    ));
+  } else {
+    // Split the domain to find the lowest domain fragment
+    const parts = rawText.split('.');
+    const lowestFragment = parts[0] || '';
+    const restOfDomain = parts.slice(1).join('.');
+    const restSuffix = restOfDomain ? `.${restOfDomain}` : '';
+
+    contentNodes = Array.from({ length: count }).map((_, index) => (
+      <React.Fragment key={index}>
+        <tspan className="text-blue-600 fill-blue-600 transition-colors duration-300" fill="#2563eb">
+          {lowestFragment}
+        </tspan>
+        <tspan className="text-slate-200 fill-slate-200 transition-colors duration-300" fill="currentColor">
+          {restSuffix} •{" "}
+        </tspan>
+      </React.Fragment>
+    ));
   }
 
   return (
@@ -124,16 +152,7 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
         </defs>
         <text className="font-mono text-[16px] font-bold tracking-[0.08em] uppercase">
           <textPath href={`#${pathId}`} startOffset="0%">
-            {Array.from({ length: count }).map((_, index) => (
-              <React.Fragment key={index}>
-                <tspan className="text-blue-600 fill-blue-600 transition-colors duration-300" fill="#2563eb">
-                  {lowestFragment}
-                </tspan>
-                <tspan className="text-slate-200 fill-slate-200 transition-colors duration-300" fill="currentColor">
-                  {restSuffix} •{" "}
-                </tspan>
-              </React.Fragment>
-            ))}
+            {contentNodes}
           </textPath>
         </text>
       </svg>
@@ -170,6 +189,7 @@ function LauncherCardItem({
 
   const startX = React.useRef(0);
   const startY = React.useRef(0);
+  const startNodeY = React.useRef(0);
   const hasMoved = React.useRef(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -177,6 +197,7 @@ function LauncherCardItem({
 
     startX.current = e.clientX;
     startY.current = e.clientY;
+    startNodeY.current = y;
     hasMoved.current = false;
     wasHeld.current = false;
 
@@ -282,7 +303,7 @@ function LauncherCardItem({
         width: 112,
         height: 112,
         transform: `translate3d(${x - 56}px, ${y - 56}px, 0)`,
-        zIndex: isDragged ? 40000 + (1000 - baseIndex) : isPressed ? 50000 + (1000 - baseIndex) : 20000 + (1000 - baseIndex),
+        zIndex: isDragged ? 40000 + (1000 - baseIndex) + (y > startNodeY.current ? -10000 : y < startNodeY.current ? 10000 : 0) : isPressed ? 50000 + (1000 - baseIndex) : 20000 + (1000 - baseIndex),
         cursor: isDragged ? 'grabbing' : 'grab',
         transition: isDragged ? 'none' : 'transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1)',
       }}
