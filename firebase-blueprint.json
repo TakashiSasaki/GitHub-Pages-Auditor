@@ -45,7 +45,6 @@
          "updatedAt": { "type": "string", "format": "date-time" }
        },
        "required": ["lastPath"]
-     }
     }
   },
   "firestore": {

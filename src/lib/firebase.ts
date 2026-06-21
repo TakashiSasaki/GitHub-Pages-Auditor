@@ -1,7 +1,9 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+// Use import.meta.glob to optionally import the config without breaking the build if missing
+const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+const firebaseConfig = (configs['../../firebase-applet-config.json'] as any)?.default;
 
 const dummyConfig = {
   apiKey: "dummy-api-key-placeholder",

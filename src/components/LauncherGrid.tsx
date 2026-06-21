@@ -269,7 +269,7 @@ function LauncherCardItem({
         width: 112,
         height: 112,
         transform: `translate3d(${x - 56}px, ${y - 56}px, 0)`,
-        zIndex: isDragged ? 40 : 20,
+        zIndex: isDragged ? 40 : isPressed ? 50 : 20,
         cursor: isDragged ? 'grabbing' : 'grab',
         transition: isDragged ? 'none' : 'transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1)',
       }}

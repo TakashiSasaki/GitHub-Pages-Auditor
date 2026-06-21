@@ -1,4 +1,6 @@
-import firebaseConfig from '../../firebase-applet-config.json';
+// Use import.meta.glob to optionally import the config without breaking the build if missing
+const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+const firebaseConfig = (configs['../../firebase-applet-config.json'] as any)?.default;
 
 export interface FrontendEnvValidation {
   valid: boolean;
