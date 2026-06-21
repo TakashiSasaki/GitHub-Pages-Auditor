@@ -1,6 +1,6 @@
 import React from 'react';
 import { LauncherSite } from '../lib/launcherSites';
-import { AlertCircle, ChevronLeft, ChevronRight, RotateCcw, ExternalLink, Database, Loader2, Maximize2, Minimize2 } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, RotateCcw, ExternalLink, Database, Loader2, Maximize2, Minimize2, Settings2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -393,6 +393,14 @@ export default function LauncherGrid({
   const activeDragIdRef = React.useRef<string | null>(null);
   const [activeDragId, setActiveDragId] = React.useState<string | null>(null);
 
+  const [speedMultiplier, setSpeedMultiplier] = React.useState(1.0); // 1.0 matches the old 0.3 internally
+  const speedMultiplierRef = React.useRef(1.0);
+  const [showControls, setShowControls] = React.useState(false);
+
+  React.useEffect(() => {
+    speedMultiplierRef.current = speedMultiplier;
+  }, [speedMultiplier]);
+
   // Measure and trace accurate container bounds
   React.useEffect(() => {
     if (!arenaRef.current) return;
@@ -486,17 +494,19 @@ export default function LauncherGrid({
 
             const force = overlap * 0.42;
 
+            const sm = speedMultiplierRef.current * 0.3;
+
             if (u.id !== dragId) {
-              u.vx -= nx * force * 0.5;
-              u.vy -= ny * force * 0.5;
-              u.x -= nx * overlap * 0.25;
-              u.y -= ny * overlap * 0.25;
+              u.vx -= nx * force * 0.5 * sm;
+              u.vy -= ny * force * 0.5 * sm;
+              u.x -= nx * overlap * 0.25 * sm;
+              u.y -= ny * overlap * 0.25 * sm;
             }
             if (v.id !== dragId) {
-              v.vx += nx * force * 0.5;
-              v.vy += ny * force * 0.5;
-              v.x += nx * overlap * 0.25;
-              v.y += ny * overlap * 0.25;
+              v.vx += nx * force * 0.5 * sm;
+              v.vy += ny * force * 0.5 * sm;
+              v.x += nx * overlap * 0.25 * sm;
+              v.y += ny * overlap * 0.25 * sm;
             }
           }
         }
@@ -527,9 +537,11 @@ export default function LauncherGrid({
 
       // 4. Position accumulation and dynamic velocity decay
       currentNodes.forEach(node => {
+        const sm = speedMultiplierRef.current * 0.3;
         if (node.id === dragId) return;
-        node.x += node.vx * 0.16;
-        node.y += node.vy * 0.16;
+        node.x += node.vx * 0.16 * sm;
+        node.y += node.vy * 0.16 * sm;
+        // Damping also depends on how strongly it's affected, but static damping is okay for preserving inertia organically
         node.vx *= damping;
         node.vy *= damping;
       });
@@ -697,6 +709,68 @@ export default function LauncherGrid({
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.15] pointer-events-none mix-blend-multiply animate-[pulse_10s_ease-in-out_infinite]"></div>
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         
+        {/* Mobile Speed Controls Toggle (Fixed floating at corner) */}
+        <div className="sm:hidden absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+          {showControls && (
+            <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-slate-200 flex flex-col gap-3 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-center justify-between gap-4">
+                <label htmlFor="physicsSpeedMobile" className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                  Animation Speed
+                </label>
+                <button aria-label="Close settings" className="text-slate-400 hover:text-slate-600" onClick={() => setShowControls(false)}>
+                   <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  id="physicsSpeedMobile"
+                  type="range"
+                  min="0.0"
+                  max="3.0"
+                  step="0.1"
+                  value={speedMultiplier}
+                  onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
+                  className="w-32 accent-indigo-600 cursor-pointer"
+                />
+                <span className="text-xs font-mono font-medium text-slate-600 w-8">{speedMultiplier.toFixed(1)}x</span>
+              </div>
+            </div>
+          )}
+          
+          {!showControls && (
+            <button 
+              onClick={() => setShowControls(true)}
+              className="w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:border-indigo-200 focus:outline-none hover:bg-indigo-50 transition-colors"
+              aria-label="Toggle animation speed controls"
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Desktop inline slider (hidden on mobile) */}
+        <div className="hidden sm:flex mb-4 bg-white/80 backdrop-blur-md rounded-xl p-4 shadow-sm border border-slate-200 items-center justify-between gap-4 shrink-0 mx-4 sm:mx-0">
+          <div className="flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-slate-400" />
+            <label htmlFor="physicsSpeedDesktop" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+              Animation Speed
+            </label>
+          </div>
+          <div className="flex flex-1 max-w-sm items-center gap-4">
+            <input
+              id="physicsSpeedDesktop"
+              type="range"
+              min="0.0"
+              max="3.0"
+              step="0.1"
+              value={speedMultiplier}
+              onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
+              className="w-full accent-indigo-600 cursor-pointer"
+            />
+            <span className="text-xs font-mono font-medium text-slate-500 w-10">{speedMultiplier.toFixed(1)}x</span>
+          </div>
+        </div>
+
         {/* Instruction and Reset removed */}
         {saveWarning && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm flex items-center gap-2 shadow-sm">

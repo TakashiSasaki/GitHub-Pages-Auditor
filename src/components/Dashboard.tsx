@@ -1073,80 +1073,15 @@ export default function Dashboard() {
           
           {/* Cached Data & Tabs Portal */}
           {document.getElementById('navbar-center-slot') && createPortal(
-            <div className="flex space-x-1 p-0.5 bg-slate-100 rounded-lg ml-2 hidden lg:flex">
-              <button
-                onClick={() => handleTabChange('summary')}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Summary
-              </button>
-              <button
-                onClick={() => handleTabChange('details')}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Full Report
-              </button>
-              <button
-                onClick={() => handleTabChange('json')}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'json' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                JSON
-              </button>
-              <button
-                onClick={() => handleTabChange('schema')}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'schema' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Schema
-              </button>
-              <button
-                onClick={() => handleTabChange('launcher')}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'launcher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Launcher
-              </button>
-            </div>,
+            <></>,
             document.getElementById('navbar-center-slot')!
           )}
 
-          {formattedTime && document.getElementById('navbar-bottom-slot') && createPortal(
-            <div className="py-2 bg-slate-50/80 border-t border-slate-200 text-gray-500 font-medium">
-              <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 px-3 sm:px-4">
-                {/* Mobile Tabs (fallback for center slot) */}
-                <div className="flex lg:hidden space-x-1 p-0.5 bg-slate-200 rounded-lg max-w-fit flex-wrap">
-                  <button
-                    onClick={() => handleTabChange('summary')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Summary
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('details')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Full Report
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('json')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'json' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    JSON
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('schema')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'schema' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Schema
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('launcher')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'launcher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Launcher
-                  </button>
-                </div>
-
-                {/* Cache Info */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 flex-1">
+          {document.getElementById('navbar-bottom-slot') && createPortal(
+            <div className="py-2 bg-slate-50/80 border-t border-slate-200 text-gray-500 font-medium flex flex-col gap-2.5">
+              {/* Cache Info: Moved above Tabs */}
+              {formattedTime && (
+                <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 flex items-center justify-between sm:justify-start gap-3">
                   <div className="flex items-center gap-2 text-[10px] sm:text-xs">
                     <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                     <span className="leading-tight">
@@ -1169,6 +1104,42 @@ export default function Dashboard() {
                       Rescan
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Tabs */}
+              <div className="max-w-7xl mx-auto w-full px-3 sm:px-4">
+                <div className="flex space-x-1 p-0.5 bg-slate-200 sm:bg-slate-100/80 border sm:border-slate-200 rounded-lg max-w-fit flex-wrap">
+                  <button
+                    onClick={() => handleTabChange('summary')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Summary
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('details')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Full Report
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('json')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'json' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('schema')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'schema' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Schema
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('launcher')}
+                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'launcher' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Launcher
+                  </button>
                 </div>
               </div>
             </div>,
