@@ -1,5 +1,5 @@
 # GitHub Pages Auditor - UI Regression Test Plan
-Version: `1.6.17` (Organization Scan Contract & Baseline Hardening)
+Version: `1.6.18` (Organization Scan Contract & Baseline Hardening)
 
 This document contains the requirements and test matrix for the **frontend user interface regression testing**. Since deploying heavier testing frameworks (such as Playwright, Cypress, or Puppeteer) inside sandboxed containerized workspaces introduces runtime execution risks, this plan outlines the exact manual validation and future E2E automation matrix.
 
@@ -46,6 +46,7 @@ This document contains the requirements and test matrix for the **frontend user 
 | **LAU-05** | Compact Metadata Bubble | User long-presses over a launcher tile. | A dense, compact metadata bubble appears. Release or drag closes the bubble correctly. No visual regression on adjacent tiles. |
 | **LAU-06** | External Link Safety | User clicks launching links for target GitHub Pages. | External links must open gracefully with `target="_blank"` and `rel="noopener noreferrer"` attributes. |
 | **LAU-07** | Self-Contained Assets | Network inspector check during launcher render. | No requests are made to `transparenttextures.com` or other unapproved external UI asset domains. |
+| **LAU-08** | Repository-Name Default Pages Badge | View circular text for default GitHub Pages project URLs. | Circular text correctly displays the repository name in green. Branch names are not used. Custom-domain sites still use domain text. Repository name does not overflow badly. |
 
 ---
 

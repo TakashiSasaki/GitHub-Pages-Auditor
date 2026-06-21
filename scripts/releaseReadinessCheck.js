@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.17';
+  const EXPECTED_VERSION = '1.6.18';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -469,6 +469,12 @@ try {
   } else {
     printFail(`UI regression plan is missing compact metadata bubble checks.`);
   }
+
+  if (uiRegression.includes('LAU-08') && uiRegression.includes('Repository-Name Default Pages Badge')) {
+    printSuccess(`UI regression plan includes repository-name default pages badge checks.`);
+  } else {
+    printFail(`UI regression plan is missing repository-name default pages badge test ID.`);
+  }
   
   if (uiRegression.includes('LAU-04') && uiRegression.includes('Persistence')) {
     printSuccess(`UI regression plan includes Launcher settings persistence checks.`);
@@ -539,6 +545,12 @@ try {
     } else {
       printFail(`${implicitDoc} is missing compact metadata bubble UX decision.`);
     }
+
+    if (content.includes('カスタムドメイン未設定時のリポジトリ名表示') || content.includes('Repository-Name Default Pages Badge')) {
+      printSuccess(`${implicitDoc} records repository-name default pages badge UX decision.`);
+    } else {
+      printFail(`${implicitDoc} is missing repository-name default pages badge UX decision.`);
+    }
   }
 
   const gridFile = 'src/components/LauncherGrid.tsx';
@@ -566,6 +578,18 @@ try {
       printSuccess(`${gridFile} correctly omits negative PWA status from compact bubble.`);
     } else {
       printFail(`${gridFile} still includes negative PWA status in compact bubble.`);
+    }
+
+    if (!content.includes('isBranchMode') && content.includes('isProjectDefaultMode')) {
+      printSuccess(`${gridFile} uses repository-name default pages badge logic.`);
+    } else {
+      printFail(`${gridFile} does not use repository-name default pages badge logic (still uses branch mode).`);
+    }
+
+    if (content.includes('text-emerald-500 fill-emerald-500') || content.includes('#10b981')) {
+      printSuccess(`${gridFile} preserves emerald color for repository-name default pages badge text.`);
+    } else {
+      printFail(`${gridFile} no longer uses emerald color for default project badge text.`);
     }
   }
 } catch (e) {

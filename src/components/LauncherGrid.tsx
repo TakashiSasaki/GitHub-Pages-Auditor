@@ -78,8 +78,8 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
   const [isHovered, setIsHovered] = React.useState(false);
   const pathId = `circle-path-${site.id}`;
   
-  const isBranchMode = !site.customDomain && !!site.sourceBranch;
-  const rawText = isBranchMode ? site.sourceBranch! : (site.hostname || '');
+  const isProjectDefaultMode = !site.customDomain;
+  const rawText = isProjectDefaultMode ? (site.name || '') : (site.hostname || '');
 
   // Determine repeat count to pad/repeat text on the circular path
   let count = 1;
@@ -91,7 +91,7 @@ function CircularDomainBadge({ site }: { site: LauncherSite }) {
 
   let contentNodes;
   
-  if (isBranchMode) {
+  if (isProjectDefaultMode) {
     contentNodes = Array.from({ length: count }).map((_, index) => (
       <React.Fragment key={index}>
         <tspan className="text-emerald-500 fill-emerald-500 transition-colors duration-300" fill="#10b981">

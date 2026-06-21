@@ -1,10 +1,10 @@
-# Manual Smoke Testing Results Template (Milestone 1.6.17)
+# Manual Smoke Testing Results Template (Milestone 1.6.18)
 
 Use this document to log manual smoke testing results prior to marking a production candidate ready for the **https://pages.moukaeritai.work** environment.
 
 - **Target Public URL**: `https://pages.moukaeritai.work`
 - **Fallback Infrastructure URL**: `https://github-pages-auditor-1042140630327.asia-east1.run.app`
-- **App Version**: `1.6.17`
+- **App Version**: `1.6.18`
 
 ---
 
@@ -20,7 +20,7 @@ Use this document to log manual smoke testing results prior to marking a product
 ## Verification Checklist
 
 ### 1. Host Health and Liveness
-- [ ] **Homepage Load:** Navigate directly to `https://pages.moukaeritai.work`. Verify the landing page loads successfully, displaying appropriate styling, typography, and version badge reading `1.6.17`.
+- [ ] **Homepage Load:** Navigate directly to `https://pages.moukaeritai.work`. Verify the landing page loads successfully, displaying appropriate styling, typography, and version badge reading `1.6.18`.
 - [ ] **Liveness Probe Endpoint:** Query the unauthenticated health endpoint `https://pages.moukaeritai.work/healthz`. Confirm it returns JSON `{ "ok": true }` with status 200 without exposing secrets.
 
 ### 2. Authentication Flow
@@ -53,6 +53,7 @@ Use this document to log manual smoke testing results prior to marking a product
 - [ ] **Badge Logic:** Confirm positive status badges (HTTPS, PWA) are visible, while negative states (e.g. "Not PWA") are omitted to reduce noise.
 - [ ] **Safe External Navigation:** Verify clicking a tile safely delegates target Pages URLs using `target="_blank"` and `rel="noopener noreferrer"`.
 - [ ] **Self-Contained Assets Check:** Verify no external network calls are made to `transparenttextures.com` for grid backgrounds.
+- [ ] **Circular Badge Text Check:** Custom-domain sites still show domain-oriented circular text; default project/root Pages URLs show repository-name circular text in green. Branch names are not used. Repository name text remains readable and does not overflow badly.
 
 ### 6. Export Schema Compliance
 - [ ] **Validate JSON V2 Export:** Click the export JSON action. Confirm the generated payload:
