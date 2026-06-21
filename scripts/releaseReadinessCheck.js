@@ -214,7 +214,7 @@ try {
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const version = packageJson.version;
-  const EXPECTED_VERSION = '1.6.11';
+  const EXPECTED_VERSION = '1.6.12';
 
   // Validate SemVer format
   const semverRegex = /^\d+\.\d+\.\d+$/;
@@ -435,6 +435,33 @@ try {
   }
 } catch (e) {
   printFail(`Could not verify maintenance baseline and regression docs: ${e.message}`);
+}
+
+// 15. Metadata Transition & UA Alignment Check
+try {
+  const metadataFile = 'server/siteMetadata.ts';
+  if (fs.existsSync(metadataFile)) {
+    const content = fs.readFileSync(metadataFile, 'utf8');
+    if (content.includes('GitHubPagesAuditor/1.6.2')) {
+      printFail(`${metadataFile} contains stale hardcoded User-Agent version (1.6.2).`);
+    } else if (content.includes('APP_USER_AGENT')) {
+      printSuccess(`${metadataFile} correctly uses aligned APP_USER_AGENT constant.`);
+    } else {
+      printFail(`${metadataFile} does not use verified APP_USER_AGENT alignment.`);
+    }
+  }
+
+  const implicitDoc = 'docs/implicit-design-decisions.md';
+  if (fs.existsSync(implicitDoc)) {
+    const content = fs.readFileSync(implicitDoc, 'utf8');
+    if (content.includes('クライアントのブラウザが対象の URL に直接アクセス')) {
+      printFail(`${implicitDoc} contains inaccurate statement about browser-side metadata fetching.`);
+    } else if (content.includes('Auditorバックエンド')) {
+      printSuccess(`${implicitDoc} accurately describes backend-side site metadata fetching.`);
+    }
+  }
+} catch (e) {
+  printFail(`Could not verify metadata fetch documentation and UA alignment: ${e.message}`);
 }
 
 console.log('\n=== RESULT ===');

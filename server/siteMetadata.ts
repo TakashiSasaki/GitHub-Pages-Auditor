@@ -1,3 +1,5 @@
+import { APP_USER_AGENT } from './constants';
+
 export interface SiteMetadata {
   faviconUrl: string | null;
   manifestUrl: string | null;
@@ -62,7 +64,7 @@ export async function fetchSiteMetadata(pageUrl: string): Promise<SiteMetadata> 
     const response = await fetch(pageUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GitHubPagesAuditor/1.6.2'
+        'User-Agent': APP_USER_AGENT
       }
     });
 
@@ -104,7 +106,7 @@ export async function fetchSiteMetadata(pageUrl: string): Promise<SiteMetadata> 
         const manifestResponse = await fetch(absManifestUrl, {
           signal: manifestController.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GitHubPagesAuditor/1.6.2'
+            'User-Agent': APP_USER_AGENT
           }
         });
 
