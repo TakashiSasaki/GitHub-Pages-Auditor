@@ -1299,7 +1299,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-              <table className="min-w-[800px] w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
+              <table className="w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
                 <thead className="bg-slate-50 font-mono">
                   <tr>
                     <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-1 py-2 text-center font-bold text-slate-400 uppercase text-[10px] w-10 border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
