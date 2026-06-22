@@ -24,8 +24,13 @@ export async function getLauncherLayout(uid: string, isAnonymous: boolean, env: 
     if (d.exists()) {
       return d.data() as LauncherLayoutDoc;
     }
-  } catch (e) {
-    console.error("Failed to read launcher layout", e);
+  } catch (e: any) {
+    const isOffline = e instanceof Error && (e.message.includes('offline') || e.message.includes('unavailable') || e.message.includes('Failed to get document'));
+    if (isOffline) {
+      console.warn("Could not read launcher layout because the client is offline. Falling back to default layout.");
+    } else {
+      console.error("Failed to read launcher layout", e);
+    }
   }
   return null;
 }

@@ -24,8 +24,13 @@ export async function getCachedIcon(
     if (d.exists()) {
       return d.data() as LauncherIconCacheDoc;
     }
-  } catch (e) {
-    console.error('Failed to read icon cache document:', e);
+  } catch (e: any) {
+    const isOffline = e instanceof Error && (e.message.includes('offline') || e.message.includes('unavailable') || e.message.includes('Failed to get document'));
+    if (isOffline) {
+      console.warn('Could not read icon cache because the client is offline.');
+    } else {
+      console.error('Failed to read icon cache document:', e);
+    }
   }
   return null;
 }
@@ -55,7 +60,12 @@ export async function saveCachedIcon(
 
   try {
     await setDoc(doc(db, path), payload);
-  } catch (e) {
-    console.error('Failed to write launcher icon cache document:', e);
+  } catch (e: any) {
+    const isOffline = e instanceof Error && (e.message.includes('offline') || e.message.includes('unavailable') || e.message.includes('Failed to get document'));
+    if (isOffline) {
+      console.warn('Could not save launcher icon cache because the client is offline.');
+    } else {
+      console.error('Failed to write launcher icon cache document:', e);
+    }
   }
 }

@@ -272,8 +272,13 @@ export default function Dashboard() {
             createdAt: createdAtStr
           });
         }
-      } catch (err) {
-        console.error("Failed to load cached audit:", err);
+      } catch (err: any) {
+        const isOffline = err instanceof Error && (err.message.includes('offline') || err.message.includes('unavailable') || err.message.includes('Failed to get document'));
+        if (isOffline) {
+          console.warn("Could not load cached audit because the client is offline.");
+        } else {
+          console.error("Failed to load cached audit:", err);
+        }
       } finally {
         if (active) {
           setIsLoadingCache(false);
@@ -1358,9 +1363,9 @@ export default function Dashboard() {
                   </tr>
                   {/* カラムヘッダ名の直下に配置するフィルタリングUI行 */}
                   <tr className="bg-slate-100/75">
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center">
+                    <th scope="col" className="bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center">
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-r border-b border-slate-200 text-left">
+                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-r border-b border-slate-200 text-left">
                       {/* Mobile: Icon Button */}
                       <div className="md:hidden flex px-0.5">
                         <button
@@ -1392,7 +1397,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
+                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
                         className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={statusFilter}
@@ -1406,10 +1411,10 @@ export default function Dashboard() {
                         <option value="disabled">Disabled</option>
                       </select>
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left text-slate-400 italic font-sans font-normal text-[10px] text-center">
+                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left text-slate-400 italic font-sans font-normal text-[10px] text-center">
                       —
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
+                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
                         className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={domainFilter}
@@ -1422,7 +1427,7 @@ export default function Dashboard() {
                         <option value="pending">Pending Verif.</option>
                       </select>
                     </th>
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
+                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
                       <select 
                         className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
                         value={httpsFilter}

@@ -38,8 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (docSnap.exists() && docSnap.data().token) {
         return docSnap.data().token;
       }
-    } catch(e) {
-      console.error("Failed to fetch PAT from Firestore:", e);
+    } catch(e: any) {
+      const isOffline = e instanceof Error && (e.message.includes('offline') || e.message.includes('unavailable') || e.message.includes('Failed to get document'));
+      if (isOffline) {
+        console.warn("Could not fetch PAT from Firestore because the client is offline. Falling back to in-memory/uncached state.");
+      } else {
+        console.error("Failed to fetch PAT from Firestore:", e);
+      }
     }
     return null;
   };
@@ -134,8 +139,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (docSnap.exists() && docSnap.data().tokenType) {
         return docSnap.data().tokenType;
       }
-    } catch (e) {
-      console.error("Failed to fetch token metadata:", e);
+    } catch (e: any) {
+      const isOffline = e instanceof Error && (e.message.includes('offline') || e.message.includes('unavailable') || e.message.includes('Failed to get document'));
+      if (isOffline) {
+        console.warn("Could not fetch token metadata because the client is offline.");
+      } else {
+        console.error("Failed to fetch token metadata:", e);
+      }
     }
     return null;
   };
