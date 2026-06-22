@@ -88,6 +88,15 @@ const COLUMN_HELP: Record<string, { title: string; description: string; values: 
 
 const REPORT_TABLE_COLUMN_COUNT = 6;
 
+const REPORT_TABLE_COLUMNS = {
+  index: '2.5rem',
+  repository: 'min(20vw, 18rem)',
+  pages: 'min(20vw, 14rem)',
+  deploy: 'min(20vw, 14rem)',
+  domain: 'min(20vw, 16rem)',
+  https: 'min(20vw, 16rem)',
+} as const;
+
 export default function Dashboard() {
   const { user, hasStoredPat, getStoredPat, getStoredTokenType } = useAuth();
   const { auditId } = useParams<{ auditId?: string }>();
@@ -357,6 +366,10 @@ export default function Dashboard() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
+    setScrollTop(0);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
   }, [searchQuery, statusFilter, domainFilter, httpsFilter]);
 
   // Stats
@@ -744,12 +757,12 @@ export default function Dashboard() {
     const totalHeight = totalItems * ROW_HEIGHT;
     
     // 3 rows buffer above/below to prevent visual flicker during fast scrolling
-    const startIdx = Math.max(0, Math.floor((scrollTop - ROW_HEIGHT * 3) / ROW_HEIGHT));
-    const endIdx = Math.min(totalItems - 1, Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * 3) / ROW_HEIGHT));
+    const startIdx = totalItems > 0 ? Math.min(totalItems - 1, Math.max(0, Math.floor((scrollTop - ROW_HEIGHT * 3) / ROW_HEIGHT))) : 0;
+    const endIdx = totalItems > 0 ? Math.min(totalItems - 1, Math.max(startIdx, Math.ceil((scrollTop + clientHeight + ROW_HEIGHT * 3) / ROW_HEIGHT))) : -1;
     
-    const visible = paginatedResults.slice(startIdx, endIdx + 1);
-    const topPad = startIdx * ROW_HEIGHT;
-    const bottomPad = Math.max(0, totalHeight - (endIdx + 1) * ROW_HEIGHT);
+    const visible = totalItems > 0 ? paginatedResults.slice(startIdx, endIdx + 1) : [];
+    const topPad = totalItems > 0 ? startIdx * ROW_HEIGHT : 0;
+    const bottomPad = totalItems > 0 ? Math.max(0, totalHeight - (endIdx + 1) * ROW_HEIGHT) : 0;
     
     return {
       startIndex: startIdx,
@@ -758,6 +771,17 @@ export default function Dashboard() {
       bottomPadding: bottomPad
     };
   }, [paginatedResults, scrollTop, clientHeight]);
+
+  const reportTableStyle = {
+    '--report-col-index': REPORT_TABLE_COLUMNS.index,
+    '--report-col-repository': REPORT_TABLE_COLUMNS.repository,
+    '--report-col-pages': REPORT_TABLE_COLUMNS.pages,
+    '--report-col-deploy': REPORT_TABLE_COLUMNS.deploy,
+    '--report-col-domain': REPORT_TABLE_COLUMNS.domain,
+    '--report-col-https': REPORT_TABLE_COLUMNS.https,
+    width:
+      'calc(var(--report-col-index) + var(--report-col-repository) + var(--report-col-pages) + var(--report-col-deploy) + var(--report-col-domain) + var(--report-col-https))',
+  } as React.CSSProperties;
 
   const formattedTime = (() => {
     if (!auditCreatedAt) return null;
@@ -1275,45 +1299,128 @@ export default function Dashboard() {
 
           {activeTab === 'details' && (
             <>
-          {/* Results Table view - Seamless Flat High-Density Layout */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-auto border-b border-gray-200 bg-white mt-1 animate-fade-in relative">
-            <div className="min-h-full">
               {results && (
-                <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-gray-500 font-mono text-[10px]">
-                  <span className="flex items-center gap-1.5 font-sans font-medium text-slate-700">
-                    <Filter className="w-3.5 h-3.5 text-slate-500" />
-                    カラム別フィルタリング
-                  </span>
-                  <div className="flex items-center gap-2.5 font-sans">
-                    {(searchQuery || statusFilter !== 'all' || domainFilter !== 'all' || httpsFilter !== 'all') && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setStatusFilter('all');
-                          setDomainFilter('all');
-                          setHttpsFilter('all');
-                        }}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded text-[10px] font-sans font-semibold transition-colors cursor-pointer"
-                        title="すべてのフィルター状態を解除"
-                      >
-                        <XCircle className="w-3 h-3 text-red-500" />
-                        フィルタ解除
-                      </button>
-                    )}
-                    <span className="font-mono text-[10px] text-gray-500">
-                      Showing {filteredResults.length} of {results.length} results
-                    </span>
+                <div className="bg-slate-50 border-b border-slate-200">
+                  <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      {/* Filters Group */}
+                      <div className="flex flex-wrap items-end gap-2.5 flex-1 min-w-0">
+                        {/* Search */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Search repositories</span>
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
+                            <input 
+                              type="text" 
+                              placeholder="Search repo/domain..."
+                              className="w-full min-w-0 pl-8 pr-8 py-1 border border-slate-200 rounded text-xs font-sans bg-white outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all font-normal"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                              <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-0.5 top-1.5 transition-colors cursor-pointer"
+                                title="Clear search"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status */}
+                        <div className="flex flex-col gap-1 min-w-[120px] flex-1 sm:flex-initial">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pages Status</span>
+                          <select 
+                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-slate-800 cursor-pointer font-sans font-normal"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as any)}
+                          >
+                            <option value="all">All Pages</option>
+                            <option value="enabled">Enabled (Any)</option>
+                            <option value="built">Active (Built)</option>
+                            <option value="building">Building</option>
+                            <option value="errored">Errored</option>
+                            <option value="disabled">Disabled</option>
+                          </select>
+                        </div>
+
+                        {/* Domain */}
+                        <div className="flex flex-col gap-1 min-w-[120px] flex-1 sm:flex-initial">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Custom Domain</span>
+                          <select 
+                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-slate-800 cursor-pointer font-sans font-normal"
+                            value={domainFilter}
+                            onChange={(e) => setDomainFilter(e.target.value as any)}
+                          >
+                            <option value="all">All Domains</option>
+                            <option value="custom">Configured</option>
+                            <option value="none">No Custom</option>
+                            <option value="unverified">Unverified/Unknown</option>
+                            <option value="pending">Pending Verif.</option>
+                          </select>
+                        </div>
+
+                        {/* HTTPS */}
+                        <div className="flex flex-col gap-1 min-w-[120px] flex-1 sm:flex-initial">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">HTTPS/Security</span>
+                          <select 
+                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-slate-800 cursor-pointer font-sans font-normal"
+                            value={httpsFilter}
+                            onChange={(e) => setHttpsFilter(e.target.value as any)}
+                          >
+                            <option value="all">All HTTPS</option>
+                            <option value="ok">Approved & Enforced</option>
+                            <option value="not_enforced">Not Enforced</option>
+                            <option value="problem">Problem/Unknown</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Meta Action & Showing Count */}
+                      <div className="flex items-center justify-between lg:justify-end gap-3 lg:border-l lg:border-slate-200 lg:pl-3">
+                        {(searchQuery || statusFilter !== 'all' || domainFilter !== 'all' || httpsFilter !== 'all') && (
+                          <button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setStatusFilter('all');
+                              setDomainFilter('all');
+                              setHttpsFilter('all');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded text-xs font-semibold transition-colors cursor-pointer font-sans"
+                            title="Clear all filters"
+                          >
+                            <XCircle className="w-3.5 h-3.5 text-red-500" />
+                            Clear Filters
+                          </button>
+                        )}
+                        <div className="text-right whitespace-nowrap">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider font-sans leading-none">Results</p>
+                          <p className="text-xs font-mono text-slate-700 font-semibold mt-1 leading-none">
+                            {filteredResults.length} / {results.length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
-              <table className="w-max divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
+
+          {/* Results Table view - Seamless Flat High-Density Layout */}
+          <div ref={scrollContainerRef} className="flex-1 overflow-auto border-b border-gray-200 bg-white mt-1 animate-fade-in relative">
+            <div className="min-h-full">
+              <table 
+                className="divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed"
+                style={reportTableStyle}
+              >
                 <colgroup>
-                  <col className="w-10" />
-                  <col className="w-[min(20vw,18rem)]" />
-                  <col className="w-[min(20vw,14rem)]" />
-                  <col className="w-[min(20vw,14rem)]" />
-                  <col className="w-[min(20vw,16rem)]" />
-                  <col className="w-[min(20vw,16rem)]" />
+                  <col style={{ width: 'var(--report-col-index)' }} />
+                  <col style={{ width: 'var(--report-col-repository)' }} />
+                  <col style={{ width: 'var(--report-col-pages)' }} />
+                  <col style={{ width: 'var(--report-col-deploy)' }} />
+                  <col style={{ width: 'var(--report-col-domain)' }} />
+                  <col style={{ width: 'var(--report-col-https)' }} />
                 </colgroup>
                 <thead className="bg-slate-50 font-mono">
                   <tr>
@@ -1359,85 +1466,6 @@ export default function Dashboard() {
                           <HelpCircle className="w-3 h-3" />
                         </button>
                       </div>
-                    </th>
-                  </tr>
-                  {/* カラムヘッダ名の直下に配置するフィルタリングUI行 */}
-                  <tr className="bg-slate-100/75">
-                    <th scope="col" className="bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center">
-                    </th>
-                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-r border-b border-slate-200 text-left">
-                      {/* Mobile: Icon Button */}
-                      <div className="md:hidden flex px-0.5">
-                        <button
-                          onClick={() => setIsSearchModalOpen(true)}
-                          className={`w-full py-0.5 rounded flex items-center justify-center transition-colors ${searchQuery ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:text-slate-800 hover:bg-slate-50'}`}
-                          title="Search repositories"
-                        >
-                          <Search className="w-3 h-3" />
-                        </button>
-                      </div>
-                      {/* Desktop: Input Field */}
-                      <div className="hidden md:block relative">
-                        <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1.5" />
-                        <input 
-                          type="text" 
-                          placeholder="Search repo/domain..."
-                          className="w-full min-w-0 pl-6 pr-6 py-0.5 border border-slate-200 rounded text-[11px] font-sans font-normal bg-white outline-none focus:border-slate-800"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        {searchQuery && (
-                          <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-0.5 top-1 transition-colors cursor-pointer"
-                            title="Clear search"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </div>
-                    </th>
-                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
-                      <select 
-                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as any)}
-                      >
-                        <option value="all">All Pages</option>
-                        <option value="enabled">Enabled (Any)</option>
-                        <option value="built">Active (Built)</option>
-                        <option value="building">Building</option>
-                        <option value="errored">Errored</option>
-                        <option value="disabled">Disabled</option>
-                      </select>
-                    </th>
-                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left text-slate-400 italic font-sans font-normal text-[10px] text-center">
-                      —
-                    </th>
-                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
-                      <select 
-                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
-                        value={domainFilter}
-                        onChange={(e) => setDomainFilter(e.target.value as any)}
-                      >
-                        <option value="all">All Domains</option>
-                        <option value="custom">Configured</option>
-                        <option value="none">No Custom</option>
-                        <option value="unverified">Unverified/Unknown</option>
-                        <option value="pending">Pending Verif.</option>
-                      </select>
-                    </th>
-                    <th scope="col" className="bg-slate-100/95 px-2 py-1 border-b border-slate-200 text-left">
-                      <select 
-                        className="w-full min-w-0 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] font-sans font-normal outline-none focus:border-slate-800"
-                        value={httpsFilter}
-                        onChange={(e) => setHttpsFilter(e.target.value as any)}
-                      >
-                        <option value="all">All HTTPS</option>
-                        <option value="ok">Approved & Enforced</option>
-                        <option value="not_enforced">Not Enforced</option>
-                        <option value="problem">Problem/Unknown</option>
-                      </select>
                     </th>
                   </tr>
                 </thead>
@@ -1864,7 +1892,7 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
           <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-xs whitespace-normal break-words [overflow-wrap:anywhere] min-w-0 max-w-full leading-tight" title={repo.fullName}>
             {repo.repoName}
           </a>
-          <div className="flex items-center gap-1.5 mt-1 min-w-0 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-1 mt-1 min-w-0 w-full overflow-hidden">
             <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none shrink-0 ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-amber-50 text-amber-700 border border-amber-150'}`}>
               {repo.visibility}
             </span>

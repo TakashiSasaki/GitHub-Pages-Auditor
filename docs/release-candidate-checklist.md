@@ -1,6 +1,6 @@
-# Release-Candidate Readiness Checklist (v1.7.26)
+# Release-Candidate Readiness Checklist (v1.7.28)
 
-This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.26: Release Candidate Documentation Polish & Go/No-Go Gate**.
+This document establishes the verification procedures, manual auditing boundaries, and non-negotiable architectural boundaries for **v1.7.28: Release Candidate Documentation Polish & Go/No-Go Gate**.
 
 ---
 

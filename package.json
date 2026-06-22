@@ -1,7 +1,7 @@
 {
   "name": "github-pages-auditor",
   "private": true,
-  "version": "1.7.26",
+  "version": "1.7.28",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
