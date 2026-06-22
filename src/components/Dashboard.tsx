@@ -86,6 +86,8 @@ const COLUMN_HELP: Record<string, { title: string; description: string; values: 
   }
 };
 
+const REPORT_TABLE_COLUMN_COUNT = 6;
+
 export default function Dashboard() {
   const { user, hasStoredPat, getStoredPat, getStoredTokenType } = useAuth();
   const { auditId } = useParams<{ auditId?: string }>();
@@ -1299,13 +1301,21 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-              <table className="w-full divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
+              <table className="w-max divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed">
+                <colgroup>
+                  <col className="w-10" />
+                  <col className="w-[min(20vw,18rem)]" />
+                  <col className="w-[min(20vw,14rem)]" />
+                  <col className="w-[min(20vw,14rem)]" />
+                  <col className="w-[min(20vw,16rem)]" />
+                  <col className="w-[min(20vw,16rem)]" />
+                </colgroup>
                 <thead className="bg-slate-50 font-mono">
                   <tr>
-                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-1 py-2 text-center font-bold text-slate-400 uppercase text-[10px] w-10 border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-1 py-2 text-center font-bold text-slate-400 uppercase text-[10px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       #
                     </th>
-                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[28%]">
+                    <th scope="col" className="sticky top-0 z-50 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-r border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       <div className="flex items-center gap-1">
                         Repository
                         <button onClick={() => setColumnGuideModal('repository')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1313,7 +1323,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[18%]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       <div className="flex items-center gap-1">
                         Pages Status
                         <button onClick={() => setColumnGuideModal('pagesStatus')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1321,7 +1331,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[17%]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       <div className="flex items-center gap-1">
                         Deploy Source
                         <button onClick={() => setColumnGuideModal('deploySource')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1329,7 +1339,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[18%]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       <div className="flex items-center gap-1">
                         Custom Domain
                         <button onClick={() => setColumnGuideModal('customDomain')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details font-sans">
@@ -1337,7 +1347,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </th>
-                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)] w-[19%]">
+                    <th scope="col" className="sticky top-0 z-40 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                       <div className="flex items-center gap-1">
                         HTTPS & Security
                         <button onClick={() => setColumnGuideModal('https')} className="text-slate-400 hover:text-indigo-500 focus:outline-none transition-colors" title="View details">
@@ -1348,7 +1358,7 @@ export default function Dashboard() {
                   </tr>
                   {/* カラムヘッダ名の直下に配置するフィルタリングUI行 */}
                   <tr className="bg-slate-100/75">
-                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center w-10">
+                    <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-0 py-1 border-r border-b border-slate-200 text-center">
                     </th>
                     <th scope="col" className="sticky top-[31px] z-40 bg-slate-100/95 px-2 py-1 border-r border-b border-slate-200 text-left">
                       {/* Mobile: Icon Button */}
@@ -1429,7 +1439,7 @@ export default function Dashboard() {
                 <tbody className="bg-white divide-y divide-gray-100 font-mono text-xs">
                   {filteredResults.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
+                      <td colSpan={REPORT_TABLE_COLUMN_COUNT} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
                         <div className="max-w-md mx-auto space-y-3.5 text-center flex flex-col items-center">
                           <AlertCircle className="w-6 h-6 text-gray-300 mx-auto" />
                           <div className="space-y-1">
@@ -1455,7 +1465,7 @@ export default function Dashboard() {
                     <>
                       {topPadding > 0 && (
                         <tr>
-                          <td colSpan={7} style={{ height: `${topPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
+                          <td colSpan={REPORT_TABLE_COLUMN_COUNT} style={{ height: `${topPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
                         </tr>
                       )}
                       {visibleResults.map((repo, index) => (
@@ -1467,7 +1477,7 @@ export default function Dashboard() {
                       ))}
                       {bottomPadding > 0 && (
                         <tr>
-                          <td colSpan={7} style={{ height: `${bottomPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
+                          <td colSpan={REPORT_TABLE_COLUMN_COUNT} style={{ height: `${bottomPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
                         </tr>
                       )}
                     </>
@@ -1839,27 +1849,27 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
     <tr style={style} className="hover:bg-slate-50 border-b border-slate-100 transition-colors group">
       
       {/* Serial Number */}
-      <td className="w-8 text-center text-[10px] text-slate-400 font-mono px-1 py-2 border-r border-slate-100 align-middle">
+      <td className="text-center text-[10px] text-slate-400 font-mono px-1 py-2 border-r border-slate-100 align-middle">
         {serialNumber}
       </td>
 
       {/* Repository name with fork badge */}
-      <td className="px-3 py-2 border-r border-slate-100 align-middle">
-        <div className="flex flex-col whitespace-normal font-sans min-w-0">
-          <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-xs break-words" title={repo.fullName}>
+      <td className="px-3 py-2 border-r border-slate-100 align-middle overflow-hidden">
+        <div className="flex flex-col min-w-0 font-sans overflow-hidden">
+          <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-xs truncate block" title={repo.fullName}>
             {repo.repoName}
           </a>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-            <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-amber-50 text-amber-700 border border-amber-150'}`}>
+          <div className="flex items-center gap-1.5 mt-1 min-w-0 overflow-hidden">
+            <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none shrink-0 ${repo.visibility === 'public' ? 'bg-sky-50 text-sky-700 border border-sky-150' : 'bg-amber-50 text-amber-700 border border-amber-150'}`}>
               {repo.visibility}
             </span>
             {repo.isFork && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none bg-slate-100 text-slate-500 border border-slate-200">
+              <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider leading-none bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 Fork
               </span>
             )}
             {repo.archived && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none bg-orange-50 text-orange-600 border border-orange-150">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none bg-orange-50 text-orange-600 border border-orange-150 shrink-0">
                 Archived
               </span>
             )}
@@ -1877,41 +1887,41 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
       </td>
 
       {/* Pages Status badge */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+      <td className="px-3 py-2 align-middle border-r border-slate-100 overflow-hidden">
         <div className="flex flex-col min-w-0">
-          <div className="whitespace-normal break-words">
+          <div className="truncate">
             {repo.hasPages ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-150 font-sans break-words whitespace-normal leading-normal">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-150 font-sans truncate max-w-full" title={`Active (${repo.pagesStatus || 'configured'})`}>
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1 animate-pulse shrink-0"></span>
-                <span className="break-all">Active ({repo.pagesStatus || 'configured'})</span>
+                <span className="truncate">Active ({repo.pagesStatus || 'configured'})</span>
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-50 text-gray-550 border border-gray-200 font-sans select-none shrink-0 animate-none">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-50 text-gray-550 border border-gray-200 font-sans select-none shrink-0 animate-none truncate max-w-full" title="Disabled">
                 <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-1 shrink-0"></span>
                 Disabled
               </span>
             )}
           </div>
           {repo.errorClassification && (
-            <div className="text-[9px] text-red-500 mt-0.5 flex items-start gap-1 font-sans break-all whitespace-normal max-w-full">
-              <AlertCircle className="w-2.5 h-2.5 text-red-400 flex-shrink-0 mt-0.5" />
-              <span>{repo.errorClassification}</span>
+            <div className="text-[9px] text-red-500 mt-0.5 flex items-center gap-1 font-sans truncate max-w-full" title={repo.errorClassification}>
+              <AlertCircle className="w-2.5 h-2.5 text-red-400 flex-shrink-0" />
+              <span className="truncate">{repo.errorClassification}</span>
             </div>
           )}
         </div>
       </td>
 
       {/* Deployment method & publishing branch */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+      <td className="px-3 py-2 align-middle border-r border-slate-100 overflow-hidden">
         <div className="flex flex-col min-w-0">
           {repo.hasPages ? (
-            <div className="space-y-0.5 break-words whitespace-normal">
-              <div className="flex items-start text-gray-750 text-xs gap-1">
-                <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="font-sans font-medium break-all whitespace-normal">{repo.deploymentMethod}</span>
+            <div className="space-y-0.5 min-w-0 overflow-hidden">
+              <div className="flex items-center text-gray-750 text-xs gap-1 min-w-0" title={repo.deploymentMethod}>
+                <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                <span className="font-sans font-medium truncate">{repo.deploymentMethod}</span>
               </div>
               {repo.publishingSourceSummary && (
-                <div className="text-[9px] text-gray-400 select-all font-mono whitespace-normal break-all">
+                <div className="text-[9px] text-gray-400 select-all font-mono truncate" title={repo.publishingSourceSummary}>
                   {repo.publishingSourceSummary}
                 </div>
               )}
@@ -1923,34 +1933,36 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
       </td>
 
       {/* Custom Domain and Verification Status */}
-      <td className="px-3 py-2 align-middle border-r border-slate-50 break-words whitespace-normal">
+      <td className="px-3 py-2 align-middle border-r border-slate-100 overflow-hidden">
         <div className="flex flex-col min-w-0">
           {repo.cname ? (
-            <div className="space-y-0.5 max-w-full break-words whitespace-normal">
-              <div className="flex items-start gap-1.5 text-gray-800 font-sans leading-tight min-w-0">
-                <Globe className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
-                <span className="font-semibold text-xs break-all whitespace-normal">{repo.cname}</span>
+            <div className="space-y-0.5 min-w-0 overflow-hidden">
+              <div className="flex items-center gap-1.5 text-gray-800 font-sans leading-none min-w-0">
+                <Globe className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <span className="font-semibold text-xs truncate block" title={repo.cname}>{repo.cname}</span>
               </div>
               
-              {repo.customDomainStatus === 'custom_domain_verified' ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150 font-sans break-words whitespace-normal">
-                  Verified
-                </span>
-              ) : repo.customDomainStatus === 'custom_domain_pending' ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-normal uppercase bg-amber-50 text-amber-700 border border-amber-150 font-sans break-words whitespace-normal">
-                  Pending Verification
-                </span>
-              ) : (
-                <span 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide leading-normal bg-blue-50 text-blue-700 border border-blue-105 cursor-help font-sans break-words whitespace-normal"
-                  title="カスタムドメイン（CNAME）が設定されています。GitHubの「ドメイン所有権検証」機能が未設定のためAPI上はUnverified/Unknownとなっていますが、HTTPS証明書が承認されていれば安全に動作しています。"
-                >
-                  Configured
-                </span>
-              )}
+              <div className="truncate">
+                {repo.customDomainStatus === 'custom_domain_verified' ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-green-50 text-green-700 border border-green-150 font-sans truncate" title="Verified">
+                    Verified
+                  </span>
+                ) : repo.customDomainStatus === 'custom_domain_pending' ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider leading-none uppercase bg-amber-50 text-amber-700 border border-amber-150 font-sans truncate" title="Pending Verification">
+                    Pending Verification
+                  </span>
+                ) : (
+                  <span 
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold text-blue-700 bg-blue-50 border border-blue-105 cursor-help font-sans truncate"
+                    title="カスタムドメイン（CNAME）が設定されています。GitHubの「ドメイン所有権検証」機能が未設定のためAPI上はUnverified/Unknownとなっていますが、HTTPS証明書が承認されていれば安全に動作しています。"
+                  >
+                    Configured
+                  </span>
+                )}
+              </div>
             </div>
           ) : repo.hasPages ? (
-            <span className="text-[11px] text-gray-400 font-normal font-sans break-words whitespace-normal">GitHub standard URL</span>
+            <span className="text-[11px] text-gray-400 font-normal font-sans truncate" title="GitHub standard URL">GitHub standard URL</span>
           ) : (
             <span className="text-gray-400">-</span>
           )}
@@ -1958,30 +1970,30 @@ const RepoRow = React.memo(({ repo, serialNumber, style }: { repo: RepositoryRes
       </td>
 
       {/* HTTPS and Enforcement */}
-      <td className="px-3 py-2 align-middle text-gray-500 break-words whitespace-normal">
+      <td className="px-3 py-2 align-middle overflow-hidden text-gray-500">
         <div className="flex flex-col min-w-0">
           {repo.hasPages ? (
-            <div className="space-y-0.5 break-words whitespace-normal">
+            <div className="space-y-0.5 min-w-0 overflow-hidden">
               {repo.httpsCertificateStatus === 'https_certificate_ok' ? (
-                <div className="flex items-start gap-1 text-emerald-700 text-xs font-sans">
-                  <Lock className="w-3 h-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="break-all whitespace-normal">HTTPS Enforced & SSL OK</span>
+                <div className="flex items-center gap-1 text-emerald-700 text-xs font-sans min-w-0" title="HTTPS Enforced & SSL OK">
+                  <Lock className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  <span className="truncate">HTTPS Enforced & SSL OK</span>
                 </div>
               ) : repo.httpsCertificateStatus === 'https_not_enforced' ? (
-                <div className="flex items-start gap-1 text-amber-605 text-xs font-sans">
-                  <UnlockWarningIcon className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <span className="break-all whitespace-normal">Approved but Not Enforced</span>
+                <div className="flex items-center gap-1 text-amber-605 text-xs font-sans min-w-0" title="Approved but Not Enforced">
+                  <UnlockWarningIcon className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  <span className="truncate">Approved but Not Enforced</span>
                 </div>
               ) : (
-                <div className="flex items-start gap-1 text-red-650 text-xs font-sans">
-                  <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="break-all whitespace-normal">SSL Configuration Issue</span>
+                <div className="flex items-center gap-1 text-red-650 text-xs font-sans min-w-0" title="SSL Configuration Issue">
+                  <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  <span className="truncate">SSL Configuration Issue</span>
                 </div>
               )}
               
               {repo.httpsCertificateState && (
-                <div className="text-[9px] text-gray-450 font-sans break-words whitespace-normal mt-0.5">
-                  Cert status: <span className="font-mono text-gray-550 select-all break-all whitespace-normal inline">{repo.httpsCertificateState}</span>
+                <div className="text-[9px] text-gray-450 font-sans truncate" title={`Cert status: ${repo.httpsCertificateState}`}>
+                  Cert status: <span className="font-mono text-gray-550 select-all truncate">{repo.httpsCertificateState}</span>
                 </div>
               )}
             </div>
