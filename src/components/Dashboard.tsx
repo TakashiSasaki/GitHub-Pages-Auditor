@@ -15,6 +15,7 @@ import { useLauncherLayout } from '../hooks/useLauncherLayout';
 import { useLauncherSitesFromResults } from '../hooks/useLauncherSitesFromResults';
 import { applyLocalOrderChange } from '../lib/launcherSites';
 import { validateGitHubOrgName } from '../lib/validation';
+import { FullReportTable } from './report/FullReportTable';
 import { 
   Play, 
   Key, 
@@ -86,17 +87,6 @@ const COLUMN_HELP: Record<string, { title: string; description: string; values: 
     ]
   }
 };
-
-const REPORT_TABLE_COLUMN_COUNT = 6;
-
-const REPORT_TABLE_COLUMNS = {
-  index: '2.5rem',
-  repository: 'min(20vw, 18rem)',
-  pages: 'min(20vw, 14rem)',
-  deploy: 'min(20vw, 14rem)',
-  domain: 'min(20vw, 16rem)',
-  https: 'min(20vw, 16rem)',
-} as const;
 
 export default function Dashboard() {
   const { user, hasStoredPat, getStoredPat, getStoredTokenType } = useAuth();
@@ -334,7 +324,6 @@ export default function Dashboard() {
 
   // Filtering & Search states
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'built' | 'building' | 'errored'>('all');
   const [domainFilter, setDomainFilter] = useState<'all' | 'custom' | 'none' | 'unverified' | 'pending'>('all');
   const [httpsFilter, setHttpsFilter] = useState<'all' | 'ok' | 'not_enforced' | 'problem'>('all');
@@ -865,17 +854,6 @@ export default function Dashboard() {
     };
   }, [paginatedResults, scrollTop, clientHeight]);
 
-  const reportTableStyle = {
-    '--report-col-index': REPORT_TABLE_COLUMNS.index,
-    '--report-col-repository': REPORT_TABLE_COLUMNS.repository,
-    '--report-col-pages': REPORT_TABLE_COLUMNS.pages,
-    '--report-col-deploy': REPORT_TABLE_COLUMNS.deploy,
-    '--report-col-domain': REPORT_TABLE_COLUMNS.domain,
-    '--report-col-https': REPORT_TABLE_COLUMNS.https,
-    width:
-      'calc(var(--report-col-index) + var(--report-col-repository) + var(--report-col-pages) + var(--report-col-deploy) + var(--report-col-domain) + var(--report-col-https))',
-  } as React.CSSProperties;
-
   const formattedTime = (() => {
     if (!auditCreatedAt) return null;
     const date = new Date(auditCreatedAt);
@@ -1391,8 +1369,34 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'details' && (
+            <FullReportTable
+              results={results}
+              filteredResults={filteredResults}
+              visibleResults={visibleResults}
+              topPadding={topPadding}
+              bottomPadding={bottomPadding}
+              startIndex={startIndex}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
+              totalPages={totalPages}
+              scrollContainerRef={scrollContainerRef}
+              setColumnGuideModal={setColumnGuideModal}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              domainFilter={domainFilter}
+              setDomainFilter={setDomainFilter}
+              httpsFilter={httpsFilter}
+              setHttpsFilter={setHttpsFilter}
+            />
+          )}
+
+          {(activeTab as any) === 'details_unused' && (
             <>
-              {results && (
+              {false && (
                 <div className="bg-slate-50 border-b border-slate-200">
                   <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -1549,7 +1553,7 @@ export default function Dashboard() {
             <div className="min-h-full">
               <table 
                 className="divide-y divide-gray-200 font-sans text-xs border-separate border-spacing-0 table-fixed"
-                style={reportTableStyle}
+                style={{}}
               >
                 <colgroup>
                   <col style={{ width: 'var(--report-col-index)' }} />
@@ -1647,51 +1651,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100 font-mono text-xs">
-                  {filteredResults.length === 0 ? (
-                    <tr>
-                      <td colSpan={REPORT_TABLE_COLUMN_COUNT} className="px-3 py-6 text-center text-gray-500 bg-gray-25">
-                        <div className="max-w-md mx-auto space-y-3.5 text-center flex flex-col items-center">
-                          <AlertCircle className="w-6 h-6 text-gray-300 mx-auto" />
-                          <div className="space-y-1">
-                            <p className="font-medium text-slate-800 text-xs font-sans">No matching repositories found</p>
-                            <p className="text-[10px] text-gray-400 font-sans">Try loosening your search query or adjusting active filtering options above.</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setSearchQuery('');
-                              setStatusFilter('all');
-                              setDomainFilter('all');
-                              setHttpsFilter('all');
-                            }}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 hover:text-slate-900 rounded font-sans text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                          >
-                            <XCircle className="w-3.5 h-3.5 text-slate-500" />
-                            すべてのフィルタを解除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    <>
-                      {topPadding > 0 && (
-                        <tr>
-                          <td colSpan={REPORT_TABLE_COLUMN_COUNT} style={{ height: `${topPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
-                        </tr>
-                      )}
-                      {visibleResults.map((repo, index) => (
-                        <RepoRow 
-                          key={repo.id} 
-                          repo={repo} 
-                          serialNumber={(currentPage - 1) * pageSize + startIndex + index + 1} 
-                        />
-                      ))}
-                      {bottomPadding > 0 && (
-                        <tr>
-                          <td colSpan={REPORT_TABLE_COLUMN_COUNT} style={{ height: `${bottomPadding}px`, padding: 0 }} className="border-0 bg-transparent" />
-                        </tr>
-                      )}
-                    </>
-                  )}
+                  {visibleResults.map(() => null)}
                 </tbody>
               </table>
             </div>
@@ -1953,52 +1913,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Search Modal */}
-      {isSearchModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setIsSearchModalOpen(false)}>
-          <div 
-            className="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden border border-slate-200 flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 flex items-center gap-3">
-              <Search className="w-5 h-5 text-slate-400" />
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search repository name or custom domain..."
-                className="flex-1 bg-transparent border-none outline-none text-base text-slate-800 font-sans font-medium placeholder-slate-400"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
-                  title="Clear search"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={() => setIsSearchModalOpen(false)}
-                className="px-3 py-1.5 ml-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
-            {searchQuery && (
-              <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-sans">
-                  Showing matches for "<span className="font-medium text-slate-700">{searchQuery}</span>"
-                </span>
-                <span className="text-xs font-medium text-indigo-600 font-sans">
-                  {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} found
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
 
     </div>
   );
