@@ -1195,7 +1195,7 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4 flex-wrap justify-center font-medium shadow-none">
               {/* Cache Info: Moved to center slot */}
               {formattedTime && (
-                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-slate-500 bg-slate-100/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded border border-slate-200/30 sm:border-0">
+                <div className="flex items-center mt-0 gap-2 text-[10px] sm:text-xs text-slate-500 bg-slate-100/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded border border-slate-200/30 sm:border-0" style={{ marginTop: 0 }}>
                   <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   <span className="leading-none text-slate-600">
                     Last Fetched: <span className="font-semibold text-slate-800 font-mono">{formattedTime.absolute}</span>

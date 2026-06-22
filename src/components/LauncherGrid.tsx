@@ -573,6 +573,7 @@ export default function LauncherGrid({
   visibleIconsRange,
   onSettingsChange
 }: LauncherGridProps) {
+  const { user } = useAuth();
   const arenaRef = React.useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = React.useState({ width: 800, height: 500 });
   
@@ -629,10 +630,37 @@ export default function LauncherGrid({
     const prev = nodesRef.current;
     const activeSites = sites.slice(0, maxVisibleCount);
 
+    // Load coordinates from localStorage if available
+    let savedCoords: Record<string, { x: number; y: number }> = {};
+    if (user?.uid) {
+      try {
+        const stored = localStorage.getItem(`gpa_launcher_coords_${user.uid}`);
+        if (stored) {
+          savedCoords = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn('Failed to load saved coordinates:', e);
+      }
+    }
+
     const synced = activeSites.map((site, index) => {
       const existing = prev.find(n => n.id === site.id);
       if (existing) {
         return { ...existing, site, baseIndex: index };
+      }
+      
+      // Use saved coordinates as initial position if they exist
+      if (savedCoords[site.id]) {
+        return {
+          id: site.id,
+          site,
+          x: savedCoords[site.id].x,
+          y: savedCoords[site.id].y,
+          vx: 0,
+          vy: 0,
+          radius: 56,
+          baseIndex: index
+        };
       }
       
       // Compute deterministic outward spiral from center
@@ -652,7 +680,7 @@ export default function LauncherGrid({
     
     nodesRef.current = synced;
     setPhysicsNodes(synced);
-  }, [sites, dimensions.width, dimensions.height, maxVisibleCount]);
+  }, [sites, dimensions.width, dimensions.height, maxVisibleCount, user]);
 
   // Regular periodic updates inside a standard requestAnimationFrame loops
   React.useEffect(() => {
@@ -781,6 +809,21 @@ export default function LauncherGrid({
 
     // Calculate final layout positions to resolve new ordered list representation
     const finalNodes = [...nodesRef.current];
+
+    // Save released positions to localStorage as initial coordinates
+    if (user?.uid) {
+      try {
+        const stored = localStorage.getItem(`gpa_launcher_coords_${user.uid}`);
+        const savedCoords = stored ? JSON.parse(stored) : {};
+        finalNodes.forEach(node => {
+          savedCoords[node.id] = { x: node.x, y: node.y };
+        });
+        localStorage.setItem(`gpa_launcher_coords_${user.uid}`, JSON.stringify(savedCoords));
+      } catch (e) {
+        console.warn('Failed to save coordinates:', e);
+      }
+    }
+
     // Sort strictly by Y coordinate as requested, falling back to X if exactly equal
     const sorted = [...finalNodes].sort((a, b) => {
       if (a.y !== b.y) {
