@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { getUserSettingDocPath } from './firestorePaths';
 import { createAnonymousSessionExpiration } from './anonymousSessionLifecycle';
 
@@ -18,6 +18,16 @@ export interface LauncherLayoutDoc {
 
 export async function getLauncherLayout(uid: string, isAnonymous: boolean, env: string): Promise<LauncherLayoutDoc | null> {
   if (!env) throw new Error("Environment string must be explicitly provided");
+  
+  if (!isFirebaseConfigured) {
+    try {
+      const stored = localStorage.getItem(`mock_gpa_pref_launcherLayout_${uid}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   const path = getUserSettingDocPath(env, uid, isAnonymous, 'launcherLayout');
   try {
     const d = await getDoc(doc(db, path));
@@ -43,14 +53,14 @@ export async function saveLauncherLayout(
   options?: { animationSpeed?: number; visibleIconsRange?: number }
 ): Promise<void> {
   if (!env) throw new Error("Environment string must be explicitly provided");
-  const path = getUserSettingDocPath(env, uid, isAnonymous, 'launcherLayout');
+  
   const now = new Date();
   const payload: LauncherLayoutDoc = {
     schemaVersion: 'github-pages-auditor.launcherLayout.v3',
     layoutMode: 'ordered_grid',
     orderedSiteIds,
     hiddenSiteIds: [],
-    updatedAt: serverTimestamp()
+    updatedAt: isFirebaseConfigured ? serverTimestamp() : now.toISOString()
   };
 
   if (options?.animationSpeed !== undefined) {
@@ -66,6 +76,17 @@ export async function saveLauncherLayout(
     payload.lastSeenAt = now.toISOString();
   }
 
+  if (!isFirebaseConfigured) {
+    try {
+      localStorage.setItem(`mock_gpa_pref_launcherLayout_${uid}`, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('Failed to save launcher layout to localStorage:', e);
+    }
+    return;
+  }
+
+  const path = getUserSettingDocPath(env, uid, isAnonymous, 'launcherLayout');
   // Throw errors here so the UI can catch and warn the user
   await setDoc(doc(db, path), payload);
 }
+

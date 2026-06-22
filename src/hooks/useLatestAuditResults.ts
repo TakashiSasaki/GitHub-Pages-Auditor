@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../lib/firebase';
+import { db, isFirebaseConfigured } from '../lib/firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { getAuditCollectionPath } from '../lib/firestorePaths';
 import { RepositoryResult } from '../types';
@@ -18,9 +18,31 @@ export function useLatestAuditResults(uid: string | undefined, isAnonymous: bool
         return;
       }
 
-      if (isAnonymous) {
+      if (isAnonymous && isFirebaseConfigured) {
         setLoading(false);
         setResults(null);
+        setError(null);
+        return;
+      }
+
+      if (!isFirebaseConfigured) {
+        // Load latest mock results from localStorage
+        const stored = localStorage.getItem(`gpa_mock_audits_${uid}`);
+        if (stored) {
+          try {
+            const audits = JSON.parse(stored);
+            if (audits.length > 0) {
+              setResults(audits[audits.length - 1].results);
+            } else {
+              setResults(null);
+            }
+          } catch (e) {
+            setResults(null);
+          }
+        } else {
+          setResults(null);
+        }
+        setLoading(false);
         setError(null);
         return;
       }
@@ -55,3 +77,4 @@ export function useLatestAuditResults(uid: string | undefined, isAnonymous: bool
 
   return { results, loading, error };
 }
+

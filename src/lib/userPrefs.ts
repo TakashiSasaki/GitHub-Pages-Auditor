@@ -1,14 +1,23 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { getUserSettingDocPath, getEnvironmentName } from './firestorePaths';
 import { createAnonymousSessionExpiration } from './anonymousSessionLifecycle';
 
 /**
- * Saves the last visited path to Firestore for the given user.
+ * Saves the last visited path to Firestore or localStorage for the given user.
  */
 export async function saveLastPath(uid: string, isAnonymous: boolean, path: string): Promise<void> {
   if (!uid || !path) return;
-  // Don't save redirecting of root if not needed, but saving actual paths is good
+  
+  if (!isFirebaseConfigured) {
+    try {
+      localStorage.setItem(`mock_gpa_pref_lastPath_${uid}`, path);
+    } catch (e) {
+      console.warn('Failed to save last path to localStorage:', e);
+    }
+    return;
+  }
+
   try {
     const env = getEnvironmentName(import.meta.env.MODE);
     const docPath = getUserSettingDocPath(env, uid, isAnonymous, 'navigation');
@@ -32,10 +41,19 @@ export async function saveLastPath(uid: string, isAnonymous: boolean, path: stri
 }
 
 /**
- * Retrieves the last visited path from Firestore for the given user.
+ * Retrieves the last visited path from Firestore or localStorage for the given user.
  */
 export async function getLastPath(uid: string, isAnonymous: boolean): Promise<string | null> {
   if (!uid) return null;
+  
+  if (!isFirebaseConfigured) {
+    try {
+      return localStorage.getItem(`mock_gpa_pref_lastPath_${uid}`) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   try {
     const env = getEnvironmentName(import.meta.env.MODE);
     const docPath = getUserSettingDocPath(env, uid, isAnonymous, 'navigation');
@@ -49,3 +67,4 @@ export async function getLastPath(uid: string, isAnonymous: boolean): Promise<st
   }
   return null;
 }
+

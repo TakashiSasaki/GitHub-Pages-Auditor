@@ -346,8 +346,8 @@ function AppContent() {
         ) : (
           <nav className={`bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 bg-[length:200%_200%] animate-gradient-x border-b border-indigo-100/50 sticky top-0 z-50 transition-transform duration-300 shadow-sm ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
             <div className="px-3 py-2 sm:px-4 sm:py-3">
-              <div className="max-w-7xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-2.5 md:gap-y-0 md:flex-nowrap">
+                <div className="flex items-center gap-4 shrink-0">
                 <Link to="/" className="text-xl font-semibold tracking-tight text-slate-900 flex items-center gap-2.5 hover:opacity-80 transition-opacity">
                   <img src="/icon.svg" alt="App Logo" className="w-6 h-6 drop-shadow-sm" />
                   <span className="truncate">GitHub Pages Auditor</span>
@@ -366,9 +366,9 @@ function AppContent() {
                   <HelpCircle className="w-4 h-4" />
                   What's this app?
                 </button>
-                <div id="navbar-center-slot"></div>
               </div>
-              <div className="flex items-center gap-4">
+              <div id="navbar-center-slot" className="order-3 md:order-2 w-full md:w-auto flex justify-center md:justify-start pt-1 md:pt-0"></div>
+              <div className="order-2 md:order-3 flex items-center gap-4 shrink-0">
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen(!menuOpen)}

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './lib/firebase';
+import { auth, db, isFirebaseConfigured } from './lib/firebase';
 import { getGithubTokenDocPath, getEnvironmentName, getUserSettingDocPath } from './lib/firestorePaths';
 import { createAnonymousSessionExpiration } from './lib/anonymousSessionLifecycle';
 
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasStoredPat, setHasStoredPat] = useState(false);
 
   const getDocRef = (uid: string, isAnonymous: boolean) => {
+    if (!isFirebaseConfigured) return null;
     const env = getEnvironmentName(import.meta.env.MODE);
     const fullPath = getGithubTokenDocPath(env, uid, isAnonymous);
     return doc(db, fullPath);
@@ -32,8 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getStoredPat = async (): Promise<string | null> => {
     if (!user) return null;
+    if (!isFirebaseConfigured) {
+      return localStorage.getItem(`mock_gpa_pat_${user.uid}`) || null;
+    }
     try {
       const docRef = getDocRef(user.uid, user.isAnonymous);
+      if (!docRef) return null;
       const docSnap = await getDoc(docRef);
       if (docSnap.exists() && docSnap.data().token) {
         return docSnap.data().token;
@@ -50,6 +55,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      // Load mock session from local storage if available
+      const stored = localStorage.getItem('mock_gpa_user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const mockUser = {
+            ...parsed,
+            getIdToken: async () => 'dummy-token'
+          };
+          setUser(mockUser as any);
+        } catch (e) {
+          localStorage.removeItem('mock_gpa_user');
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -71,8 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const savePatToFirestore = async (pat: string) => {
     if (!user) throw new Error('Must be logged in');
-    // First validate with backend
-    const token = await user.getIdToken();
+    
+    // First validate with backend using either a valid Firebase token or dummy-token fallback
+    let token = 'dummy-token';
+    if (isFirebaseConfigured) {
+      token = await user.getIdToken();
+    }
+    
     const res = await fetch('/api/pat/validate', {
       method: 'POST',
       headers: {
@@ -87,10 +119,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(errData.details || errData.error || 'Failed to validate PAT');
     }
 
+    if (!isFirebaseConfigured) {
+      const derivedType = pat.startsWith('github_pat_') ? 'fine_grained' : (pat.startsWith('ghp_') ? 'classic' : 'unknown');
+      localStorage.setItem(`mock_gpa_pat_${user.uid}`, pat.trim());
+      localStorage.setItem(`mock_gpa_token_type_${user.uid}`, derivedType);
+      setHasStoredPat(true);
+      return;
+    }
+
     // Since validation succeeded, save directly to Firestore
     try {
       const now = new Date();
       const docRef = getDocRef(user.uid, user.isAnonymous);
+      if (!docRef) throw new Error('Firestore was requested but ref is null</h4>');
       const tokenPayload: any = {
         token: pat,
         updatedAt: serverTimestamp()
@@ -131,6 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getStoredTokenType = async (): Promise<'classic' | 'fine_grained' | 'unknown' | null> => {
     if (!user) return null;
+    if (!isFirebaseConfigured) {
+      return (localStorage.getItem(`mock_gpa_token_type_${user.uid}`) as any) || null;
+    }
     try {
       const env = getEnvironmentName(import.meta.env.MODE);
       const metadataPath = getUserSettingDocPath(env, user.uid, user.isAnonymous, 'tokenMetadata');
@@ -151,15 +195,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    if (!isFirebaseConfigured) {
+      const mockUser = {
+        uid: 'mock-google-user',
+        isAnonymous: false,
+        displayName: 'Google Demo User',
+        email: 'demo@example.com'
+      };
+      localStorage.setItem('mock_gpa_user', JSON.stringify(mockUser));
+      const mockUserObj = {
+        ...mockUser,
+        getIdToken: async () => 'dummy-token'
+      };
+      setUser(mockUserObj as any);
+      return;
+    }
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   };
 
   const signInAsGuest = async () => {
+    if (!isFirebaseConfigured) {
+      const mockUser = {
+        uid: 'anonymous-guest',
+        isAnonymous: true,
+        displayName: 'Guest User',
+        email: null
+      };
+      localStorage.setItem('mock_gpa_user', JSON.stringify(mockUser));
+      const mockUserObj = {
+        ...mockUser,
+        getIdToken: async () => 'dummy-token'
+      };
+      setUser(mockUserObj as any);
+      return;
+    }
     await signInAnonymously(auth);
   };
 
   const logout = async () => {
+    if (!isFirebaseConfigured) {
+      localStorage.removeItem('mock_gpa_user');
+      setUser(null);
+      return;
+    }
     await signOut(auth);
   };
 
@@ -175,3 +254,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+

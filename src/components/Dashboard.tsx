@@ -6,6 +6,7 @@ import { buildCsvExport } from '../export/csvExport';
 import { buildJsonExportV2 } from '../export/exportBuildersV2';
 import { ExportBuildContext } from '../export/exportContext';
 import { useAuth } from '../AuthContext';
+import { isFirebaseConfigured } from '../lib/firebase';
 import Ajv from 'ajv';
 import schema from '@/schemas/github-pages-auditor-export-v2.schema.json';
 import { getEnvironmentName, getAuditCollectionPath } from '../lib/firestorePaths';
@@ -244,7 +245,7 @@ export default function Dashboard() {
 
   // Check for existing cached audit on load or after audits are finished
   useEffect(() => {
-    if (!user || user.isAnonymous || auditId) {
+    if (!user || auditId || (user.isAnonymous && isFirebaseConfigured)) {
       setCachedAudit(null);
       return;
     }
@@ -252,6 +253,28 @@ export default function Dashboard() {
     let active = true;
     async function checkLatestCache() {
       setIsLoadingCache(true);
+      if (!isFirebaseConfigured) {
+        try {
+          const stored = localStorage.getItem(`gpa_mock_audits_${user!.uid}`);
+          if (stored) {
+            const audits = JSON.parse(stored);
+            if (audits.length > 0 && active) {
+              const lastAudit = audits[audits.length - 1];
+              setCachedAudit({
+                auditId: lastAudit.auditId,
+                createdAt: lastAudit.createdAt
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to load local cached audit", e);
+        } finally {
+          if (active) {
+            setIsLoadingCache(false);
+          }
+        }
+        return;
+      }
       try {
         const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
@@ -398,6 +421,32 @@ export default function Dashboard() {
 
       setIsLoadingResults(true);
       setError(null);
+
+      if (!isFirebaseConfigured) {
+        try {
+          const stored = localStorage.getItem(`gpa_mock_audits_${user!.uid}`);
+          if (stored) {
+            const audits = JSON.parse(stored);
+            const found = audits.find((a: any) => a.auditId === auditId);
+            if (found && active) {
+              setResults(found.results);
+              setAuditCreatedAt(found.createdAt);
+              setIsLoadingResults(false);
+              return;
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+        if (active) {
+          setError('Specified audit report was not found locally.');
+          setResults(null);
+          setAuditCreatedAt(null);
+          setIsLoadingResults(false);
+        }
+        return;
+      }
+
       try {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
@@ -571,6 +620,28 @@ export default function Dashboard() {
         setResults(finalData.results);
         setAuditCreatedAt(finalData.createdAt || new Date().toISOString());
 
+        const saveLocalAudit = (id: string, resultsData: any) => {
+          try {
+            const stored = localStorage.getItem(`gpa_mock_audits_${user!.uid}`) || '[]';
+            const audits = JSON.parse(stored);
+            const auditEntry = {
+              auditId: id,
+              results: resultsData,
+              createdAt: new Date().toISOString()
+            };
+            audits.push(auditEntry);
+            localStorage.setItem(`gpa_mock_audits_${user!.uid}`, JSON.stringify(audits));
+          } catch (e) {
+            console.error("Failed to save local audit to localStorage", e);
+          }
+        };
+
+        if (!isFirebaseConfigured) {
+          saveLocalAudit(finalData.auditId, finalData.results);
+          navigate(`/results/${finalData.auditId}`);
+          return;
+        }
+
         if (finalData.auditId && user && !user.isAnonymous) {
           try {
             const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
@@ -597,6 +668,28 @@ export default function Dashboard() {
         const data = await res.json();
         setResults(data.results);
         setAuditCreatedAt(data.createdAt || new Date().toISOString());
+
+        const saveLocalAudit = (id: string, resultsData: any) => {
+          try {
+            const stored = localStorage.getItem(`gpa_mock_audits_${user!.uid}`) || '[]';
+            const audits = JSON.parse(stored);
+            const auditEntry = {
+              auditId: id,
+              results: resultsData,
+              createdAt: new Date().toISOString()
+            };
+            audits.push(auditEntry);
+            localStorage.setItem(`gpa_mock_audits_${user!.uid}`, JSON.stringify(audits));
+          } catch (e) {
+            console.error("Failed to save local audit to localStorage", e);
+          }
+        };
+
+        if (!isFirebaseConfigured) {
+          saveLocalAudit(data.auditId, data.results);
+          navigate(`/results/${data.auditId}`);
+          return;
+        }
 
         if (data.auditId && user && !user.isAnonymous) {
           try {
@@ -1121,76 +1214,76 @@ export default function Dashboard() {
           
           {/* Cached Data & Tabs Portal */}
           {document.getElementById('navbar-center-slot') && createPortal(
-            <></>,
-            document.getElementById('navbar-center-slot')!
-          )}
-
-          {document.getElementById('navbar-bottom-slot') && createPortal(
-            <div className="py-2 bg-slate-50/80 border-t border-slate-200 text-gray-500 font-medium flex flex-col gap-2.5">
-              {/* Cache Info: Moved above Tabs */}
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4 flex-wrap justify-center font-medium shadow-none">
+              {/* Cache Info: Moved to center slot */}
               {formattedTime && (
-                <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 flex items-center justify-between sm:justify-start gap-3">
-                  <div className="flex items-center gap-2 text-[10px] sm:text-xs">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span className="leading-tight">
-                      Last Fetched: <span className="font-semibold text-slate-800 font-mono">{formattedTime.absolute}</span>
-                    </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
-                      {formattedTime.relative}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 border-l border-slate-300 pl-3 ml-1">
-                    <span className="text-[9px] text-slate-400 font-normal leading-tight hidden lg:inline">
-                      ※ Cached data
-                    </span>
+                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-slate-500 bg-slate-100/50 sm:bg-transparent px-2 py-1 sm:p-0 rounded border border-slate-200/30 sm:border-0">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span className="leading-none text-slate-600">
+                    Last Fetched: <span className="font-semibold text-slate-800 font-mono">{formattedTime.absolute}</span>
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                    {formattedTime.relative}
+                  </span>
+                  <div className="flex items-center border-l border-slate-300 pl-2">
                     <button 
+                      type="button"
                       onClick={runAudit}
                       disabled={isAuditing}
-                      className="px-2 py-1 bg-white text-slate-800 rounded-md hover:bg-gray-50 flex items-center border border-slate-300 shadow-xs text-[10px] font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-1.5 py-0.5 bg-white text-slate-800 rounded hover:bg-gray-50 flex items-center border border-slate-300 shadow-xs text-[9px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                      title="Force refresh the data from GitHub"
                     >
-                      <RefreshCw className={`w-3 h-3 mr-1.5 text-slate-500 ${isAuditing ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-2.5 h-2.5 mr-1 text-slate-500 ${isAuditing ? 'animate-spin' : ''}`} />
                       Rescan
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Tabs */}
-              <div className="max-w-7xl mx-auto w-full px-3 sm:px-4">
-                <div className="flex space-x-1 p-0.5 bg-slate-200 sm:bg-slate-100/80 border sm:border-slate-200 rounded-lg max-w-fit flex-wrap">
-                  <button
-                    onClick={() => handleTabChange('summary')}
-                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Summary
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('details')}
-                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Full Report
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('json')}
-                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'json' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    JSON
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('schema')}
-                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'schema' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Schema
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('launcher')}
-                    className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'launcher' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Launcher
-                  </button>
-                </div>
+              {/* Tabs: Moved to center slot */}
+              <div className="flex space-x-1 p-0.5 bg-slate-200/65 border border-slate-200/80 rounded-lg max-w-fit flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('summary')}
+                  className={`px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'summary' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/35' : 'text-slate-500 hover:text-slate-755'}`}
+                >
+                  Summary
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('details')}
+                  className={`px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'details' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/35' : 'text-slate-500 hover:text-slate-755'}`}
+                >
+                  Full Report
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('json')}
+                  className={`px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'json' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/35' : 'text-slate-500 hover:text-slate-755'}`}
+                >
+                  JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('schema')}
+                  className={`px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'schema' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/35' : 'text-slate-500 hover:text-slate-755'}`}
+                >
+                  Schema
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('launcher')}
+                  className={`px-2.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer ${activeTab === 'launcher' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/35' : 'text-slate-500 hover:text-slate-755'}`}
+                >
+                  Launcher
+                </button>
               </div>
             </div>,
+            document.getElementById('navbar-center-slot')!
+          )}
+
+          {document.getElementById('navbar-bottom-slot') && createPortal(
+            <></>,
             document.getElementById('navbar-bottom-slot')!
           )}
 

@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { getLauncherIconCacheDocPath } from './firestorePaths';
 import { getCacheId, isCacheExpired, toIconDataUrl } from './launcherIconCachePure';
 import type { LauncherIconCacheDoc } from './launcherIconCachePure';
@@ -7,7 +7,7 @@ export { getCacheId, isCacheExpired, toIconDataUrl };
 export type { LauncherIconCacheDoc };
 
 /**
- * Retrieves a persistent cached launcher icon document from Firestore, if present.
+ * Retrieves a persistent cached launcher icon document from Firestore or localStorage.
  */
 export async function getCachedIcon(
   uid: string,
@@ -18,6 +18,16 @@ export async function getCachedIcon(
 ): Promise<LauncherIconCacheDoc | null> {
   if (!uid || !iconUrl || !env) return null;
   const cacheId = await getCacheId(siteId, iconUrl);
+  
+  if (!isFirebaseConfigured) {
+    try {
+      const stored = localStorage.getItem(`mock_gpa_icon_cache_${uid}_${cacheId}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   const path = getLauncherIconCacheDocPath(env, uid, isAnonymous, cacheId);
   try {
     const d = await getDoc(doc(db, path));
@@ -36,8 +46,7 @@ export async function getCachedIcon(
 }
 
 /**
- * Saves or updates a cached launcher icon document in Firestore, appending default
- * 30 days expiration and tracking usage markers.
+ * Saves or updates a cached launcher icon document in Firestore or localStorage.
  */
 export async function saveCachedIcon(
   uid: string,
@@ -47,7 +56,6 @@ export async function saveCachedIcon(
 ): Promise<void> {
   if (!uid || !env) return;
   const cacheId = await getCacheId(docData.siteId, docData.sourceIconUrl);
-  const path = getLauncherIconCacheDocPath(env, uid, isAnonymous, cacheId);
   
   const fetchedTime = new Date(docData.fetchedAt).getTime();
   const expiresAtDate = new Date(fetchedTime + 30 * 24 * 60 * 60 * 1000); // 30 days default ttl
@@ -58,6 +66,16 @@ export async function saveCachedIcon(
     lastUsedAt: new Date().toISOString()
   };
 
+  if (!isFirebaseConfigured) {
+    try {
+      localStorage.setItem(`mock_gpa_icon_cache_${uid}_${cacheId}`, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('Could not save launcher icon cache to localStorage:', e);
+    }
+    return;
+  }
+
+  const path = getLauncherIconCacheDocPath(env, uid, isAnonymous, cacheId);
   try {
     await setDoc(doc(db, path), payload);
   } catch (e: any) {
@@ -69,3 +87,4 @@ export async function saveCachedIcon(
     }
   }
 }
+
